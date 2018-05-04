@@ -1,0 +1,46 @@
+/*
+ * Copyright © 2018, Intel Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU Lesser General Public License,
+ * version 2.1, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ */
+
+module libtest_suite {
+
+	import from libtest all;
+	import from libtcp all;
+
+	function tcp_test(inout cf_t cf) runs on tcp_node
+	{
+		tcp_node_init(cf);
+
+		bit_set(f.syn);
+
+		tcp_send();
+
+		tcp_recv();
+
+		if (bit_is_set(f.syn) and bit_is_set(f.ack)) {
+			setverdict(pass);
+		}
+	}
+
+	testcase test_libtest_001(inout cf_t cf) runs on tcp_node
+	{
+		tcp_test(cf);
+	}
+
+	control {
+		var cf_t cf;
+		execute(test_libtest_001(cf));
+		execute(test_libtest_001(cf));
+	}
+
+} with { encode "RAW" }

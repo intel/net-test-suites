@@ -1,0 +1,170 @@
+/*
+ * Copyright © 2017-2018, Intel Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU Lesser General Public License,
+ * version 2.1, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ */
+
+module libtcp {
+
+	import from libtypes all;
+	import from libtest all;
+	import from libnetinet all;
+
+	modulepar {
+		integer m_src_port := 4242;
+		integer m_dst_port := 4242;
+	}
+
+	external function tcp_enc(in tcp_t packet) return octetstring
+		with { extension "prototype(convert) encode(RAW)" };
+
+	external function tcp_dec(in octetstring data) return tcp_t
+		with { extension "prototype(convert) decode(RAW)" };
+
+	type component tcp_node extends test_node {
+		var tcp_t tcp;
+		var th_flags_t f;
+		var uint32_t th_ack := 0;
+		var uint32_t th_seq := 0;
+		var uint16_t th_win := 1280;
+	}
+
+	type enumerated tcp_state_t {
+		TCP_NONE,
+		TCP_LISTEN,
+		TCP_SYN_SENT,
+		TCP_SYN_RECEIVED,
+		TCP_ESTABLISHED,
+		TCP_FIN_WAIT1,
+		TCP_FIN_WAIT2,
+		TCP_CLOSE_WAIT,
+		TCP_CLOSING,
+		TCP_LAST_ACK,
+		TCP_TIME_WAIT,
+		TCP_CLOSED
+	}
+
+	function tcp_init(boolean reset_state := false) runs on tcp_node
+		return tcp_t
+ 	{
+		tcp := tcp_dec(int2oct(0, 20));
+
+		f := tcp.hdr.th_flags;
+
+		if (reset_state) {
+			th_ack := 0;
+			th_seq := 0;
+		}
+
+		tcp.hdr.th_win := th_win;
+
+		return tcp;
+	}
+
+	function tcp_node_init(inout cf_t cf) runs on tcp_node {
+
+		test_node_init(cf);
+
+		tcp_init();
+	}
+
+	function tcp_send(octetstring user_data := ''O) runs on tcp_node
+	{
+		tcp.hdr.th_sport := libtcp.m_src_port;
+		tcp.hdr.th_dport := libtcp.m_dst_port;
+
+		tcp.hdr.th_flags := f;
+		tcp.hdr.th_flags.doff := int2bit(5, 4);
+
+		tcp.hdr.th_ack := th_ack;
+		tcp.hdr.th_seq := th_seq;
+
+		if (lengthof(user_data) > 0) {
+			tcp.data := user_data;
+		}
+
+		p.send(tcp_enc(tcp)) to { IPPROTO_TCP, int2oct(0, 6), int2oct(0, 16) };
+
+		th_seq := th_seq + 1;
+
+		tcp_init();
+
+		t.start(t_timeout);
+	}
+
+	function tcp_connect() runs on tcp_node
+	{
+		tcp_init(reset_state := true);
+
+		bit_set(f.syn);
+
+		tcp_send();
+
+		tcp_recv();
+
+		if (bit_is_set(f.syn) and bit_is_set(f.ack)) {
+			sv(pass);
+		}
+
+		tcp_init();
+
+		bit_set(f.ack);
+
+		tcp_send();
+
+		tcp_recv(on_timeout := pass);
+
+		tcp_init();
+	}
+
+	altstep tcp_recv(verdicttype on_timeout := fail) runs on tcp_node
+	{
+		[] p.receive(octetstring:?) -> value data {
+
+			t.stop;
+
+			var octetstring tcp_data := data;
+
+			tcp_data := replace(tcp_data, 0, 54, ''O);
+
+			tcp := tcp_dec(tcp_data);
+
+			f := tcp.hdr.th_flags;
+
+			th_ack := tcp.hdr.th_seq + 1;
+
+			if (on_timeout == pass) {
+				sv(fail);
+			}
+		}
+		[] t.timeout {
+			sv(on_timeout);
+		}
+	}
+
+	function tcp_close() runs on tcp_node
+	{
+		tcp_init();
+
+		bit_set(f.fin);
+		bit_set(f.ack);
+
+		tcp_send();
+
+		t.start(t_timeout);
+
+		alt {
+			[] p.receive { t.stop };
+			[] t.timeout;
+		}
+	}
+
+} with { encode "RAW"; }

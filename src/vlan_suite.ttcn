@@ -1,0 +1,111 @@
+/* -*- tab-width: 4; -*- */
+/*
+ * Copyright © 2017-2018, Intel Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU Lesser General Public License,
+ * version 2.1, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ */
+
+module vlan_suite {
+
+import from libtest all;
+import from libnetinet all;
+import from libutils_module all;
+import from port_data_module all;
+
+type port port_eth_t message {
+	inout eth_t;
+} with {
+	extension "user port_data
+		out(eth_t -> octetstring : function(eth_enc))
+   		in(octetstring -> eth_t : function(eth_dec))";
+}
+
+type component vlan_node_t extends test_node {
+	var eth_t eth;
+	port port_eth_t P;
+}
+
+/* TODO: Change to template */
+function vlan_tag(out eth_t eth)
+{
+	eth.vlan.vlan_type := eth.hdr.h_proto;
+	eth.hdr.h_proto := ETHERTYPE_VLAN;
+	eth.vlan.vlan_pri := '000'B;
+	eth.vlan.vlan_cfi := '0'B;
+	eth.vlan.vlan_id := 100;
+}
+
+/* Receive template */
+template eth_t tr_icmp6_erp := {
+	data := {
+		ip6 := {
+			data := {
+				icmp6 := {
+					hdr := {
+						icmp6_type := ICMP6_ECHO_REPLY
+					}
+				}
+			}
+		}
+	}
+}
+
+testcase Test_VLAN_001(inout cf_t cf) runs on vlan_node_t {
+
+	test_node_init(cf);
+	test_node_shutdown(cf);
+
+	map(self:P, system:P);
+
+	data := fx_ip6_echo_init(cf.dst_eth, cf.src_eth, cf.dst_ip6, cf.src_ip6);
+
+	P.send(eth_dec(data));
+
+	t.start(t_timeout);
+
+	alt {
+		[] P.receive(tr_icmp6_erp) {
+			sv(pass);
+		}
+		[] t.timeout {
+			sv(fail);
+			self.stop;
+		}
+	}
+
+	data := fx_ip6_echo_init(cf.dst_eth, cf.src_eth,
+							 cf.dst_ip6, cf.src_ip6);
+	eth := eth_dec(data);
+
+	vlan_tag(eth);
+
+	P.send(eth);
+
+	t.start(t_timeout);
+
+	alt {
+		[] P.receive(?) -> value eth {
+			log(eth);
+			sv(pass);
+		}
+		[] t.timeout {
+			sv(fail);
+			self.stop;
+		}
+	}
+}
+
+control {
+	var cf_t cf;
+	execute(Test_VLAN_001(cf));
+}
+
+} with { encode "RAW" }

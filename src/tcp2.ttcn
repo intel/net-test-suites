@@ -1,0 +1,411 @@
+/* -*- tab-width: 4; -*- */
+/*
+ * Copyright © 2018, Intel Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU Lesser General Public License,
+ * version 2.1, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ */
+
+module tcp2 {
+
+import from libtypes all;
+import from libtest all;
+import from libtcp all;
+import from port_data_module all;
+import from libutils_module all;
+
+modulepar {
+	integer m_src_port := 4242;
+}
+
+type bitstring th_flags_t length(6) with {
+	variant "FIELDLENGTH(6),BITORDER(msb)"; };
+
+const th_flags_t TH_URG	:='000001'B;
+const th_flags_t TH_ACK	:='000010'B;
+const th_flags_t TH_PSH	:='000100'B;
+const th_flags_t TH_RST	:='001000'B;
+const th_flags_t TH_SYN :='010000'B;
+const th_flags_t TH_FIN :='100000'B;
+const th_flags_t TH_NONE :='000000'B;
+template th_flags_t TH_ANY := '??????'B;
+
+type union opt_t {
+	record of tcp_opt_t opt,
+	octetstring	data
+}
+
+const uint8_t TO_MSS := 2;
+
+type record tcp_opt_t {
+	uint8_t	kind,
+	uint8_t	len,
+	octetstring data optional
+} with {
+	variant "FIELDORDER(msb)";
+	variant (len) "LENGTHTO(kind,len,data)";
+}
+
+type record of tcp_opt_t tcp_options_t;
+
+type record tcp2_t {
+	uint16_t	th_sport,
+	uint16_t	th_dport,
+	uint32_t	th_seq,
+	uint32_t	th_ack,
+	uint4_t		th_doff,
+	bit3_t		th_res,
+	bit3_t		th_ecn,
+	th_flags_t	th_flags,
+	uint16_t	th_win,
+	uint16_t	th_sum,
+	uint16_t	th_urp,
+	tcp_options_t opt optional,
+	octetstring data optional
+} with {
+	variant "FIELDORDER(msb)";
+	variant(th_sport, th_dport, th_seq, th_ack, th_win) "BYTEORDER(last)";
+	variant (opt) "REPEATABLE(yes)";
+	variant(th_doff) "LENGTHTO(th_sport,th_dport,th_seq,th_ack,th_doff,
+		th_res,th_ecn,th_flags,th_win,th_sum,th_urp,opt)";
+	variant(th_doff) "UNIT(dword32)";
+}
+
+external function tcp2_enc(in tcp2_t packet) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+
+external function tcp2_dec(in octetstring data) return tcp2_t
+	with { extension "prototype(convert) decode(RAW)" };
+
+/* Send template */
+template tcp2_t ts_tcp(th_flags_t f := TH_NONE,
+					   integer sp := m_src_port,
+					   integer sn := 0,
+					   integer an := 0,
+					   template octetstring d := omit) := {
+	 th_sport := sp,
+	 th_dport := 4242,
+	 th_seq := sn,
+	 th_ack := an,
+	 th_doff := 5,
+	 th_res := '000'B,
+	 th_ecn := '000'B,
+	 th_flags := f,
+	 th_win := 1280,
+	 th_sum := 0,
+	 th_urp := 0,
+	 opt := omit,
+	 data := d
+}
+
+/* Receive template */
+template tcp2_t tr_tcp(template th_flags_t f := TH_ANY,
+					   integer sp := m_src_port,
+					   template integer sn := ?,
+					   template integer an := ?,
+					   template octetstring d := *) := {
+	 th_sport := sp,
+	 th_dport := ?,
+	 th_seq := sn,
+	 th_ack := an,
+	 th_doff := ?,
+	 th_res := '000'B,
+	 th_ecn := '000'B,
+	 th_flags := f,
+	 th_win := ?,
+	 th_sum := ?,
+	 th_urp := ?,
+	 opt := *,
+	 data := d
+}
+
+function tcp2_on_send(in tcp2_t msg_in, out octetstring msg_out)
+{
+	/* TODO: Redo inter test non volatile data storage, drop fx_db. */
+	var octetstring src_eth := fx_ether_aton(fx_db_search("src_eth"));
+	var octetstring dst_eth := fx_ether_aton(fx_db_search("dst_eth"));
+	var octetstring src_ip6 := fx_inet6_pton(fx_db_search("src_ip6"));
+	var octetstring dst_ip6 := fx_inet6_pton(fx_db_search("dst_ip6"));
+	var octetstring tcp := tcp2_enc(msg_in);
+	msg_out := fx_ip6_init(dst_eth, src_eth, dst_ip6, src_ip6,
+						   IPPROTO_TCP, lengthof(tcp));
+	msg_out := msg_out & tcp;
+
+} with { extension "prototype(fast)" }
+
+function tcp2_on_recv(in octetstring msg_in, out tcp2_t msg_out)
+{
+	msg_in := replace(msg_in, 0, 54, ''O); /* trim Eth and IPv6 headers */
+	msg_out := tcp2_dec(msg_in);
+} with { extension "prototype(fast)" }
+
+type port port_tcp message {
+	inout tcp2_t;
+} with {
+	extension "user port_data
+		out(tcp2_t -> octetstring : function(tcp2_on_send))
+   		in(octetstring -> tcp2_t : function(tcp2_on_recv))";
+}
+
+type component tcp2_node_t extends test_node {
+	var tcp2_t tcp;
+	var tcp_state_t s := TCP_NONE;
+	var integer sp := 0; /* source port */
+	var integer msn := 0; /* my sequence number */
+	var integer psn := 0; /* peer sequence number */
+	var octetstring d_s := ''O; /* data to send */
+	var octetstring d_u := ''O; /* unacknowledged data */
+	var integer d_step := 2;
+	timer T := 1.0;
+	port port_tcp P;
+	var default d_as_timeout;
+	var default d_as_unexpected_msg;
+}
+
+altstep as_timeout() runs on tcp2_node_t
+{
+	[] T.timeout { setverdict(fail); self.stop; }
+}
+
+altstep as_unexpected_msg() runs on tcp2_node_t
+{
+	[] P.receive(?) { setverdict(fail); self.stop; }
+}
+
+function tcp2_enc_dec(tcp2_t msg_in, out tcp2_t msg_out)
+{
+	var octetstring d := tcp2_enc(msg_in);
+
+	msg_out := tcp2_dec(d);
+}
+
+function tcp2_compare(tcp2_t msg1, tcp2_t msg2)
+{
+	if (msg1 == msg2) {
+		setverdict(pass);
+	} else {
+		log("Decoded: ", msg2);
+		setverdict(fail);
+		self.stop;
+	}
+}
+
+/**
+ * Test TCP RAW encoder and decoder
+ */
+testcase test_tcp_codecs() runs on tcp2_node_t
+{
+	var tcp2_t tcp2;
+
+	/* No data, no options */
+
+	tcp := valueof(ts_tcp)
+
+	tcp2_enc_dec(tcp, tcp2);
+
+	tcp.th_doff := 5;
+
+	tcp2_compare(tcp, tcp2);
+
+	/* Data, no options */
+
+	tcp := valueof(ts_tcp(d := '1111'O));
+
+	tcp2_enc_dec(tcp, tcp2);
+
+	tcp.th_doff := 5;
+
+	tcp2_compare(tcp, tcp2);
+
+	/* Data, options */
+
+	tcp := valueof(ts_tcp(d := '1111'O));
+
+	tcp.opt := {
+		{ TO_MSS, 4, '0000'O },
+		{ TO_MSS, 4, '0000'O }
+	}
+
+	tcp2_enc_dec(tcp, tcp2);
+
+	tcp.th_doff := 7;
+
+	tcp2_compare(tcp, tcp2);
+
+	/* No data, options */
+
+	tcp := valueof(ts_tcp);
+
+	tcp.opt := {
+		{ TO_MSS, 4, '0000'O },
+		{ TO_MSS, 4, '0000'O }
+	}
+
+	tcp2_enc_dec(tcp, tcp2);
+
+	tcp.th_doff := 7;
+
+	tcp2_compare(tcp, tcp2);
+}
+
+/**
+ * TODO: Add templates test here
+ */
+testcase test_tcp_templates() runs on tcp2_node_t
+{
+	setverdict(pass);
+}
+
+function pre_inc(inout integer sn, integer step := 1) return integer
+{
+	sn := sn + step;
+	return sn;
+}
+
+function post_inc(inout integer sn, integer step := 1) return integer
+{
+	var integer r := sn;
+	sn := sn + step;
+	return r;
+}
+
+function data_pop(inout octetstring data_in, integer len := 1)
+	return octetstring
+{
+	var octetstring data_out := substr(data_in, 0, len);
+
+	data_in := replace(data_in, 0, len, ''O);
+
+	return data_out;
+}
+
+function data_push(inout octetstring data, octetstring data_new)
+{
+	data := data & data_new;
+}
+
+function th_is_set(tcp2_t tcp, th_flags_t f) return boolean
+{
+	if ((tcp.th_flags and4b f) == f) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+function th_set(inout tcp2_t tcp, th_flags_t f)
+{
+	tcp.th_flags := tcp.th_flags or4b f;
+}
+
+function sn_set(inout tcp2_t tcp, integer msn, integer psn)
+{
+	tcp.th_seq := msn;
+	tcp.th_ack := psn;
+}
+
+/**
+ * Test TCP connection establishment, data transfer
+ * (data echoing expected) and connection close.
+ */
+testcase test_tcp_conn(inout cf_t cf,
+					   integer isn := 0, /* Initial sequence number */
+					   integer src_port := m_src_port,
+					   octetstring data_to_send := ''O)
+	runs on tcp2_node_t
+{
+	test_node_init(cf);
+	test_node_shutdown(cf);
+
+	map(self:P, system:P);
+	d_as_timeout := activate(as_timeout());
+	d_as_unexpected_msg := activate(as_unexpected_msg());
+	msn := isn;
+	sp := src_port;
+	T.start;
+
+	alt {
+	[s == TCP_NONE] T.timeout {
+		P.send(ts_tcp(TH_SYN, sp := sp, sn := post_inc(msn)));
+		s := TCP_SYN_SENT;
+		T.start; repeat;
+	}
+	[s == TCP_SYN_SENT] P.receive(tr_tcp(TH_SYN or4b TH_ACK, an := msn))
+			-> value tcp {
+		T.stop;
+		s := TCP_SYN_RECEIVED;
+		psn := tcp.th_seq;
+		P.send(ts_tcp(TH_ACK, sp := sp, sn := msn, an := pre_inc(psn)));
+		data_push(d_s, data_to_send);
+		T.start; repeat;
+	}
+	[s == TCP_SYN_RECEIVED] T.timeout {
+		s := TCP_ESTABLISHED;
+		deactivate(d_as_timeout); deactivate(d_as_unexpected_msg);
+		T.start; repeat;
+	}
+	[s == TCP_ESTABLISHED] P.receive(tr_tcp) -> value tcp {
+		T.stop;
+		var tcp2_t tcp2 := valueof(ts_tcp);
+		if (th_is_set(tcp, TH_PSH)) {
+			th_set(tcp2, TH_ACK);
+			pre_inc(psn, lengthof(tcp.data));
+		}
+		if (th_is_set(tcp, TH_ACK)) {
+			if (tcp.th_ack > msn - lengthof(d_u)) {
+				var integer diff := tcp.th_ack - (msn - lengthof(d_u));
+				data_pop(d_u, diff);
+			}
+		}
+		if (tcp2.th_flags != TH_NONE) {
+			sn_set(tcp2, msn, psn);
+			P.send(tcp2);
+		}
+		T.start; repeat;
+	}
+	[s == TCP_ESTABLISHED] T.timeout {
+		if (lengthof(d_u) > 0) { goto wait_for_data; }
+		if (lengthof(d_s) > 0) {
+			d_u := data_pop(d_s, d_step);
+			P.send(ts_tcp(TH_PSH, sn := post_inc(msn, lengthof(d_u)),
+						  an := psn, d := d_u));
+			goto wait_for_data;
+		}
+		/* Everything is sent and aknowledged, close the connection */
+		s := TCP_CLOSE_WAIT;
+		d_as_timeout := activate(as_timeout());
+		d_as_unexpected_msg := activate(as_unexpected_msg());
+		P.send(ts_tcp(TH_FIN or4b TH_ACK, sp := sp,
+					  sn := post_inc(msn), an := psn));
+label wait_for_data;
+		T.start; repeat;
+	}
+	[s == TCP_CLOSE_WAIT] P.receive(tr_tcp(TH_FIN or4b TH_ACK, an := msn)) {
+		T.stop;
+		s := TCP_CLOSED;
+		goto test_end;
+	}
+	}
+label test_end;
+	if (s == TCP_CLOSED and lengthof(d_s) == 0 and lengthof(d_u) == 0) {
+		setverdict(pass);
+	}
+}
+
+control {
+	var cf_t cf;
+	execute(test_tcp_codecs());
+	execute(test_tcp_templates());
+	execute(test_tcp_conn(cf, data_to_send := '01020304'O));
+	//execute(test_tcp_conn(cf, isn := 2000, src_port := 4243));
+}
+} with {
+	encode "RAW";
+};

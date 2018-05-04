@@ -1,0 +1,163 @@
+/*
+ * Copyright © 2018, Intel Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU Lesser General Public License,
+ * version 2.1, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ */
+
+module libtest {
+
+	import from libtypes all;
+	import from libnetinet all;
+	import from PortQemu_Module all;
+	import from libutils_module all;
+
+	modulepar {
+		charstring m_src_eth := "00:00:00:00:00:02";
+		charstring m_src_ip6 := "fe80::2";
+	}
+
+	type record cf_t {
+		boolean init,
+		boolean ready,
+		eth_addr_t src_eth,
+		in6_addr_t src_ip6,
+		octetstring dst_eth,
+		octetstring dst_ip6
+	}
+
+	type component test_node {
+		var octetstring	data;
+		var qemu_port_addr proto := { IPPROTO_ICMPv6 };
+		port PortQemu p;
+		timer t;
+		var float t_timeout := 1.0;
+	}
+
+	function sv(verdicttype val) runs on test_node
+	{
+		setverdict(val);
+	}
+
+	function bit_is_set(bit1_t b) return boolean
+	{
+		if (b == '1'B) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	function bit_set(inout bit1_t b)
+	{
+		b := '1'B;
+	}
+
+	function cf_init(inout cf_t cf)
+	{
+		cf.init := false;
+		cf.ready := false;
+		cf.src_eth := fx_ether_aton(m_src_eth);
+		cf.src_ip6 := fx_inet6_pton(m_src_ip6);
+		cf.dst_eth := ''O;
+		cf.dst_ip6 := ''O;
+	}
+
+	function test_node_ip6_auto_config(inout cf_t cf)
+		runs on test_node
+	{
+		data := fx_ip6_nbr_soliciation_init();
+
+		p.send(data) to { IPPROTO_RAW, int2oct(0, 6), int2oct(0, 16) };
+
+		while (not cf.ready) {
+
+			alt {
+				[] p.receive(octetstring:?) -> value data sender proto {
+
+					fx_ip6_nbr_soliciation_decode(data, cf.dst_ip6, cf.dst_eth);
+
+					data := fx_ip6_nbr_advert_init(cf.dst_ip6, cf.dst_eth);
+
+					p.send(data) to { IPPROTO_RAW, int2oct(0, 6), int2oct(0, 16) };
+
+					cf.ready := true;
+				}
+			}
+		}
+	}
+
+	function test_node_ping_client(inout cf_t cf) runs on test_node
+	{
+		var octetstring src_eth := fx_ether_aton(m_src_eth);
+		var octetstring src_ip6 := fx_inet6_pton(m_src_ip6);
+
+		data := fx_ip6_echo_init(cf.dst_eth, src_eth, cf.dst_ip6, src_ip6);
+
+		p.send(data) to { IPPROTO_RAW, int2oct(0, 6), int2oct(0, 16) };
+
+		t.start(t_timeout);
+
+		alt {
+			[] p.receive(octetstring:?) -> value data sender proto {
+				t.stop;
+			}
+			[] t.timeout {
+				sv(fail);
+				self.stop;
+			}
+		}
+	}
+
+	function test_node_init(inout cf_t cf) runs on test_node
+	{
+		map(self:p, system:test_port);
+
+		if (isbound(cf) != true) {
+			cf_init(cf);
+			test_node_ip6_auto_config(cf);
+			cf.init := true;
+		}
+
+		if (not cf.ready) {
+			setverdict(fail);
+			stop;
+		}
+
+		test_node_ping_client(cf);
+
+		var charstring val;
+		var port_qemu_param par;
+
+		val := fx_ether_ntoa(cf.dst_eth);
+		par := { "dst_eth", val };
+		p.send(par);
+
+		val := fx_inet6_ntop(cf.dst_ip6);
+		par := { "dst_ip6", val };
+		p.send(par);
+	}
+
+	function cf_save(cf_t cf)
+	{
+		fx_db_insert("src_eth", fx_ether_ntoa(cf.src_eth));
+		fx_db_insert("src_ip6", fx_inet6_ntop(cf.src_ip6));
+		fx_db_insert("dst_eth", fx_ether_ntoa(cf.dst_eth));
+		fx_db_insert("dst_ip6", fx_inet6_ntop(cf.dst_ip6));
+	}
+
+	function test_node_shutdown(cf_t cf) runs on test_node
+	{
+		unmap(self:p, system:test_port);
+
+		cf_save(cf);
+	}
+}
+
