@@ -18,6 +18,7 @@
 #include <netinet/ip6.h>
 #include <netinet/icmp6.h>
 #include <netinet/tcp.h>
+#include <netinet/udp.h>
 #include <arpa/inet.h>
 
 #include <errno.h>
@@ -160,20 +161,24 @@ uint16_t inet6_chksum(uint8_t *data, size_t data_len)
 	struct ip6_hdr *ip6 = (struct ip6_hdr *) (eth + 1);
 	struct icmp6_hdr *icmp6;
 	struct tcphdr *tcp;
+	struct udphdr *udp;
 	uint16_t *sum = NULL;
 
 	if (ntohs(eth->h_proto) == ETHERTYPE_VLAN) {
 		ip6 = (struct ip6_hdr *) ((void *) ip6 + 4);
 	}
 
-	icmp6 = (struct icmp6_hdr *) (ip6 + 1);
-	tcp = (struct tcphdr *) (ip6 + 1);
-
 	switch (ip6->ip6_nxt) {
 	case IPPROTO_TCP:
+		tcp = (struct tcphdr *) (ip6 + 1);
 		sum = &tcp->th_sum;
 		break;
+	case IPPROTO_UDP:
+		udp = (struct udphdr *) (ip6 + 1);
+		sum = &udp->uh_sum;
+		break;
 	case IPPROTO_ICMPV6:
+		icmp6 = (struct icmp6_hdr *) (ip6 + 1);
 		sum = &icmp6->icmp6_cksum;
 		break;
 	default:
