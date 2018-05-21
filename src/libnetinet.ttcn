@@ -92,6 +92,7 @@ type record ip6_t {
 	variant(data) "CROSSTAG(
 		icmp6,	hdr.ip6_nxt = IPPROTO_ICMPv6;
 		tcp,	hdr.ip6_nxt = IPPROTO_TCP;
+		udp,	hdr.ip6_nxt = IPPROTO_UDP;
 	)";
 }
 
@@ -182,6 +183,9 @@ type record udphdr_t {
 type record udp_t {
 	udphdr_t hdr,
 	octetstring data optional
+} with {
+	variant (hdr) "LENGTHTO(data,hdr)";
+	variant (hdr) "LENGTHINDEX(uh_ulen)";
 }
 
 external function eth_enc(in eth_t packet) return octetstring
