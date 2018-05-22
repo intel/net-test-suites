@@ -53,7 +53,7 @@ type enumerated icmp6_type_t {
 type record eth_t {
 	ethhdr_t	hdr,
 	vlan_tag_t	vlan optional,
-	eth_data_t	data
+	eth_data_t	data optional
 } with {
 	variant "CROSSTAG(vlan, hdr.h_proto = ETHERTYPE_VLAN)";
 	variant(data) "CROSSTAG(
