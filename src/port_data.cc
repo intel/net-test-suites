@@ -196,7 +196,7 @@ uint16_t inet6_chksum(uint8_t *data, size_t data_len)
 
 	*sum = 0;
 
-	s += _cs(icmp6, ntohs(ip6->ip6_plen));
+	s += _cs(ip6 + 1, ntohs(ip6->ip6_plen));
 
 	s = cs(s);
 
