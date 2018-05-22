@@ -94,6 +94,8 @@ type record ip6_t {
 		tcp,	hdr.ip6_nxt = IPPROTO_TCP;
 		udp,	hdr.ip6_nxt = IPPROTO_UDP;
 	)";
+	variant (hdr) "LENGTHTO(data)";
+	variant (hdr) "LENGTHINDEX(ip6_plen)";
 }
 
 type record ip6_hdr_t {
