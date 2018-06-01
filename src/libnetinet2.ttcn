@@ -1,0 +1,315 @@
+/* -*- tab-width: 4; -*- */
+/*
+ * Copyright © 2017-2018, Intel Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU Lesser General Public License,
+ * version 2.1, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ */
+
+module libnetinet2 {
+
+import from libtypes all;
+
+type octetstring in_addr_t length(4);
+type octetstring eth_addr_t length(6);
+type octetstring in6_addr_t length(16);
+
+type record vlan_tag_t {
+	bit3_t		vlan_pri,
+	bit1_t		vlan_cfi,
+	integer		vlan_id,
+	ethertype_t vlan_type
+} with {
+	variant(vlan_id) "FIELDLENGTH(12),BYTEORDER(last)";
+	variant(vlan_type) "BYTEORDER(last)";
+}
+
+type record eth_t {
+	eth_addr_t	h_dest,
+	eth_addr_t	h_source,
+	ethertype_t	h_proto,
+	vlan_tag_t	vlan optional,
+	octetstring	data optional
+} with {
+	variant(h_proto) "BYTEORDER(last)";
+}
+
+type record ip_t {
+	bit4_t		ip_v,
+	bit4_t		ip_hl,
+	uint8_t		ip_tos,
+	uint16_t	ip_len,
+	uint16_t	ip_id,
+	uint16_t	ip_off,
+	uint8_t		ip_ttl,
+	ipproto_t	ip_p,
+	uint16_t	ip_sum,
+	in_addr_t	ip_src,
+	in_addr_t	ip_dst,
+	octetstring	data optional
+} with {
+	variant(ip_len) "BYTEORDER(last)";
+	variant(ip_len) "LENGTHTO(
+		ip_v,ip_hl,ip_tos,ip_len,ip_id,ip_off,ip_ttl,
+		ip_p,ip_sum,ip_src,ip_dst,data)";
+}
+
+type record ip6_t {
+	uint32_t	ip6_vfc,
+	uint16_t	ip6_plen,
+	ipproto_t	ip6_nxt,
+	uint8_t		ip6_hlim,
+	in6_addr_t	ip6_src,
+	in6_addr_t	ip6_dst,
+	octetstring data optional
+} with {
+	variant(ip6_plen) "BYTEORDER(last)";
+	variant(ip6_plen) "LENGTHTO(data)";
+}
+
+type record udp_t {
+	uint16_t	uh_sport,
+	uint16_t	uh_dport,
+	uint16_t	uh_ulen,
+	uint16_t	uh_sum,
+	octetstring	data optional,
+	octetstring	x optional
+} with {
+	variant(uh_sport, uh_dport, uh_ulen) "BYTEORDER(last)";
+	variant(uh_ulen) "LENGTHTO(uh_sport,uh_dport,uh_ulen,uh_sum,data)";
+}
+
+type bitstring th_flags_t length(6) with {
+	variant "FIELDLENGTH(6),BITORDER(msb)"; };
+
+const th_flags_t TH_URG	:='000001'B;
+const th_flags_t TH_ACK	:='000010'B;
+const th_flags_t TH_PSH	:='000100'B;
+const th_flags_t TH_RST	:='001000'B;
+const th_flags_t TH_SYN :='010000'B;
+const th_flags_t TH_FIN :='100000'B;
+const th_flags_t TH_NONE :='000000'B;
+template th_flags_t TH_ANY := '??????'B;
+
+type union opt_t {
+	record of tcp_opt_t opt,
+	octetstring	data
+}
+
+const uint8_t TO_MSS := 2;
+
+type record tcp_opt_t {
+	uint8_t	kind,
+	uint8_t	len,
+	octetstring data optional
+} with {
+	variant "FIELDORDER(msb)";
+	variant(len) "LENGTHTO(kind,len,data)";
+}
+
+type record of tcp_opt_t tcp_options_t;
+
+type record tcp_t {
+	uint16_t	th_sport,
+	uint16_t	th_dport,
+	uint32_t	th_seq,
+	uint32_t	th_ack,
+	uint4_t		th_doff,
+	bit3_t		th_res,
+	bit3_t		th_ecn,
+	th_flags_t	th_flags,
+	uint16_t	th_win,
+	uint16_t	th_sum,
+	uint16_t	th_urp,
+	tcp_options_t opt optional,
+	octetstring data optional
+} with {
+	variant(th_sport, th_dport, th_seq, th_ack, th_win) "BYTEORDER(last)";
+	variant(opt) "REPEATABLE(yes)";
+	variant(th_doff) "LENGTHTO(th_sport,th_dport,th_seq,th_ack,th_doff,
+		th_res,th_ecn,th_flags,th_win,th_sum,th_urp,opt)";
+	variant(th_doff) "UNIT(dword32)";
+}
+
+type record icmp_t {
+	icmp_type_t	icmp_type,
+	uint8_t		icmp_code,
+	uint16_t	icmp_cksum,
+	icmp_data_t	data
+}
+
+type union icmp_data_t {
+	icmp_echo_t	echo,
+	octetstring	data
+}
+
+type record icmp_echo_t {
+	uint16_t	icmp_id,
+	uint16_t	icmp_seq,
+	octetstring	data optional
+} with {
+	variant(icmp_id, icmp_seq) "BYTEORDER(last)";
+}
+
+type record icmp6_echo_t {
+	uint16_t	icmp6_id,
+	uint16_t	icmp6_seq,
+	octetstring	data optional
+} with {
+	variant(icmp6_id, icmp6_seq) "BYTEORDER(last)";
+}
+
+type record icmp6_nbr_sol_t {
+	bit1_t		ns_flag_router,
+	bit1_t		ns_flag_solicited,
+	bit1_t		ns_flag_override,
+	uint32_t	ns_reserved,
+	in6_addr_t	ns_target,
+	octetstring	ns_options optional
+} with {
+	variant(ns_reserved) "FIELDLENGTH(29)";
+}
+
+type record icmp6_nbr_adv_t {
+	bit1_t		na_flag_router,
+	bit1_t		na_flag_solicited,
+	bit1_t		na_flag_override,
+	uint32_t	na_reserved,
+	in6_addr_t	na_target,
+	octetstring na_options optional
+} with {
+	variant(na_reserved) "FIELDLENGTH(29)";
+}
+
+type union icmp6_data_t {
+	icmp6_echo_t		echo,
+	icmp6_nbr_adv_t		nbr_adv,
+	icmp6_nbr_sol_t		nbr_sol,
+	octetstring			data
+}
+
+type record icmp6_t {
+	icmp6_type_t	icmp6_type,
+	uint8_t			icmp6_code,
+	uint16_t		icmp6_cksum,
+	icmp6_data_t	data optional
+} with {
+	variant(data) "CROSSTAG(
+		echo,		icmp6_type = ICMP6_ECHO_REQUEST;
+		echo,		icmp6_type = ICMP6_ECHO_REPLY;
+		nbr_sol,	icmp6_type = ICMP6_NEIGHBOR_SOLICIT;
+		nbr_adv,	icmp6_type = ICMP6_NEIGHBOR_ADVERT;
+	)";
+}
+
+type record arp_t {
+	uint16_t	arp_hrd,
+	ethertype_t	arp_pro,
+	uint8_t		arp_hln,
+	uint8_t		arp_pln,
+	uint16_t	arp_op,
+	eth_addr_t	arp_sha,
+	in_addr_t	arp_spa,
+	eth_addr_t	arp_tha,
+	in_addr_t	arp_tpa
+} with {
+	variant(arp_hrd, arp_pro, arp_op) "BYTEORDER(last)";
+}
+
+type enumerated ipproto_t {
+	IPPROTO_IP(0),
+	IPPROTO_ICMP(1),
+	IPPROTO_TCP(6),
+	IPPROTO_UDP(17),
+	IPPROTO_IPV6(41),
+	IPPROTO_ICMPV6(58),
+	IPPROTO_RAW(255)
+} with {
+	variant "FIELDLENGTH(8)";
+};
+
+type enumerated ethertype_t {
+	ETHERTYPE_IP('0800'H),
+	ETHERTYPE_ARP('0806'H),
+	ETHERTYPE_VLAN('8100'H),
+	ETHERTYPE_IPV6('86dd'H)
+} with {
+	variant "FIELDLENGTH(16)";
+};
+
+type enumerated icmp_type_t {
+	ICMP_ECHO_REPLY(0),
+	ICMP_ECHO(8)
+} with {
+	variant "FIELDLENGTH(8)";
+};
+
+type enumerated icmp6_type_t {
+	ICMP6_ECHO_REQUEST(128),
+	ICMP6_ECHO_REPLY(129),
+	ICMP6_ROUTER_SOLICIT(133),
+	ICMP6_ROUTER_ADVERT(134),
+	ICMP6_NEIGHBOR_SOLICIT(135),
+	ICMP6_NEIGHBOR_ADVERT(136)
+}
+
+external function eth_enc(in eth_t packet) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function eth_dec(in octetstring data) return eth_t
+	with { extension "prototype(convert) decode(RAW)" };
+
+external function ip_enc(in ip_t packet) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function ip_dec(in octetstring data) return ip_t
+	with { extension "prototype(convert) decode(RAW)" };
+
+external function arp_enc(in arp_t packet) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function arp_dec(in octetstring data) return arp_t
+	with { extension "prototype(convert) decode(RAW)" };
+
+external function icmp_enc(in icmp_t packet) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function icmp_dec(in octetstring data) return icmp_t
+	with { extension "prototype(convert) decode(RAW)" };
+
+external function ip6_enc(in ip6_t packet) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function ip6_dec(in octetstring data) return ip6_t
+	with { extension "prototype(convert) decode(RAW)" };
+
+external function icmp6_enc(in icmp6_t packet) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function icmp6_dec(in octetstring data) return icmp6_t
+	with { extension "prototype(convert) decode(RAW)" };
+
+external function udp_enc(in udp_t packet) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function udp_dec(in octetstring data) return udp_t
+	with { extension "prototype(convert) decode(RAW)" };
+
+external function tcp_enc(in tcp_t packet) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function tcp_dec(in octetstring data) return tcp_t
+	with { extension "prototype(convert) decode(RAW)" };
+
+type port port_ip message { inout ip_t; } with { extension "internal"; }
+type port port_arp message { inout arp_t; } with { extension "internal"; }
+type port port_icmp message { inout icmp_t; } with { extension "internal"; }
+type port port_ip6 message { inout ip6_t; } with { extension "internal"; }
+type port port_icmp6 message { inout icmp6_t; } with { extension "internal"; }
+type port port_tcp message { inout tcp_t; } with { extension "internal"; }
+type port port_udp message { inout udp_t; } with { extension "internal"; }
+type port port_cf message { inout charstring; } with { extension "internal"; }
+
+} with {
+	variant "FIELDORDER(msb)";
+	encode "RAW";
+}

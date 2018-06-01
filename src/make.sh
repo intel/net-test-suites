@@ -5,7 +5,6 @@ touch cversion.h
 
 ttcn3_makefilegen -e test_suite \
 		  -w \
-		  -s \
 		  *.cc \
 		  *.ttcn
 

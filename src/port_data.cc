@@ -15,6 +15,8 @@
 #include <sys/socket.h>
 
 #include <netinet/ether.h>
+#include <netinet/ip.h>
+#include <netinet/ip_icmp.h>
 #include <netinet/ip6.h>
 #include <netinet/icmp6.h>
 #include <netinet/tcp.h>
@@ -155,27 +157,64 @@ uint16_t cs(int32_t s)
 	return ~((s & 0xFFFF) + (s >> 16));
 }
 
+/* TODO: Refactor this */
 uint16_t inet6_chksum(uint8_t *data, size_t data_len)
 {
 	struct ethhdr *eth = (struct ethhdr *) data;
+	struct ip *ip = (struct ip *) (eth + 1);
 	struct ip6_hdr *ip6 = (struct ip6_hdr *) (eth + 1);
 	struct icmp6_hdr *icmp6;
+	struct icmp *icmp;
 	struct tcphdr *tcp;
 	struct udphdr *udp;
 	uint16_t *sum = NULL;
+	uint16_t h_proto = eth->h_proto;
+	uint8_t *ipproto = NULL;
+	size_t vlan_len = 0;
 
 	if (ntohs(eth->h_proto) == ETHERTYPE_VLAN) {
+		ip = (struct ip *) ((void *) ip + 4);
 		ip6 = (struct ip6_hdr *) ((void *) ip6 + 4);
+		h_proto = *(uint16_t *)
+			((void *) eth + sizeof(struct ethhdr) + 2);
+		vlan_len = 4;
 	}
 
-	switch (ip6->ip6_nxt) {
+	h_proto = ntohs(h_proto);
+
+	switch (h_proto) {
+	case ETHERTYPE_IP:
+		ipproto = &ip->ip_p;
+		break;
+	case ETHERTYPE_IPV6:
+		ipproto = &ip6->ip6_nxt;
+		break;
+	case ETHERTYPE_ARP:
+		goto end;
+	default:
+		_E("Unsupported ETHERTYPE: 0x%04hx (%hu)", h_proto, h_proto);
+	}
+
+	switch (*ipproto) {
 	case IPPROTO_TCP:
-		tcp = (struct tcphdr *) (ip6 + 1);
+		if (h_proto == ETHERTYPE_IP) {
+			tcp = (struct tcphdr *) (ip + 1);
+		} else {
+			tcp = (struct tcphdr *) (ip6 + 1);
+		}
 		sum = &tcp->th_sum;
 		break;
 	case IPPROTO_UDP:
-		udp = (struct udphdr *) (ip6 + 1);
+		if (h_proto == ETHERTYPE_IP) {
+			udp = (struct udphdr *) (ip + 1);
+		} else {
+			udp = (struct udphdr *) (ip6 + 1);
+		}
 		sum = &udp->uh_sum;
+		break;
+	case IPPROTO_ICMP:
+		icmp = (struct icmp *) (ip + 1);
+		sum = &icmp->icmp_cksum;
 		break;
 	case IPPROTO_ICMPV6:
 		icmp6 = (struct icmp6_hdr *) (ip6 + 1);
@@ -188,20 +227,36 @@ uint16_t inet6_chksum(uint8_t *data, size_t data_len)
 
 	int32_t s;
 
-	s = _cs(&ip6->ip6_src, sizeof(struct in6_addr) * 2);
+	if (h_proto == ETHERTYPE_IP) {
+		s = _cs(&ip->ip_src, sizeof(struct in_addr) * 2);
+	} else {
+		s = _cs(&ip6->ip6_src, sizeof(struct in6_addr) * 2);
+	}
 
-	s += htons(ip6->ip6_nxt);
-
-	s += ip6->ip6_plen;
+	if (h_proto == ETHERTYPE_IP) {
+		s += htons(ip->ip_p);
+		s += htons(data_len - vlan_len - 20 - 14);
+	} else {
+		s += htons(*ipproto);
+		s += ip6->ip6_plen;
+	}
 
 	*sum = 0;
 
-	s += _cs(ip6 + 1, ntohs(ip6->ip6_plen));
+	if (h_proto == ETHERTYPE_IP) {
+		s += _cs(data + 14 + vlan_len + 20, data_len - vlan_len - 20 - 14);
+	} else {
+		s += _cs(ip6 + 1, ntohs(ip6->ip6_plen));
+	}
 
 	s = cs(s);
 
 	*sum = s;
 
+	if (h_proto == ETHERTYPE_IP) {
+		ip->ip_sum = cs(_cs(ip, sizeof(struct ip)));
+	}
+ end:
 	return s;
 }
 

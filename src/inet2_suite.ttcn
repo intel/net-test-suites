@@ -1,0 +1,401 @@
+/* -*- tab-width: 4; -*- */
+/*
+ * Copyright © 2017-2018, Intel Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU Lesser General Public License,
+ * version 2.1, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ */
+
+module inet2_suite {
+
+import from libtypes all;
+import from libnetinet2 all;
+import from port_data_module all;
+import from libutils_module all;
+
+modulepar {
+	charstring m_eth_dst := "00:00:00:00:00:01";
+	charstring m_eth_src := "00:00:00:00:00:02";
+	charstring m_ip_dst := "10.0.0.1";
+	charstring m_ip_src := "10.0.0.2";
+	charstring m_ip6_dst := "fe80::1";
+	charstring m_ip6_src := "fe80::2";
+	ethertype_t m_ethertype := ETHERTYPE_IPV6;
+}
+
+type component eth_CT {
+	port port_data		P_ETH;
+	port port_ip		P_IP;
+	port port_arp		P_ARP;
+	port port_icmp		P_ICMP;
+	port port_ip6		P_IP6;
+	port port_icmp6		P_ICMP6;
+	port port_tcp		P_TCP;
+	port port_udp		P_UDP;
+	port port_cf		P_CF;
+	var ethertype_t ethertype := m_ethertype;
+	var boolean vlan_enabled := false;
+}
+
+type component test_CT extends eth_CT {
+	var eth_CT eth_ct;
+}
+
+function test_ct_init() runs on test_CT {
+	eth_ct := eth_CT.create;
+
+	connect(self:P_IP, eth_ct:P_IP);
+	connect(self:P_ARP, eth_ct:P_ARP);
+	connect(self:P_ICMP, eth_ct:P_ICMP);
+	connect(self:P_IP6, eth_ct:P_IP6);
+	connect(self:P_ICMP6, eth_ct:P_ICMP6);
+	connect(self:P_UDP, eth_ct:P_UDP);
+	connect(self:P_TCP, eth_ct:P_TCP);
+	connect(self:P_CF, eth_ct:P_CF);
+
+	eth_ct.start(eth_ct_start());
+}
+
+template eth_t ts_ETH (ethertype_t proto, template octetstring d := omit) := {
+	h_dest := fx_ether_aton(m_eth_dst),
+	h_source := fx_ether_aton(m_eth_src),
+	h_proto := proto,
+    vlan := omit,
+    data := d
+}
+
+template ip6_t ts_IP6 (ipproto_t proto, template octetstring d := omit) := {
+	ip6_vfc := 96,
+	ip6_plen := 0,
+	ip6_nxt := proto,
+	ip6_hlim := 0,
+	ip6_src := fx_inet6_pton(m_ip6_src),
+	ip6_dst := fx_inet6_pton(m_ip6_dst),
+	data := d
+}
+
+template ip_t ts_IP (ipproto_t proto, template octetstring d := omit) := {
+	ip_v := int2bit(4, 4),
+	ip_hl := int2bit(5, 4),
+	ip_tos := 0,
+	ip_len := 0,
+	ip_id := 0,
+	ip_off := 0,
+	ip_ttl := 255,
+	ip_p := proto,
+	ip_sum := 0,
+	ip_src := fx_inet_aton(m_ip_src),
+	ip_dst := fx_inet_aton(m_ip_dst),
+	data := d
+}
+
+function eth_ip6_new(ipproto_t proto, octetstring d) return eth_t {
+	var ip6_t ip6 := valueof(ts_IP6(proto, d));
+	var eth_t e := valueof(ts_ETH(ETHERTYPE_IPV6, ip6_enc(ip6)));
+	return e;
+}
+
+function eth_ip_new(ipproto_t proto, octetstring d) return eth_t {
+	var ip_t ip := valueof(ts_IP(proto, d));
+	var eth_t e := valueof(ts_ETH(ETHERTYPE_IP, ip_enc(ip)));
+	return e;
+}
+
+function eth_ct_ip6_input(eth_t eth) runs on eth_CT {
+	var ip6_t ip6 := ip6_dec(eth.data);
+
+	select(ip6.ip6_nxt) {
+	case(IPPROTO_ICMPV6) {
+		var icmp6_t icmp6 := icmp6_dec(ip6.data);
+		P_ICMP6.send(icmp6);
+	}
+	case(IPPROTO_TCP) {
+		var tcp_t tcp := tcp_dec(ip6.data);
+		P_TCP.send(tcp);
+	}
+	case(IPPROTO_UDP) {
+		var udp_t udp := udp_dec(ip6.data);
+		P_UDP.send(udp);
+	}
+	}
+}
+
+function eth_ct_ip_input(eth_t eth) runs on eth_CT {
+	var ip_t ip := ip_dec(eth.data);
+
+	select(ip.ip_p) {
+	case(IPPROTO_ICMP) {
+		var icmp_t icmp := icmp_dec(ip.data);
+		P_ICMP.send(icmp);
+	}
+	case(IPPROTO_TCP) {
+		var tcp_t tcp := tcp_dec(ip.data);
+		P_TCP.send(tcp);
+	}
+	case(IPPROTO_UDP) {
+		var udp_t udp := udp_dec(ip.data);
+		P_UDP.send(udp);
+	}
+	}
+}
+
+template arp_t ts_ARP := {
+	arp_hrd := 1, //ARPHRD_ETHER
+	arp_pro := ETHERTYPE_IP,
+	arp_hln := 6,
+	arp_pln := 4,
+	arp_op := 2, //ARPOP_REPLY
+	arp_sha := fx_ether_aton(m_eth_src),
+	arp_spa := fx_inet_aton(m_ip_src),
+	arp_tha := fx_ether_aton(m_eth_dst),
+	arp_tpa := fx_inet_aton(m_ip_dst)
+}
+
+function eth_ct_arp_input(eth_t eth) runs on eth_CT {
+	var arp_t arp := valueof(ts_ARP);
+	eth := valueof(ts_ETH(ETHERTYPE_ARP, arp_enc(arp)));
+	eth_ct_eth_send(eth);
+}
+
+template vlan_tag_t ts_VLAN (ethertype_t t, bit3_t pri := '000'B) := {
+	vlan_pri := pri,
+	vlan_cfi := '0'B,
+	vlan_id := 100,
+	vlan_type := t
+}
+
+function eth_ct_eth_send(eth_t eth) runs on eth_CT {
+
+	if (vlan_enabled == true) {
+		eth.vlan := valueof(ts_VLAN(t := eth.h_proto));
+		eth.h_proto := ETHERTYPE_VLAN;
+	}
+	P_ETH.send(eth_enc(eth));
+}
+
+function eth_ct_start() runs on eth_CT {
+
+	map(self:P_ETH, system:P_ETH);
+
+	var octetstring d;
+	var eth_t eth;
+	var udp_t udp;
+	var icmp6_t icmp6;
+	var icmp_t icmp;
+
+	while (true) {
+		alt {
+		[] P_CF.receive("ipv4_enable") { ethertype := ETHERTYPE_IP; }
+		[] P_CF.receive("vlan_enable") { vlan_enabled := true; }
+		[] P_ETH.receive(?) -> value d {
+
+			eth := eth_dec(d);
+
+			if (eth.h_proto == ETHERTYPE_VLAN) {
+				eth.h_proto := eth.vlan.vlan_type;
+			}
+
+			select(eth.h_proto) {
+			case(ETHERTYPE_IPV6) {
+				eth_ct_ip6_input(eth);
+			}
+			case(ETHERTYPE_ARP) {
+				eth_ct_arp_input(eth);
+			}
+			case(ETHERTYPE_IP) {
+				eth_ct_ip_input(eth);
+			}
+			}
+		}
+		[] P_ICMP.receive(?) -> value icmp {
+			eth := eth_ip_new(IPPROTO_ICMP, icmp_enc(icmp));
+			eth_ct_eth_send(eth);
+		}
+		[] P_ICMP6.receive(?) -> value icmp6 {
+			eth := eth_ip6_new(IPPROTO_ICMPV6, icmp6_enc(icmp6));
+			eth_ct_eth_send(eth);
+		}
+		[] P_UDP.receive(?) -> value udp {
+			select(ethertype) {
+			case(ETHERTYPE_IPV6) {
+				eth := eth_ip6_new(IPPROTO_UDP, udp_enc(udp));
+			}
+			case(ETHERTYPE_IP) {
+				eth := eth_ip_new(IPPROTO_UDP, udp_enc(udp));
+			}
+			}
+			eth_ct_eth_send(eth);
+		}
+		}
+	}
+}
+
+template udp_t ts_UDP (template octetstring d := omit) := {
+	uh_sport := 4241,
+	uh_dport := 4242,
+	uh_ulen := 0,
+	uh_sum := 0,
+	data := d,
+	x := omit
+}
+
+template udp_t tr_UDP (template octetstring d := omit) := {
+	uh_sport := ?,
+	uh_dport := ?,
+	uh_ulen := ?,
+	uh_sum := ?,
+	data := d
+}
+
+template icmp6_t ts_ICMP6 (template icmp6_type_t t,
+						   uint8_t code,
+						   template icmp6_data_t d := omit) := {
+	icmp6_type := t,
+	icmp6_code := code,
+	icmp6_cksum := 0,
+	data := d
+}
+
+template icmp6_t tr_ICMP6 (template icmp6_type_t t) := {
+	icmp6_type := t,
+	icmp6_code := ?,
+	icmp6_cksum := ?,
+	data := *
+}
+
+template icmp6_t ts_ICMP6_NBR_SOL := {
+	icmp6_type := ICMP6_NEIGHBOR_SOLICIT,
+	icmp6_code := 0,
+	icmp6_cksum := 0,
+	data := {
+		nbr_sol := {
+			ns_flag_router := '0'B,
+			ns_flag_solicited := '1'B,
+			ns_flag_override := '0'B,
+			ns_reserved := 0,
+			ns_target := fx_inet6_pton(m_ip6_src),
+			ns_options := '0101'O & fx_ether_aton(m_eth_src)
+		}
+	}
+}
+
+function do_nbr_sol() runs on test_CT {
+
+	var icmp6_t icmp6 := valueof(ts_ICMP6_NBR_SOL);
+
+	P_ICMP6.send(icmp6);
+
+	alt {
+		[] P_ICMP6.receive(tr_ICMP6(ICMP6_NEIGHBOR_SOLICIT)) -> value icmp6 {
+			log(icmp6);
+		}
+	}
+}
+
+template icmp6_t ts_ICMP6_ECHO_REQUEST := {
+	icmp6_type := ICMP6_ECHO_REQUEST,
+	icmp6_code := 0,
+	icmp6_cksum := 0,
+	data := {
+		echo := {
+			icmp6_id := 1,
+			icmp6_seq := 1,
+			data := omit
+		}
+	}
+}
+
+function do_ping6() runs on test_CT {
+
+	var icmp6_t icmp6 := valueof(ts_ICMP6_ECHO_REQUEST);
+
+	P_ICMP6.send(icmp6);
+
+	alt {
+		[] P_ICMP6.receive(tr_ICMP6(ICMP6_ECHO_REPLY)) -> value icmp6 {
+			log(icmp6);
+			setverdict(pass);
+		}
+	}
+}
+
+template icmp_t ts_ICMP := {
+	icmp_type := ICMP_ECHO,
+	icmp_code := 0,
+	icmp_cksum := 0,
+	data := {
+		echo := {
+			icmp_id := 1,
+			icmp_seq := 1,
+			data := omit
+		}
+	}
+}
+
+function do_ping() runs on test_CT {
+
+	var icmp_t icmp := valueof(ts_ICMP);
+
+	timer T := 3.0;
+
+	P_ICMP.send(icmp);
+
+	T.start;
+
+	alt {
+		[] P_ICMP.receive(?) -> value icmp {
+			log(icmp);
+			setverdict(pass);
+		}
+		[] T.timeout {
+			setverdict(fail);
+		}
+	}
+}
+testcase Test_UDP() runs on test_CT {
+
+	test_ct_init();
+
+	//do_nbr_sol();
+	//do_ping6();
+
+	P_CF.send("ipv4_enable");
+
+	do_ping();
+
+	//P_CF.send("vlan_enable");
+
+	var udp_t udp := valueof(ts_UDP('01'O));
+
+	timer T := 3.0;
+
+	P_UDP.send(udp);
+
+	T.start;
+
+	alt {
+		[] P_UDP.receive(tr_UDP('01'O)) -> value udp {
+			setverdict(pass);
+		}
+		[] P_ICMP6.receive(?) {
+			setverdict(fail);
+		}
+		[] T.timeout {
+			setverdict(fail);
+		}
+	}
+}
+
+control {
+
+	execute(Test_UDP());
+}
+
+}

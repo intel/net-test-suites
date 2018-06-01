@@ -21,6 +21,7 @@ external function fx_ether_ntoa(octetstring addr) return charstring;
 external function fx_inet6_ntop(octetstring addr) return charstring;
 
 external function fx_ether_aton(charstring addr) return octetstring;
+external function fx_inet_aton(charstring addr) return octetstring;
 external function fx_inet6_pton(charstring addr) return octetstring;
 
 external function fx_inet6_chksum(octetstring data) return integer;

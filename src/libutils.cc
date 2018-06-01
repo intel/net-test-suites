@@ -311,6 +311,13 @@ OCTETSTRING fx__inet6__pton(CHARSTRING const &s)
 	return OCTETSTRING(sizeof(struct in6_addr), (uint8_t *) &addr);
 }
 
+OCTETSTRING fx__inet__aton(CHARSTRING const &s)
+{
+	struct in_addr addr;
+	inet_aton(s, &addr);
+	return OCTETSTRING(sizeof(struct in_addr), (uint8_t *) &addr);
+}
+
 INTEGER fx__inet6__chksum(const OCTETSTRING& msg)
 {
 	const uint8_t *data = msg;
