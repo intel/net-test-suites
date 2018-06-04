@@ -187,6 +187,7 @@ function eth_ct_start() runs on eth_CT {
 	var octetstring d;
 	var eth_t eth;
 	var udp_t udp;
+	var tcp_t tcp;
 	var icmp6_t icmp6;
 	var icmp_t icmp;
 
@@ -229,6 +230,17 @@ function eth_ct_start() runs on eth_CT {
 			}
 			case(ETHERTYPE_IP) {
 				eth := eth_ip_new(IPPROTO_UDP, udp_enc(udp));
+			}
+			}
+			eth_ct_eth_send(eth);
+		}
+		[] P_TCP.receive(?) -> value tcp {
+			select(ethertype) {
+			case(ETHERTYPE_IPV6) {
+				eth := eth_ip6_new(IPPROTO_TCP, tcp_enc(tcp));
+			}
+			case(ETHERTYPE_IP) {
+				eth := eth_ip_new(IPPROTO_TCP, tcp_enc(tcp));
 			}
 			}
 			eth_ct_eth_send(eth);
