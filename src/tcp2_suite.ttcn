@@ -21,52 +21,6 @@ import from libtest all;
 import from port_data_module all;
 import from libutils_module all;
 
-modulepar {
-	integer m_src_port := 4242;
-}
-
-/* TCP send template */
-template tcp_t ts_TCP(th_flags_t f := TH_NONE,
-					  integer sp := m_src_port,
-					  integer sn := 0,
-					  integer an := 0,
-					  template octetstring d := omit) := {
-	 th_sport := sp,
-	 th_dport := 4242,
-	 th_seq := sn,
-	 th_ack := an,
-	 th_doff := 5,
-	 th_res := '000'B,
-	 th_ecn := '000'B,
-	 th_flags := f,
-	 th_win := 1280,
-	 th_sum := 0,
-	 th_urp := 0,
-	 opt := omit,
-	 data := d
-}
-
-/* TCP receive template */
-template tcp_t tr_TCP(template th_flags_t f := TH_ANY,
-					  integer sp := m_src_port,
-					  template integer sn := ?,
-					  template integer an := ?,
-					  template octetstring d := *) := {
-	 th_sport := sp,
-	 th_dport := ?,
-	 th_seq := sn,
-	 th_ack := an,
-	 th_doff := ?,
-	 th_res := '000'B,
-	 th_ecn := '000'B,
-	 th_flags := f,
-	 th_win := ?,
-	 th_sum := ?,
-	 th_urp := ?,
-	 opt := *,
-	 data := d
-}
-
 function tcp_on_send(in tcp_t msg_in, out octetstring msg_out)
 {
 	/* TODO: Redo inter test non volatile data storage, drop fx_db. */
@@ -258,7 +212,7 @@ function sn_set(inout tcp_t tcp, integer msn, integer psn)
  */
 testcase test_tcp_conn(inout cf_t cf,
 					   integer isn := 0, /* Initial sequence number */
-					   integer src_port := m_src_port,
+					   integer src_port := 4242,
 					   octetstring data_to_send := ''O)
 	runs on tcp_node_t
 {
