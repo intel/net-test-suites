@@ -13,7 +13,7 @@
  *
  */
 
-module inet2_suite {
+module libtest2 {
 
 import from libtypes all;
 import from libnetinet2 all;
