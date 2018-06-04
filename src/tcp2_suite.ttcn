@@ -17,39 +17,11 @@ module tcp2_suite {
 
 import from libtypes all;
 import from libnetinet2 all;
-import from libtest all;
+import from libtest2 all;
 import from port_data_module all;
 import from libutils_module all;
 
-function tcp_on_send(in tcp_t msg_in, out octetstring msg_out)
-{
-	/* TODO: Redo inter test non volatile data storage, drop fx_db. */
-	var octetstring src_eth := fx_ether_aton(fx_db_search("src_eth"));
-	var octetstring dst_eth := fx_ether_aton(fx_db_search("dst_eth"));
-	var octetstring src_ip6 := fx_inet6_pton(fx_db_search("src_ip6"));
-	var octetstring dst_ip6 := fx_inet6_pton(fx_db_search("dst_ip6"));
-	var octetstring tcp := tcp_enc(msg_in);
-	msg_out := fx_ip6_init(dst_eth, src_eth, dst_ip6, src_ip6,
-						   IPPROTO_TCP, lengthof(tcp));
-	msg_out := msg_out & tcp;
-
-} with { extension "prototype(fast)" }
-
-function tcp_on_recv(in octetstring msg_in, out tcp_t msg_out)
-{
-	msg_in := replace(msg_in, 0, 54, ''O); /* trim Eth and IPv6 headers */
-	msg_out := tcp_dec(msg_in);
-} with { extension "prototype(fast)" }
-
-type port port_tcp message {
-	inout tcp_t;
-} with {
-	extension "user port_data
-		out(tcp_t -> octetstring : function(tcp_on_send))
-   		in(octetstring -> tcp_t : function(tcp_on_recv))";
-}
-
-type component tcp_node_t extends test_node {
+type component tcp_CT extends test_CT {
 	var tcp_t tcp;
 	var tcp_state_t s := TCP_NONE;
 	var integer sp := 0; /* source port */
@@ -59,19 +31,18 @@ type component tcp_node_t extends test_node {
 	var octetstring d_u := ''O; /* unacknowledged data */
 	var integer d_step := 2;
 	timer T := 1.0;
-	port port_tcp P;
 	var default d_as_timeout;
 	var default d_as_unexpected_msg;
 }
 
-altstep as_timeout() runs on tcp_node_t
+altstep as_timeout() runs on tcp_CT
 {
 	[] T.timeout { setverdict(fail); self.stop; }
 }
 
-altstep as_unexpected_msg() runs on tcp_node_t
+altstep as_unexpected_msg() runs on tcp_CT
 {
-	[] P.receive(?) { setverdict(fail); self.stop; }
+	[] P_TCP.receive(?) { setverdict(fail); self.stop; }
 }
 
 function tcp_enc_dec(tcp_t msg_in, out tcp_t msg_out)
@@ -95,7 +66,7 @@ function tcp_compare(tcp_t msg1, tcp_t msg2)
 /**
  * Test TCP RAW encoder and decoder
  */
-testcase test_tcp_codecs() runs on tcp_node_t
+testcase test_tcp_codecs() runs on tcp_CT
 {
 	var tcp_t tcp2;
 
@@ -153,7 +124,7 @@ testcase test_tcp_codecs() runs on tcp_node_t
 /**
  * TODO: Add templates test here
  */
-testcase test_tcp_templates() runs on tcp_node_t
+testcase test_tcp_templates() runs on tcp_CT
 {
 	setverdict(pass);
 }
@@ -210,16 +181,15 @@ function sn_set(inout tcp_t tcp, integer msn, integer psn)
  * Test TCP connection establishment, data transfer
  * (data echoing expected) and connection close.
  */
-testcase test_tcp_conn(inout cf_t cf,
-					   integer isn := 0, /* Initial sequence number */
+testcase test_tcp_conn(integer isn := 0, /* Initial sequence number */
 					   integer src_port := 4242,
 					   octetstring data_to_send := ''O)
-	runs on tcp_node_t
+	runs on tcp_CT
 {
-	test_node_init(cf);
-	test_node_shutdown(cf);
+	test_ct_init();
 
-	map(self:P, system:P);
+	P_CF.send("ipv4_enable");
+
 	d_as_timeout := activate(as_timeout());
 	d_as_unexpected_msg := activate(as_unexpected_msg());
 	msn := isn;
@@ -228,16 +198,16 @@ testcase test_tcp_conn(inout cf_t cf,
 
 	alt {
 	[s == TCP_NONE] T.timeout {
-		P.send(ts_TCP(TH_SYN, sp := sp, sn := post_inc(msn)));
+		P_TCP.send(ts_TCP(TH_SYN, sp := sp, sn := post_inc(msn)));
 		s := TCP_SYN_SENT;
 		T.start; repeat;
 	}
-	[s == TCP_SYN_SENT] P.receive(tr_TCP(TH_SYN or4b TH_ACK, an := msn))
+	[s == TCP_SYN_SENT] P_TCP.receive(tr_TCP(TH_SYN or4b TH_ACK, an := msn))
 			-> value tcp {
 		T.stop;
 		s := TCP_SYN_RECEIVED;
 		psn := tcp.th_seq;
-		P.send(ts_TCP(TH_ACK, sp := sp, sn := msn, an := pre_inc(psn)));
+		P_TCP.send(ts_TCP(TH_ACK, sp := sp, sn := msn, an := pre_inc(psn)));
 		data_push(d_s, data_to_send);
 		T.start; repeat;
 	}
@@ -246,7 +216,7 @@ testcase test_tcp_conn(inout cf_t cf,
 		deactivate(d_as_timeout); deactivate(d_as_unexpected_msg);
 		T.start; repeat;
 	}
-	[s == TCP_ESTABLISHED] P.receive(tr_TCP) -> value tcp {
+	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP) -> value tcp {
 		T.stop;
 		var tcp_t tcp2 := valueof(ts_TCP);
 		if (th_is_set(tcp, TH_PSH)) {
@@ -261,7 +231,7 @@ testcase test_tcp_conn(inout cf_t cf,
 		}
 		if (tcp2.th_flags != TH_NONE) {
 			sn_set(tcp2, msn, psn);
-			P.send(tcp2);
+			P_TCP.send(tcp2);
 		}
 		T.start; repeat;
 	}
@@ -269,7 +239,7 @@ testcase test_tcp_conn(inout cf_t cf,
 		if (lengthof(d_u) > 0) { goto wait_for_data; }
 		if (lengthof(d_s) > 0) {
 			d_u := data_pop(d_s, d_step);
-			P.send(ts_TCP(TH_PSH, sn := post_inc(msn, lengthof(d_u)),
+			P_TCP.send(ts_TCP(TH_PSH, sn := post_inc(msn, lengthof(d_u)),
 						  an := psn, d := d_u));
 			goto wait_for_data;
 		}
@@ -277,12 +247,12 @@ testcase test_tcp_conn(inout cf_t cf,
 		s := TCP_CLOSE_WAIT;
 		d_as_timeout := activate(as_timeout());
 		d_as_unexpected_msg := activate(as_unexpected_msg());
-		P.send(ts_TCP(TH_FIN or4b TH_ACK, sp := sp,
+		P_TCP.send(ts_TCP(TH_FIN or4b TH_ACK, sp := sp,
 					  sn := post_inc(msn), an := psn));
 label wait_for_data;
 		T.start; repeat;
 	}
-	[s == TCP_CLOSE_WAIT] P.receive(tr_TCP(TH_FIN or4b TH_ACK, an := msn)) {
+	[s == TCP_CLOSE_WAIT] P_TCP.receive(tr_TCP(TH_FIN or4b TH_ACK, an := msn)) {
 		T.stop;
 		s := TCP_CLOSED;
 		goto test_end;
@@ -295,12 +265,9 @@ label test_end;
 }
 
 control {
-	var cf_t cf;
 	execute(test_tcp_codecs());
 	execute(test_tcp_templates());
-	execute(test_tcp_conn(cf, data_to_send := '01020304'O));
-	//execute(test_tcp_conn(cf, isn := 2000, src_port := 4243));
+	execute(test_tcp_conn(data_to_send := '01020304'O));
 }
-} with {
-	encode "RAW";
-};
+
+}
