@@ -26,7 +26,7 @@ modulepar {
 }
 
 /* TCP send template */
-template tcp_t ts_tcp(th_flags_t f := TH_NONE,
+template tcp_t ts_TCP(th_flags_t f := TH_NONE,
 					  integer sp := m_src_port,
 					  integer sn := 0,
 					  integer an := 0,
@@ -47,7 +47,7 @@ template tcp_t ts_tcp(th_flags_t f := TH_NONE,
 }
 
 /* TCP receive template */
-template tcp_t tr_tcp(template th_flags_t f := TH_ANY,
+template tcp_t tr_TCP(template th_flags_t f := TH_ANY,
 					  integer sp := m_src_port,
 					  template integer sn := ?,
 					  template integer an := ?,
@@ -147,7 +147,7 @@ testcase test_tcp_codecs() runs on tcp_node_t
 
 	/* No data, no options */
 
-	tcp := valueof(ts_tcp)
+	tcp := valueof(ts_TCP)
 
 	tcp_enc_dec(tcp, tcp2);
 
@@ -157,7 +157,7 @@ testcase test_tcp_codecs() runs on tcp_node_t
 
 	/* Data, no options */
 
-	tcp := valueof(ts_tcp(d := '1111'O));
+	tcp := valueof(ts_TCP(d := '1111'O));
 
 	tcp_enc_dec(tcp, tcp2);
 
@@ -167,7 +167,7 @@ testcase test_tcp_codecs() runs on tcp_node_t
 
 	/* Data, options */
 
-	tcp := valueof(ts_tcp(d := '1111'O));
+	tcp := valueof(ts_TCP(d := '1111'O));
 
 	tcp.opt := {
 		{ TO_MSS, 4, '0000'O },
@@ -182,7 +182,7 @@ testcase test_tcp_codecs() runs on tcp_node_t
 
 	/* No data, options */
 
-	tcp := valueof(ts_tcp);
+	tcp := valueof(ts_TCP);
 
 	tcp.opt := {
 		{ TO_MSS, 4, '0000'O },
@@ -274,16 +274,16 @@ testcase test_tcp_conn(inout cf_t cf,
 
 	alt {
 	[s == TCP_NONE] T.timeout {
-		P.send(ts_tcp(TH_SYN, sp := sp, sn := post_inc(msn)));
+		P.send(ts_TCP(TH_SYN, sp := sp, sn := post_inc(msn)));
 		s := TCP_SYN_SENT;
 		T.start; repeat;
 	}
-	[s == TCP_SYN_SENT] P.receive(tr_tcp(TH_SYN or4b TH_ACK, an := msn))
+	[s == TCP_SYN_SENT] P.receive(tr_TCP(TH_SYN or4b TH_ACK, an := msn))
 			-> value tcp {
 		T.stop;
 		s := TCP_SYN_RECEIVED;
 		psn := tcp.th_seq;
-		P.send(ts_tcp(TH_ACK, sp := sp, sn := msn, an := pre_inc(psn)));
+		P.send(ts_TCP(TH_ACK, sp := sp, sn := msn, an := pre_inc(psn)));
 		data_push(d_s, data_to_send);
 		T.start; repeat;
 	}
@@ -292,9 +292,9 @@ testcase test_tcp_conn(inout cf_t cf,
 		deactivate(d_as_timeout); deactivate(d_as_unexpected_msg);
 		T.start; repeat;
 	}
-	[s == TCP_ESTABLISHED] P.receive(tr_tcp) -> value tcp {
+	[s == TCP_ESTABLISHED] P.receive(tr_TCP) -> value tcp {
 		T.stop;
-		var tcp_t tcp2 := valueof(ts_tcp);
+		var tcp_t tcp2 := valueof(ts_TCP);
 		if (th_is_set(tcp, TH_PSH)) {
 			th_set(tcp2, TH_ACK);
 			pre_inc(psn, lengthof(tcp.data));
@@ -315,7 +315,7 @@ testcase test_tcp_conn(inout cf_t cf,
 		if (lengthof(d_u) > 0) { goto wait_for_data; }
 		if (lengthof(d_s) > 0) {
 			d_u := data_pop(d_s, d_step);
-			P.send(ts_tcp(TH_PSH, sn := post_inc(msn, lengthof(d_u)),
+			P.send(ts_TCP(TH_PSH, sn := post_inc(msn, lengthof(d_u)),
 						  an := psn, d := d_u));
 			goto wait_for_data;
 		}
@@ -323,12 +323,12 @@ testcase test_tcp_conn(inout cf_t cf,
 		s := TCP_CLOSE_WAIT;
 		d_as_timeout := activate(as_timeout());
 		d_as_unexpected_msg := activate(as_unexpected_msg());
-		P.send(ts_tcp(TH_FIN or4b TH_ACK, sp := sp,
+		P.send(ts_TCP(TH_FIN or4b TH_ACK, sp := sp,
 					  sn := post_inc(msn), an := psn));
 label wait_for_data;
 		T.start; repeat;
 	}
-	[s == TCP_CLOSE_WAIT] P.receive(tr_tcp(TH_FIN or4b TH_ACK, an := msn)) {
+	[s == TCP_CLOSE_WAIT] P.receive(tr_TCP(TH_FIN or4b TH_ACK, an := msn)) {
 		T.stop;
 		s := TCP_CLOSED;
 		goto test_end;
