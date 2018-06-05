@@ -195,6 +195,20 @@ type enumerated tcp_state_t {
 	TCP_CLOSED
 }
 
+function th_is_set(tcp_t tcp, th_flags_t f) return boolean
+{
+	if ((tcp.th_flags and4b f) == f) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+function th_set(inout tcp_t tcp, th_flags_t f)
+{
+	tcp.th_flags := tcp.th_flags or4b f;
+}
+
 type record icmp_t {
 	icmp_type_t	icmp_type,
 	uint8_t		icmp_code,

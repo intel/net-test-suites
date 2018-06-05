@@ -157,20 +157,6 @@ function data_push(inout octetstring data, octetstring data_new)
 	data := data & data_new;
 }
 
-function th_is_set(tcp_t tcp, th_flags_t f) return boolean
-{
-	if ((tcp.th_flags and4b f) == f) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-function th_set(inout tcp_t tcp, th_flags_t f)
-{
-	tcp.th_flags := tcp.th_flags or4b f;
-}
-
 function sn_set(inout tcp_t tcp, integer msn, integer psn)
 {
 	tcp.th_seq := msn;
