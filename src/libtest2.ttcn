@@ -61,6 +61,8 @@ function test_ct_init() runs on test_CT {
 	connect(self:P_CF, eth_ct:P_CF);
 
 	eth_ct.start(eth_ct_start());
+
+	do_ping();
 }
 
 template eth_t ts_ETH (ethertype_t proto, template octetstring d := omit) := {
