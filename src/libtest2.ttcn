@@ -27,7 +27,7 @@ modulepar {
 	charstring m_ip_src := "10.0.0.2";
 	charstring m_ip6_dst := "fe80::1";
 	charstring m_ip6_src := "fe80::2";
-	ethertype_t m_ethertype := ETHERTYPE_IPV6;
+	ethertype_t m_ethertype := ETHERTYPE_IP;
 }
 
 type component eth_CT {

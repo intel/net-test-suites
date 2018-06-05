@@ -29,7 +29,7 @@ type component tcp_CT extends test_CT {
 	var integer psn := 0; /* peer sequence number */
 	var octetstring d_s := ''O; /* data to send */
 	var octetstring d_u := ''O; /* unacknowledged data */
-	var integer d_step := 2;
+	var integer d_step := 1;
 	timer T := 1.0;
 	var default d_as_timeout;
 	var default d_as_unexpected_msg;
@@ -173,8 +173,6 @@ testcase test_tcp_conn(integer isn := 0, /* Initial sequence number */
 	runs on tcp_CT
 {
 	test_ct_init();
-
-	P_CF.send("ipv4_enable");
 
 	d_as_timeout := activate(as_timeout());
 	d_as_unexpected_msg := activate(as_unexpected_msg());
