@@ -17,7 +17,7 @@ module vlan_suite {
 
 import from libtypes all;
 import from libtest2 all;
-import from libnetinet2 all;
+import from libnetinet all;
 import from port_data_module all;
 
 /**

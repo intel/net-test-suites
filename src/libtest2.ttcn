@@ -16,7 +16,7 @@
 module libtest2 {
 
 import from libtypes all;
-import from libnetinet2 all;
+import from libnetinet all;
 import from port_data_module all;
 import from libutils_module all;
 

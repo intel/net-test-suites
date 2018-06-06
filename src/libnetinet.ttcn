@@ -13,7 +13,7 @@
  *
  */
 
-module libnetinet2 {
+module libnetinet {
 
 import from libtypes all;
 
