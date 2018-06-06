@@ -12,7 +12,7 @@
  *
  */
 
-#include "libutils_module.hh"
+#include "libutils.hh"
 
 #include <sys/types.h>
 
@@ -25,7 +25,7 @@
 #include <map>
 #include <string>
 
-namespace libutils__module {
+namespace libutils {
 
 int32_t _cs(void *data, size_t data_len)
 {
