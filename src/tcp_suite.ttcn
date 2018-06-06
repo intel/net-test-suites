@@ -37,12 +37,12 @@ type component tcp_CT extends test_CT {
 
 altstep as_timeout() runs on tcp_CT
 {
-	[] T.timeout { setverdict(fail); self.stop; }
+	[] T.timeout { setverdict(fail); stop; }
 }
 
 altstep as_unexpected_msg() runs on tcp_CT
 {
-	[] P_TCP.receive(?) { setverdict(fail); self.stop; }
+	[] P_TCP.receive(?) { setverdict(fail); stop; }
 }
 
 /**
