@@ -24,7 +24,6 @@ import from port_data_types all;
 type component tcp_CT extends test_CT {
 	var tcp_t tcp;
 	var tcp_state_t s := TCP_NONE;
-	var integer sp := 0; /* source port */
 	var integer msn := 0; /* my sequence number */
 	var integer psn := 0; /* peer sequence number */
 	var octetstring d_s := ''O; /* data to send */
@@ -413,22 +412,18 @@ testcase Test_TCP_013() runs on tcp_CT {
  * Test TCP connection establishment, data transfer
  * (data echoing expected) and connection close.
  */
-testcase test_tcp_conn(integer isn := 0, /* Initial sequence number */
-					   integer src_port := 4242,
-					   octetstring data_to_send := ''O)
-	runs on tcp_CT
+testcase test_tcp_conn(octetstring data_to_send := ''O) runs on tcp_CT
 {
 	test_ct_init();
 
 	d_as_timeout := activate(as_timeout());
 	d_as_unexpected_msg := activate(as_unexpected_msg());
-	msn := isn;
-	sp := src_port;
+
 	T.start;
 
 	alt {
 	[s == TCP_NONE] T.timeout {
-		P_TCP.send(ts_TCP(TH_SYN, sp := sp, sn := post_inc(msn)));
+		P_TCP.send(ts_TCP(TH_SYN, sn := post_inc(msn)));
 		s := TCP_SYN_SENT;
 		T.start; repeat;
 	}
@@ -437,7 +432,7 @@ testcase test_tcp_conn(integer isn := 0, /* Initial sequence number */
 		T.stop;
 		s := TCP_SYN_RECEIVED;
 		psn := tcp.th_seq;
-		P_TCP.send(ts_TCP(TH_ACK, sp := sp, sn := msn, an := pre_inc(psn)));
+		P_TCP.send(ts_TCP(TH_ACK, sn := msn, an := pre_inc(psn)));
 		data_push(d_s, data_to_send);
 		T.start; repeat;
 	}
@@ -478,7 +473,7 @@ testcase test_tcp_conn(integer isn := 0, /* Initial sequence number */
 		s := TCP_CLOSE_WAIT;
 		d_as_timeout := activate(as_timeout());
 		d_as_unexpected_msg := activate(as_unexpected_msg());
-		P_TCP.send(ts_TCP(TH_FIN or4b TH_ACK, sp := sp,
+		P_TCP.send(ts_TCP(TH_FIN or4b TH_ACK,
 					  sn := post_inc(msn), an := psn));
 label wait_for_data;
 		T.start; repeat;
@@ -496,8 +491,6 @@ label test_end;
 }
 
 control {
-	//execute(test_tcp_codecs());
-	//execute(test_tcp_templates());
 	execute(Test_TCP_001());
 	execute(Test_TCP_002());
 	execute(Test_TCP_003());
