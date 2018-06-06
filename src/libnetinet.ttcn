@@ -381,6 +381,90 @@ type port port_tcp message { inout tcp_t; } with { extension "internal"; }
 type port port_udp message { inout udp_t; } with { extension "internal"; }
 type port port_cf message { inout charstring; } with { extension "internal"; }
 
+function tcp_enc_dec(tcp_t msg_in, out tcp_t msg_out)
+{
+	var octetstring d := tcp_enc(msg_in);
+
+	msg_out := tcp_dec(d);
+}
+
+function tcp_compare(tcp_t msg1, tcp_t msg2)
+{
+	if (msg1 == msg2) {
+		setverdict(pass);
+	} else {
+		log("Decoded: ", msg2);
+		setverdict(fail);
+		self.stop;
+	}
+}
+
+/**
+ * Test TCP RAW encoder and decoder
+ */
+function test_tcp_codecs()
+{
+	var tcp_t tcp, tcp2;
+
+	/* No data, no options */
+
+	tcp := valueof(ts_TCP)
+
+	tcp_enc_dec(tcp, tcp2);
+
+	tcp.th_doff := 5;
+
+	tcp_compare(tcp, tcp2);
+
+	/* Data, no options */
+
+	tcp := valueof(ts_TCP(d := '1111'O));
+
+	tcp_enc_dec(tcp, tcp2);
+
+	tcp.th_doff := 5;
+
+	tcp_compare(tcp, tcp2);
+
+	/* Data, options */
+
+	tcp := valueof(ts_TCP(d := '1111'O));
+
+	tcp.opt := {
+		{ TO_MSS, 4, '0000'O },
+		{ TO_MSS, 4, '0000'O }
+	}
+
+	tcp_enc_dec(tcp, tcp2);
+
+	tcp.th_doff := 7;
+
+	tcp_compare(tcp, tcp2);
+
+	/* No data, options */
+
+	tcp := valueof(ts_TCP);
+
+	tcp.opt := {
+		{ TO_MSS, 4, '0000'O },
+		{ TO_MSS, 4, '0000'O }
+	}
+
+	tcp_enc_dec(tcp, tcp2);
+
+	tcp.th_doff := 7;
+
+	tcp_compare(tcp, tcp2);
+}
+
+/**
+ * TODO: Add templates test here
+ */
+function test_tcp_templates()
+{
+	setverdict(pass);
+}
+
 } with {
 	variant "FIELDORDER(msb)";
 	encode "RAW";
