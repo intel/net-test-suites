@@ -21,6 +21,10 @@ import from libtest all;
 import from libutils all;
 import from port_data_types all;
 
+modulepar {
+	float T_default := 3.0;
+}
+
 type component tcp_CT extends test_CT {
 	var tcp_t tcp;
 	var tcp_state_t s := TCP_NONE;
@@ -29,7 +33,7 @@ type component tcp_CT extends test_CT {
 	var octetstring data_to_send := ''O;
 	var octetstring data_unack := ''O;
 	var integer data_step := 1;
-	timer T := 3.0;
+	timer T := T_default;
 	var default d_as_timeout;
 	var default d_as_unexpected_msg;
 }
@@ -467,7 +471,7 @@ testcase test_tcp_conn(octetstring d := ''O) runs on tcp_CT
 		if (lengthof(data_to_send) > 0) {
 			data_unack := data_pop(data_to_send, data_step);
 			P_TCP.send(ts_TCP(TH_PSH, sn := post_inc(msn, lengthof(data_unack)),
-						  an := psn, d := data_unack));
+						an := psn, d := data_unack));
 			goto wait_for_data;
 		}
 		/* Everything is sent and aknowledged, close the connection */
@@ -475,7 +479,7 @@ testcase test_tcp_conn(octetstring d := ''O) runs on tcp_CT
 		d_as_timeout := activate(as_timeout());
 		d_as_unexpected_msg := activate(as_unexpected_msg());
 		P_TCP.send(ts_TCP(TH_FIN or4b TH_ACK,
-					  sn := post_inc(msn), an := psn));
+					sn := post_inc(msn), an := psn));
 label wait_for_data;
 		T.start; repeat;
 	}
