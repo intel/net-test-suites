@@ -225,6 +225,10 @@ uint16_t inet6_chksum(uint8_t *data, size_t data_len)
 		   ip6->ip6_nxt);
 	}
 
+	if (*sum) {
+		goto end;
+	}
+
 	int32_t s;
 
 	if (h_proto == ETHERTYPE_IP) {

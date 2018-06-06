@@ -539,6 +539,75 @@ testcase Test_TCP_010() runs on tcp_CT {
 	}
 }
 
+/**
+ * Send SYN+ACK, expect nothing
+ */
+testcase Test_TCP_011() runs on tcp_CT {
+
+	test_ct_init();
+
+	P_TCP.send(ts_TCP(f := TH_SYN or4b TH_ACK));
+
+	T.start;
+
+	alt {
+	[] P_TCP.receive(?) {
+		setverdict(fail);
+	}
+	[] T.timeout {
+		setverdict(pass);
+	}
+	}
+}
+
+/**
+ * Send SYN with the wrong checksum, expect nothing
+ */
+testcase Test_TCP_012() runs on tcp_CT {
+
+	test_ct_init();
+
+	P_TCP.send(ts_TCP(f := TH_SYN, sum := 1));
+
+	T.start;
+
+	alt {
+	[] P_TCP.receive(?) {
+		T.stop;
+		setverdict(fail);
+	}
+	[] T.timeout {
+		setverdict(pass);
+	}
+	}
+}
+
+/**
+ * Check a reaction on SYN with the payload
+ */
+testcase Test_TCP_013() runs on tcp_CT {
+
+	test_ct_init();
+
+	P_TCP.send(ts_TCP(f := TH_SYN, sn := post_inc(msn), d := '01'O));
+
+	T.start;
+
+	alt {
+	[] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK)) {
+		T.stop;
+		setverdict(pass);
+	}
+	[] T.timeout {
+		setverdict(fail);
+	}
+	}
+
+	/* Terminate half open connection */
+
+	P_TCP.send(ts_TCP(f := TH_RST, sn := msn));
+}
+
 control {
 	//execute(test_tcp_codecs());
 	//execute(test_tcp_templates());
@@ -553,6 +622,9 @@ control {
 	execute(Test_TCP_008());
 	execute(Test_TCP_009());
 	execute(Test_TCP_010());
+	execute(Test_TCP_011());
+	execute(Test_TCP_012());
+	execute(Test_TCP_013());
 	//execute(test_tcp_conn(data_to_send := '01'O));
 }
 
