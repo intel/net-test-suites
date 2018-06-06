@@ -30,22 +30,7 @@ type component tcp_ct extends test_CT {
 	var tcp_state_t s := TCP_NONE;
 	var integer msn := 0; /* my sequence number */
 	var integer psn := 0; /* peer sequence number */
-	var octetstring data_to_send := ''O;
-	var octetstring data_unack := ''O;
-	var integer data_step := 1;
 	timer T := T_default;
-	var default d_as_timeout;
-	var default d_as_unexpected_msg;
-}
-
-altstep as_timeout() runs on tcp_ct
-{
-	[] T.timeout { setverdict(fail); stop; }
-}
-
-altstep as_unexpected_msg() runs on tcp_ct
-{
-	[] P_TCP.receive(?) { setverdict(fail); stop; }
 }
 
 /**
@@ -412,6 +397,16 @@ testcase tc_tcp_013() runs on tcp_ct {
  * TODO: SYN sent, expect SYN+ACK, verify TCP checksum
  */
 
+altstep as_timeout() runs on tcp_ct
+{
+	[] T.timeout { setverdict(fail); stop; }
+}
+
+altstep as_unexpected_msg() runs on tcp_ct
+{
+	[] P_TCP.receive(?) { setverdict(fail); stop; }
+}
+
 /**
  * Test TCP connection establishment, data transfer
  * (data echoing expected) and connection close.
@@ -420,10 +415,12 @@ testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 {
 	test_ct_init();
 
-	data_to_send := d;
+	var octetstring data_to_send := d;
+	var octetstring data_unack := ''O;
+	var integer data_step := 1;
 
-	d_as_timeout := activate(as_timeout());
-	d_as_unexpected_msg := activate(as_unexpected_msg());
+	var default d_as_timeout := activate(as_timeout());
+	var default d_as_unexpected_msg := activate(as_unexpected_msg());
 
 	T.start;
 
