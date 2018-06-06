@@ -32,7 +32,7 @@ titan-instal.sh script:
 
 ```
     # cd net-test-suites.git
-    # . titan-instal.sh
+    # . titan-install.sh
 ```
 
 * Alternatively, visit the project's download page, get a suitable version
