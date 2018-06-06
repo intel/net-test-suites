@@ -276,8 +276,8 @@ testcase Test_TCP_002() runs on tcp_CT {
 
 	test_ct_init();
 
-	P_TCP.send(ts_TCP(f := TH_URG or4b TH_ACK or4b TH_PSH or4b TH_RST
-					  or4b TH_SYN or4b TH_FIN));
+	P_TCP.send(ts_TCP(f := TH_URG or4b TH_ACK or4b TH_PSH
+					  or4b TH_RST or4b TH_SYN or4b TH_FIN));
 	T.start;
 
 	alt {
@@ -297,12 +297,12 @@ testcase Test_TCP_003() runs on tcp_CT {
 
 	test_ct_init();
 
-	P_TCP.send(ts_TCP(f := TH_SYN, sn := msn));
+	P_TCP.send(ts_TCP(f := TH_SYN));
 
 	T.start;
 
 	alt {
-	[] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK)) -> value tcp {
+	[] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK)) {
 		T.stop;
 		setverdict(pass);
 	}
@@ -313,7 +313,7 @@ testcase Test_TCP_003() runs on tcp_CT {
 
 	/* Terminate half open connection */
 
-	P_TCP.send(ts_TCP(TH_RST, sn := pre_inc(msn)));
+	P_TCP.send(ts_TCP(f := TH_RST, sn := pre_inc(msn)));
 }
 
 /**
@@ -334,7 +334,7 @@ testcase Test_TCP_004() runs on tcp_CT {
 		T.stop;
 		psn := tcp.th_seq;
 		s := TCP_SYN_RECEIVED;
-		P_TCP.send(ts_TCP(TH_ACK));
+		P_TCP.send(ts_TCP(f := TH_ACK));
 		T.start; repeat;
 	}
 	[s == TCP_SYN_RECEIVED] P_TCP.receive(tr_TCP(f := TH_RST or4b TH_ACK)) {
@@ -348,11 +348,11 @@ testcase Test_TCP_004() runs on tcp_CT {
 
 	/* Terminate half open connection */
 
-	P_TCP.send(ts_TCP(TH_RST, sn := pre_inc(msn)));
+	P_TCP.send(ts_TCP(f := TH_RST, sn := pre_inc(msn)));
 }
 
 /**
- * SYN received, send ACK with th_seq incremented, th_ack=0, expect RST
+ * SYN received, send ACK (th_seq incremented, th_ack=0), expect RST
  */
 testcase Test_TCP_005() runs on tcp_CT {
 
@@ -383,7 +383,7 @@ testcase Test_TCP_005() runs on tcp_CT {
 
 	/* Terminate half open connection */
 
-	P_TCP.send(ts_TCP(TH_RST, sn := pre_inc(msn)));
+	P_TCP.send(ts_TCP(f := TH_RST, sn := pre_inc(msn)));
 }
 
 control {
