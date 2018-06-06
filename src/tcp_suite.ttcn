@@ -25,7 +25,7 @@ modulepar {
 	float T_default := 3.0;
 }
 
-type component tcp_CT extends test_CT {
+type component tcp_ct extends test_CT {
 	var tcp_t tcp;
 	var tcp_state_t s := TCP_NONE;
 	var integer msn := 0; /* my sequence number */
@@ -38,12 +38,12 @@ type component tcp_CT extends test_CT {
 	var default d_as_unexpected_msg;
 }
 
-altstep as_timeout() runs on tcp_CT
+altstep as_timeout() runs on tcp_ct
 {
 	[] T.timeout { setverdict(fail); stop; }
 }
 
-altstep as_unexpected_msg() runs on tcp_CT
+altstep as_unexpected_msg() runs on tcp_ct
 {
 	[] P_TCP.receive(?) { setverdict(fail); stop; }
 }
@@ -51,7 +51,7 @@ altstep as_unexpected_msg() runs on tcp_CT
 /**
  * Send TCP messsage with no flags set, expect nothing
  */
-testcase Test_TCP_001() runs on tcp_CT {
+testcase tc_tcp_001() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -72,7 +72,7 @@ testcase Test_TCP_001() runs on tcp_CT {
 /**
  * Send TCP messsage with all flags set, expect nothing
  */
-testcase Test_TCP_002() runs on tcp_CT {
+testcase tc_tcp_002() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -93,7 +93,7 @@ testcase Test_TCP_002() runs on tcp_CT {
 /**
  * Send TCP SYN, expect SYN+ACK
  */
-testcase Test_TCP_003() runs on tcp_CT {
+testcase tc_tcp_003() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -119,7 +119,7 @@ testcase Test_TCP_003() runs on tcp_CT {
 /**
  * SYN received, send ACK with th_seq=0, th_ack=0, expect RST+ACK
  */
-testcase Test_TCP_004() runs on tcp_CT {
+testcase tc_tcp_004() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -154,7 +154,7 @@ testcase Test_TCP_004() runs on tcp_CT {
 /**
  * SYN received, send ACK (th_seq incremented, th_ack=0), expect RST
  */
-testcase Test_TCP_005() runs on tcp_CT {
+testcase tc_tcp_005() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -189,7 +189,7 @@ testcase Test_TCP_005() runs on tcp_CT {
 /**
  * Send SYN+RST, expect ACK+RST
  */
-testcase Test_TCP_006() runs on tcp_CT {
+testcase tc_tcp_006() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -211,7 +211,7 @@ testcase Test_TCP_006() runs on tcp_CT {
 /**
  * Send RST in the middle of three way handshake, expect nothing
  */
-testcase Test_TCP_007() runs on tcp_CT {
+testcase tc_tcp_007() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -245,7 +245,7 @@ testcase Test_TCP_007() runs on tcp_CT {
 /**
  * Send RST (th_seq=0) in the middle of three way handshake, expect RST+ACK
  */
-testcase Test_TCP_008() runs on tcp_CT {
+testcase tc_tcp_008() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -277,7 +277,7 @@ testcase Test_TCP_008() runs on tcp_CT {
 /**
  * Send SYN instead of ACK, expect RST+ACK
  */
-testcase Test_TCP_009() runs on tcp_CT {
+testcase tc_tcp_009() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -309,7 +309,7 @@ testcase Test_TCP_009() runs on tcp_CT {
 /**
  * Send SYN (th_seq=0) instead of ACK, expect RST+ACK (with th_ack=1)
  */
-testcase Test_TCP_010() runs on tcp_CT {
+testcase tc_tcp_010() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -342,7 +342,7 @@ testcase Test_TCP_010() runs on tcp_CT {
 /**
  * Send SYN+ACK, expect nothing
  */
-testcase Test_TCP_011() runs on tcp_CT {
+testcase tc_tcp_011() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -363,7 +363,7 @@ testcase Test_TCP_011() runs on tcp_CT {
 /**
  * Send SYN with the wrong checksum, expect nothing
  */
-testcase Test_TCP_012() runs on tcp_CT {
+testcase tc_tcp_012() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -385,7 +385,7 @@ testcase Test_TCP_012() runs on tcp_CT {
 /**
  * Check a reaction on SYN with the payload
  */
-testcase Test_TCP_013() runs on tcp_CT {
+testcase tc_tcp_013() runs on tcp_ct {
 
 	test_ct_init();
 
@@ -416,7 +416,7 @@ testcase Test_TCP_013() runs on tcp_CT {
  * Test TCP connection establishment, data transfer
  * (data echoing expected) and connection close.
  */
-testcase test_tcp_conn(octetstring d := ''O) runs on tcp_CT
+testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 {
 	test_ct_init();
 
@@ -497,21 +497,21 @@ label test_end;
 }
 
 control {
-	execute(Test_TCP_001());
-	execute(Test_TCP_002());
-	execute(Test_TCP_003());
-	execute(Test_TCP_003());
-	execute(Test_TCP_004());
-	execute(Test_TCP_005());
-	execute(Test_TCP_006());
-	execute(Test_TCP_007());
-	execute(Test_TCP_008());
-	execute(Test_TCP_009());
-	execute(Test_TCP_010());
-	execute(Test_TCP_011());
-	execute(Test_TCP_012());
-	execute(Test_TCP_013());
-	execute(test_tcp_conn(d := '01'O));
+	execute(tc_tcp_001());
+	execute(tc_tcp_002());
+	execute(tc_tcp_003());
+	execute(tc_tcp_003());
+	execute(tc_tcp_004());
+	execute(tc_tcp_005());
+	execute(tc_tcp_006());
+	execute(tc_tcp_007());
+	execute(tc_tcp_008());
+	execute(tc_tcp_009());
+	execute(tc_tcp_010());
+	execute(tc_tcp_011());
+	execute(tc_tcp_012());
+	execute(tc_tcp_013());
+	execute(tc_tcp_conn(d := '01'O));
 }
 
 }
