@@ -13,7 +13,7 @@
  *
  */
 
-module tcp2_suite {
+module tcp_suite {
 
 import from libtypes all;
 import from libnetinet2 all;
