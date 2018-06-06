@@ -18,16 +18,12 @@ kwinject.out
 /src/lib*.hh
 /src/*_suite.cc
 /src/*_suite.hh
-/src/Port*_Module.cc
-/src/Port*_Module.hh
 /src/port*_module.cc
 /src/port*_module.hh
-/src/tcp2.cc
-/src/tcp2.hh
 /src/cons.cc
 /src/cons.hh
 /src/Makefile
 /src/cversion.h
 /src/test_suite
-!/src/libutils.cc
+!/src/libutils_ext.cc
 
