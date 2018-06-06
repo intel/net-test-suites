@@ -18,7 +18,7 @@ module libtest {
 import from libtypes all;
 import from libnetinet all;
 import from port_data_types all;
-import from libutils_module all;
+import from libutils all;
 
 modulepar {
 	charstring m_eth_dst := "00:00:00:00:00:01";

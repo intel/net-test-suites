@@ -13,7 +13,7 @@
  *
  */
 
-module libutils_module {
+module libutils {
 
 import from libnetinet all;
 

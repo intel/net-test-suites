@@ -19,7 +19,7 @@ import from libtypes all;
 import from libnetinet all;
 import from libtest all;
 import from port_data_types all;
-import from libutils_module all;
+import from libutils all;
 
 type component tcp_CT extends test_CT {
 	var tcp_t tcp;
