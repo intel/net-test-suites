@@ -129,32 +129,31 @@ testcase test_tcp_templates() runs on tcp_CT
 	setverdict(pass);
 }
 
-function pre_inc(inout integer sn, integer step := 1) return integer
+function pre_inc(inout integer i, integer step := 1) return integer
 {
-	sn := sn + step;
-	return sn;
+	i := i + step;
+	return i;
 }
 
-function post_inc(inout integer sn, integer step := 1) return integer
+function post_inc(inout integer i, integer step := 1) return integer
 {
-	var integer r := sn;
-	sn := sn + step;
+	var integer r := i;
+	i := i + step;
 	return r;
 }
 
-function data_pop(inout octetstring data_in, integer len := 1)
-	return octetstring
+function data_pop(inout octetstring d_in, integer len := 1) return octetstring
 {
-	var octetstring data_out := substr(data_in, 0, len);
+	var octetstring d_out := substr(d_in, 0, len);
 
-	data_in := replace(data_in, 0, len, ''O);
+	d_in := replace(d_in, 0, len, ''O);
 
-	return data_out;
+	return d_out;
 }
 
-function data_push(inout octetstring data, octetstring data_new)
+function data_push(inout octetstring d, octetstring d_new)
 {
-	data := data & data_new;
+	d := d & d_new;
 }
 
 function sn_set(inout tcp_t tcp, integer msn, integer psn)
