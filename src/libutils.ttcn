@@ -26,4 +26,32 @@ external function fx_inet6_pton(charstring addr) return octetstring;
 
 external function fx_inet6_chksum(octetstring data) return integer;
 
+ 
+function pre_inc(inout integer i, integer step := 1) return integer
+{
+	i := i + step;
+	return i;
+}
+
+function post_inc(inout integer i, integer step := 1) return integer
+{
+	var integer r := i;
+	i := i + step;
+	return r;
+}
+
+function data_pop(inout octetstring d_in, integer len := 1) return octetstring
+{
+	var octetstring d_out := substr(d_in, 0, len);
+
+	d_in := replace(d_in, 0, len, ''O);
+
+	return d_out;
+}
+
+function data_push(inout octetstring d, octetstring d_new)
+{
+	d := d & d_new;
+}
+
 }
