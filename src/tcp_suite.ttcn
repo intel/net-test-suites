@@ -129,12 +129,6 @@ testcase test_tcp_templates() runs on tcp_CT
 	setverdict(pass);
 }
 
-function sn_set(inout tcp_t tcp, integer msn, integer psn)
-{
-	tcp.th_seq := msn;
-	tcp.th_ack := psn;
-}
-
 /**
  * Send TCP messsage with no flags set, expect nothing
  */
@@ -550,7 +544,8 @@ testcase test_tcp_conn(integer isn := 0, /* Initial sequence number */
 			}
 		}
 		if (tcp2.th_flags != TH_NONE) {
-			sn_set(tcp2, msn, psn);
+			tcp2.th_seq := msn;
+			tcp2.th_ack := psn;
 			P_TCP.send(tcp2);
 		}
 		T.start; repeat;
