@@ -608,6 +608,10 @@ testcase Test_TCP_013() runs on tcp_CT {
 	P_TCP.send(ts_TCP(f := TH_RST, sn := msn));
 }
 
+/**
+ * TODO: SYN sent, expect SYN+ACK, verify TCP checksum
+ */
+
 control {
 	//execute(test_tcp_codecs());
 	//execute(test_tcp_templates());
