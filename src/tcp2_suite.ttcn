@@ -30,7 +30,7 @@ type component tcp_CT extends test_CT {
 	var octetstring d_s := ''O; /* data to send */
 	var octetstring d_u := ''O; /* unacknowledged data */
 	var integer d_step := 1;
-	timer T := 1.0;
+	timer T := 3.0;
 	var default d_as_timeout;
 	var default d_as_unexpected_msg;
 }
@@ -442,6 +442,38 @@ testcase Test_TCP_007() runs on tcp_CT {
 	}
 }
 
+/**
+ * Send RST (th_seq=0) in the middle of three way handshake, expect RST+ACK
+ */
+testcase Test_TCP_008() runs on tcp_CT {
+
+	test_ct_init();
+
+	P_TCP.send(ts_TCP(f := TH_SYN, sn := post_inc(msn)));
+	s := TCP_SYN_SENT;
+
+	T.start;
+
+	alt {
+	[s == TCP_SYN_SENT] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK,
+											 an := msn)) {
+		T.stop;
+		s := TCP_SYN_RECEIVED;
+		P_TCP.send(ts_TCP(f := TH_RST, sn := 0));
+		T.start;
+		repeat;
+	}
+	[s == TCP_SYN_RECEIVED] P_TCP.receive(tr_TCP(f := TH_ACK or4b TH_RST,
+												 an := msn)) {
+		T.stop;
+		setverdict(pass);
+	}
+	[] T.timeout {
+		setverdict(fail);
+	}
+	}
+}
+
 control {
 	//execute(test_tcp_codecs());
 	//execute(test_tcp_templates());
@@ -453,6 +485,7 @@ control {
 	execute(Test_TCP_005());
 	execute(Test_TCP_006());
 	execute(Test_TCP_007());
+	execute(Test_TCP_008());
 	//execute(test_tcp_conn(data_to_send := '01'O));
 }
 
