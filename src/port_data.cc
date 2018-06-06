@@ -30,7 +30,7 @@
 
 #include "port_data.hh"
 
-namespace port__data__module {
+namespace port__data__types {
 
 #define E(fmt, args...)							\
 do {									\

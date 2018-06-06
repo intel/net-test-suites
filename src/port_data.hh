@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-namespace port__data__module {
+namespace port__data__types {
 
 #define PORT_DATA_BUF_MAXSIZE 1522
 

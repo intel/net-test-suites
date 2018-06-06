@@ -12,7 +12,7 @@
  *
  */
 
-module port_data_module {
+module port_data_types {
 
 type port port_data message {
 	inout octetstring;

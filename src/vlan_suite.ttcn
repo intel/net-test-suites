@@ -18,7 +18,7 @@ module vlan_suite {
 import from libtypes all;
 import from libtest all;
 import from libnetinet all;
-import from port_data_module all;
+import from port_data_types all;
 
 /**
  * This test sends UDP packets with and without VLAN tags
