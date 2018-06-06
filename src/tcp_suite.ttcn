@@ -18,8 +18,8 @@ module tcp_suite {
 import from libtypes all;
 import from libnetinet all;
 import from libtest all;
-import from port_data_types all;
 import from libutils all;
+import from port_data_types all;
 
 type component tcp_CT extends test_CT {
 	var tcp_t tcp;
@@ -161,91 +161,6 @@ function sn_set(inout tcp_t tcp, integer msn, integer psn)
 {
 	tcp.th_seq := msn;
 	tcp.th_ack := psn;
-}
-
-/**
- * Test TCP connection establishment, data transfer
- * (data echoing expected) and connection close.
- */
-testcase test_tcp_conn(integer isn := 0, /* Initial sequence number */
-					   integer src_port := 4242,
-					   octetstring data_to_send := ''O)
-	runs on tcp_CT
-{
-	test_ct_init();
-
-	d_as_timeout := activate(as_timeout());
-	d_as_unexpected_msg := activate(as_unexpected_msg());
-	msn := isn;
-	sp := src_port;
-	T.start;
-
-	alt {
-	[s == TCP_NONE] T.timeout {
-		P_TCP.send(ts_TCP(TH_SYN, sp := sp, sn := post_inc(msn)));
-		s := TCP_SYN_SENT;
-		T.start; repeat;
-	}
-	[s == TCP_SYN_SENT] P_TCP.receive(tr_TCP(TH_SYN or4b TH_ACK, an := msn))
-			-> value tcp {
-		T.stop;
-		s := TCP_SYN_RECEIVED;
-		psn := tcp.th_seq;
-		P_TCP.send(ts_TCP(TH_ACK, sp := sp, sn := msn, an := pre_inc(psn)));
-		data_push(d_s, data_to_send);
-		T.start; repeat;
-	}
-	[s == TCP_SYN_RECEIVED] T.timeout {
-		s := TCP_ESTABLISHED;
-		deactivate(d_as_timeout); deactivate(d_as_unexpected_msg);
-		T.start; repeat;
-	}
-	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP) -> value tcp {
-		T.stop;
-		var tcp_t tcp2 := valueof(ts_TCP);
-		if (th_is_set(tcp, TH_PSH)) {
-			th_set(tcp2, TH_ACK);
-			pre_inc(psn, lengthof(tcp.data));
-		}
-		if (th_is_set(tcp, TH_ACK)) {
-			if (tcp.th_ack > msn - lengthof(d_u)) {
-				var integer diff := tcp.th_ack - (msn - lengthof(d_u));
-				data_pop(d_u, diff);
-			}
-		}
-		if (tcp2.th_flags != TH_NONE) {
-			sn_set(tcp2, msn, psn);
-			P_TCP.send(tcp2);
-		}
-		T.start; repeat;
-	}
-	[s == TCP_ESTABLISHED] T.timeout {
-		if (lengthof(d_u) > 0) { goto wait_for_data; }
-		if (lengthof(d_s) > 0) {
-			d_u := data_pop(d_s, d_step);
-			P_TCP.send(ts_TCP(TH_PSH, sn := post_inc(msn, lengthof(d_u)),
-						  an := psn, d := d_u));
-			goto wait_for_data;
-		}
-		/* Everything is sent and aknowledged, close the connection */
-		s := TCP_CLOSE_WAIT;
-		d_as_timeout := activate(as_timeout());
-		d_as_unexpected_msg := activate(as_unexpected_msg());
-		P_TCP.send(ts_TCP(TH_FIN or4b TH_ACK, sp := sp,
-					  sn := post_inc(msn), an := psn));
-label wait_for_data;
-		T.start; repeat;
-	}
-	[s == TCP_CLOSE_WAIT] P_TCP.receive(tr_TCP(TH_FIN or4b TH_ACK, an := msn)) {
-		T.stop;
-		s := TCP_CLOSED;
-		goto test_end;
-	}
-	}
-label test_end;
-	if (s == TCP_CLOSED and lengthof(d_s) == 0 and lengthof(d_u) == 0) {
-		setverdict(pass);
-	}
 }
 
 /**
@@ -612,6 +527,91 @@ testcase Test_TCP_013() runs on tcp_CT {
  * TODO: SYN sent, expect SYN+ACK, verify TCP checksum
  */
 
+/**
+ * Test TCP connection establishment, data transfer
+ * (data echoing expected) and connection close.
+ */
+testcase test_tcp_conn(integer isn := 0, /* Initial sequence number */
+					   integer src_port := 4242,
+					   octetstring data_to_send := ''O)
+	runs on tcp_CT
+{
+	test_ct_init();
+
+	d_as_timeout := activate(as_timeout());
+	d_as_unexpected_msg := activate(as_unexpected_msg());
+	msn := isn;
+	sp := src_port;
+	T.start;
+
+	alt {
+	[s == TCP_NONE] T.timeout {
+		P_TCP.send(ts_TCP(TH_SYN, sp := sp, sn := post_inc(msn)));
+		s := TCP_SYN_SENT;
+		T.start; repeat;
+	}
+	[s == TCP_SYN_SENT] P_TCP.receive(tr_TCP(TH_SYN or4b TH_ACK, an := msn))
+			-> value tcp {
+		T.stop;
+		s := TCP_SYN_RECEIVED;
+		psn := tcp.th_seq;
+		P_TCP.send(ts_TCP(TH_ACK, sp := sp, sn := msn, an := pre_inc(psn)));
+		data_push(d_s, data_to_send);
+		T.start; repeat;
+	}
+	[s == TCP_SYN_RECEIVED] T.timeout {
+		s := TCP_ESTABLISHED;
+		deactivate(d_as_timeout); deactivate(d_as_unexpected_msg);
+		T.start; repeat;
+	}
+	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP) -> value tcp {
+		T.stop;
+		var tcp_t tcp2 := valueof(ts_TCP);
+		if (th_is_set(tcp, TH_PSH)) {
+			th_set(tcp2, TH_ACK);
+			pre_inc(psn, lengthof(tcp.data));
+		}
+		if (th_is_set(tcp, TH_ACK)) {
+			if (tcp.th_ack > msn - lengthof(d_u)) {
+				var integer diff := tcp.th_ack - (msn - lengthof(d_u));
+				data_pop(d_u, diff);
+			}
+		}
+		if (tcp2.th_flags != TH_NONE) {
+			sn_set(tcp2, msn, psn);
+			P_TCP.send(tcp2);
+		}
+		T.start; repeat;
+	}
+	[s == TCP_ESTABLISHED] T.timeout {
+		if (lengthof(d_u) > 0) { goto wait_for_data; }
+		if (lengthof(d_s) > 0) {
+			d_u := data_pop(d_s, d_step);
+			P_TCP.send(ts_TCP(TH_PSH, sn := post_inc(msn, lengthof(d_u)),
+						  an := psn, d := d_u));
+			goto wait_for_data;
+		}
+		/* Everything is sent and aknowledged, close the connection */
+		s := TCP_CLOSE_WAIT;
+		d_as_timeout := activate(as_timeout());
+		d_as_unexpected_msg := activate(as_unexpected_msg());
+		P_TCP.send(ts_TCP(TH_FIN or4b TH_ACK, sp := sp,
+					  sn := post_inc(msn), an := psn));
+label wait_for_data;
+		T.start; repeat;
+	}
+	[s == TCP_CLOSE_WAIT] P_TCP.receive(tr_TCP(TH_FIN or4b TH_ACK, an := msn)) {
+		T.stop;
+		s := TCP_CLOSED;
+		goto test_end;
+	}
+	}
+label test_end;
+	if (s == TCP_CLOSED and lengthof(d_s) == 0 and lengthof(d_u) == 0) {
+		setverdict(pass);
+	}
+}
+
 control {
 	//execute(test_tcp_codecs());
 	//execute(test_tcp_templates());
@@ -629,7 +629,7 @@ control {
 	execute(Test_TCP_011());
 	execute(Test_TCP_012());
 	execute(Test_TCP_013());
-	//execute(test_tcp_conn(data_to_send := '01'O));
+	execute(test_tcp_conn(data_to_send := '01'O));
 }
 
 }
