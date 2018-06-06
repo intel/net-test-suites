@@ -26,28 +26,4 @@ external function fx_inet6_pton(charstring addr) return octetstring;
 
 external function fx_inet6_chksum(octetstring data) return integer;
 
-external function fx_ip6_init(octetstring eth_dst,
-							  octetstring eth_src,
-							  octetstring ip6_dst,
-							  octetstring ip6_src,
-							  ipproto_t ip6_nxt,
-							  integer ip6_plen) return octetstring;
-
-/* TODO: Drop the ones below */
-
-external function fx_db_insert(charstring key, charstring val);
-external function fx_db_search(charstring key) return charstring;
-
-external function fx_ip6_nbr_soliciation_init() return octetstring;
-external function fx_ip6_nbr_soliciation_decode(octetstring msg,
-												out octetstring ip6_src,
-												out octetstring lla);
-
-external function fx_ip6_nbr_advert_init(octetstring ip6_dst,
-	octetstring eth_dst) return octetstring;
-
-external function fx_ip6_echo_init(octetstring eth_dst,
-								   octetstring eth_src,
-								   octetstring ip6_dst,
-								   octetstring ip6_src) return octetstring;
 }
