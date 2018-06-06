@@ -26,9 +26,9 @@ type component tcp_CT extends test_CT {
 	var tcp_state_t s := TCP_NONE;
 	var integer msn := 0; /* my sequence number */
 	var integer psn := 0; /* peer sequence number */
-	var octetstring d_s := ''O; /* data to send */
-	var octetstring d_u := ''O; /* unacknowledged data */
-	var integer d_step := 1;
+	var octetstring data_to_send := ''O;
+	var octetstring data_unack := ''O;
+	var integer data_step := 1;
 	timer T := 3.0;
 	var default d_as_timeout;
 	var default d_as_unexpected_msg;
@@ -412,9 +412,11 @@ testcase Test_TCP_013() runs on tcp_CT {
  * Test TCP connection establishment, data transfer
  * (data echoing expected) and connection close.
  */
-testcase test_tcp_conn(octetstring data_to_send := ''O) runs on tcp_CT
+testcase test_tcp_conn(octetstring d := ''O) runs on tcp_CT
 {
 	test_ct_init();
+
+	data_to_send := d;
 
 	d_as_timeout := activate(as_timeout());
 	d_as_unexpected_msg := activate(as_unexpected_msg());
@@ -433,7 +435,6 @@ testcase test_tcp_conn(octetstring data_to_send := ''O) runs on tcp_CT
 		s := TCP_SYN_RECEIVED;
 		psn := tcp.th_seq;
 		P_TCP.send(ts_TCP(TH_ACK, sn := msn, an := pre_inc(psn)));
-		data_push(d_s, data_to_send);
 		T.start; repeat;
 	}
 	[s == TCP_SYN_RECEIVED] T.timeout {
@@ -449,9 +450,9 @@ testcase test_tcp_conn(octetstring data_to_send := ''O) runs on tcp_CT
 			pre_inc(psn, lengthof(tcp.data));
 		}
 		if (th_is_set(tcp, TH_ACK)) {
-			if (tcp.th_ack > msn - lengthof(d_u)) {
-				var integer diff := tcp.th_ack - (msn - lengthof(d_u));
-				data_pop(d_u, diff);
+			if (tcp.th_ack > msn - lengthof(data_unack)) {
+				var integer diff := tcp.th_ack - (msn - lengthof(data_unack));
+				data_pop(data_unack, diff);
 			}
 		}
 		if (tcp2.th_flags != TH_NONE) {
@@ -462,11 +463,11 @@ testcase test_tcp_conn(octetstring data_to_send := ''O) runs on tcp_CT
 		T.start; repeat;
 	}
 	[s == TCP_ESTABLISHED] T.timeout {
-		if (lengthof(d_u) > 0) { goto wait_for_data; }
-		if (lengthof(d_s) > 0) {
-			d_u := data_pop(d_s, d_step);
-			P_TCP.send(ts_TCP(TH_PSH, sn := post_inc(msn, lengthof(d_u)),
-						  an := psn, d := d_u));
+		if (lengthof(data_unack) > 0) { goto wait_for_data; }
+		if (lengthof(data_to_send) > 0) {
+			data_unack := data_pop(data_to_send, data_step);
+			P_TCP.send(ts_TCP(TH_PSH, sn := post_inc(msn, lengthof(data_unack)),
+						  an := psn, d := data_unack));
 			goto wait_for_data;
 		}
 		/* Everything is sent and aknowledged, close the connection */
@@ -485,7 +486,8 @@ label wait_for_data;
 	}
 	}
 label test_end;
-	if (s == TCP_CLOSED and lengthof(d_s) == 0 and lengthof(d_u) == 0) {
+	if (s == TCP_CLOSED and lengthof(data_to_send) == 0
+			and lengthof(data_unack) == 0) {
 		setverdict(pass);
 	}
 }
@@ -505,7 +507,7 @@ control {
 	execute(Test_TCP_011());
 	execute(Test_TCP_012());
 	execute(Test_TCP_013());
-	execute(test_tcp_conn(data_to_send := '01'O));
+	execute(test_tcp_conn(d := '01'O));
 }
 
 }
