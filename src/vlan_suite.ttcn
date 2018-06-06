@@ -16,139 +16,46 @@
 module vlan_suite {
 
 import from libtypes all;
-import from libtest all;
-import from libnetinet all;
-import from libutils_module all;
+import from libtest2 all;
+import from libnetinet2 all;
 import from port_data_module all;
 
-type port port_eth_t message {
-	inout eth_t;
-} with {
-	extension "user port_data
-		out(eth_t -> octetstring : function(eth_on_send))
-   		in(octetstring -> eth_t : function(eth_dec))";
-}
-
-function eth_on_send(in eth_t eth, out octetstring data)
-{
-	eth.hdr.h_dest := fx_ether_aton(fx_db_search("dst_eth"));
-	eth.hdr.h_source := fx_ether_aton(fx_db_search("src_eth"));
-
-	eth.data.ip6.hdr.ip6_dst := fx_inet6_pton(fx_db_search("dst_ip6"));
-	eth.data.ip6.hdr.ip6_src := fx_inet6_pton(fx_db_search("src_ip6"));
-
-	data := eth_enc(eth);
-
-} with { extension "prototype(fast)" }
-
-type component vlan_node_t extends test_node {
-	timer T := 1.0;
-	port port_eth_t P;
-}
-
-template eth_t ts_ETH := {
-    hdr := {
-        h_dest := '000000000000'O,
-        h_source := '000000000000'O,
-        h_proto := ETHERTYPE_IPV6
-    },
-    vlan := omit,
-    data := omit
-}
-
-template eth_t ts_IP6 modifies ts_ETH := {
-	data := {
-        ip6 := {
-            hdr := {
-                ip6_vfc := 96,
-                ip6_plen := 0,
-                ip6_nxt := IPPROTO_UDP,
-                ip6_hlim := 0,
-                ip6_src := '00000000000000000000000000000000'O,
-                ip6_dst := '00000000000000000000000000000000'O
-            },
-            data := omit
-        }
-	}
-}
-
-template udp_t ts_UDP (template octetstring d := omit) := {
-	hdr := {
-		uh_sport := 4242,
-		uh_dport := 4242,
-		uh_ulen := 0,
-		uh_sum := 0
-	},
-	data := d
-}
-
-template vlan_tag_t ts_VLAN (bit3_t pri := '000'B) := {
-	vlan_pri := pri,
-	vlan_cfi := '0'B,
-	vlan_id := 100,
-	vlan_type := ETHERTYPE_IPV6
-}
-
-template eth_t tr_ETH := {
-	hdr := ?,
-    vlan := *,
-	data := *
-}
-
-template eth_t tr_VLAN (template bit3_t pri := '???'B) modifies tr_ETH := {
-	vlan := {
-		vlan_pri := pri,
-		vlan_cfi := ?,
-		vlan_id := ?,
-		vlan_type := ?
-	}
-}
-
-function eth_ip6_udp_new(in template ip6_t ip6 := omit,
-						 in template udp_t udp := omit,
-						 in template vlan_tag_t vlan := omit) return eth_t
-{
-	var eth_t eth;
-
-	if (isvalue(ip6)) {
-		eth := valueof(ts_ETH);
-		eth.data.ip6 := valueof(ip6);
-	} else {
-		eth := valueof(ts_IP6);
-	}
-
-	if (isvalue(vlan)) {
-		eth.vlan := valueof(vlan);
-		eth.vlan.vlan_type := eth.hdr.h_proto;
-		eth.hdr.h_proto := ETHERTYPE_VLAN;
-	}
-
-	eth.data.ip6.data.udp := valueof(udp);
-
-	return eth;
-}
-
 /**
- * This test case sends UDP packets with different VLAN priorities
- * and expects prioritized echo replies.
+ * This test sends UDP packets with and without VLAN tags
+ * and checks VLAN in echo replies.
  */
-testcase Test_VLAN_001(inout cf_t cf) runs on vlan_node_t {
+testcase Test_VLAN_001() runs on test_CT {
 
-	test_node_init(cf);
-	test_node_shutdown(cf);
+	test_ct_init();
 
-	map(self:P, system:P);
+	var udp_t udp;
 
-	var eth_t eth1 := eth_ip6_udp_new(udp := ts_UDP(d := '01'O));
-	var eth_t eth2 := eth_ip6_udp_new(udp := ts_UDP(d := '02'O),
-									  vlan := ts_VLAN(pri := '101'B));
-	P.send(eth1);
-	P.send(eth2);
+	timer T := 1.0;
+
+	P_UDP.send(ts_UDP(d := '01'O));
 
 	T.start;
 
 	alt {
-		[] P.receive(tr_VLAN('101'B)) {
+		[] P_UDP.receive(?) -> value udp {
+			T.stop;
+			setverdict(pass);
+		}
+		[] T.timeout {
+			setverdict(fail);
+		}
+	}
+
+	P_CF.send("vlan_enable");
+
+	P_UDP.send(ts_UDP(d := '01'O));
+
+	T.start;
+
+	alt {
+		[] P_UDP.receive(?) -> value udp {
+			/* TODO: Check VLAN tag in the reply */
+			T.stop;
 			setverdict(pass);
 		}
 		[] T.timeout {
@@ -158,8 +65,7 @@ testcase Test_VLAN_001(inout cf_t cf) runs on vlan_node_t {
 }
 
 control {
-	var cf_t cf;
-	execute(Test_VLAN_001(cf));
+	execute(Test_VLAN_001());
 }
 
-} with { encode "RAW" }
+}
