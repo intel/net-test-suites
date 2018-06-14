@@ -499,7 +499,6 @@ control {
 	execute(tc_tcp_001());
 	execute(tc_tcp_002());
 	execute(tc_tcp_003());
-	execute(tc_tcp_003());
 	execute(tc_tcp_004());
 	execute(tc_tcp_005());
 	execute(tc_tcp_006());
