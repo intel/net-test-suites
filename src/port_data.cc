@@ -248,6 +248,11 @@ uint16_t inet6_chksum(uint8_t *data, size_t data_len)
 	*sum = 0;
 
 	if (h_proto == ETHERTYPE_IP) {
+
+		if (*ipproto == IPPROTO_ICMP) {
+			s = 0;
+		}
+
 		s += _cs(data + 14 + vlan_len + 20, data_len - vlan_len - 20 - 14);
 	} else {
 		s += _cs(ip6 + 1, ntohs(ip6->ip6_plen));
