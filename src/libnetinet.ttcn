@@ -121,7 +121,7 @@ type record tcp_t {
 	uint16_t	th_dport,
 	uint32_t	th_seq,
 	uint32_t	th_ack,
-	uint4_t		th_doff,
+	uint4_t		th_off,
 	bit3_t		th_res,
 	bit3_t		th_ecn,
 	th_flags_t	th_flags,
@@ -133,9 +133,9 @@ type record tcp_t {
 } with {
 	variant(th_sport, th_dport, th_seq, th_ack, th_win) "BYTEORDER(last)";
 	variant(opt) "REPEATABLE(yes)";
-	variant(th_doff) "LENGTHTO(th_sport,th_dport,th_seq,th_ack,th_doff,
+	variant(th_off) "LENGTHTO(th_sport,th_dport,th_seq,th_ack,th_off,
 		th_res,th_ecn,th_flags,th_win,th_sum,th_urp,opt)";
-	variant(th_doff) "UNIT(dword32)";
+	variant(th_off) "UNIT(dword32)";
 }
 
 /* TCP send template */
@@ -149,7 +149,7 @@ template tcp_t ts_TCP(th_flags_t f := TH_NONE,
 	 th_dport := 4242,
 	 th_seq := sn,
 	 th_ack := an,
-	 th_doff := 5,
+	 th_off := 5,
 	 th_res := '000'B,
 	 th_ecn := '000'B,
 	 th_flags := f,
@@ -170,7 +170,7 @@ template tcp_t tr_TCP(template th_flags_t f := TH_ANY,
 	 th_dport := ?,
 	 th_seq := sn,
 	 th_ack := an,
-	 th_doff := ?,
+	 th_off := ?,
 	 th_res := '000'B,
 	 th_ecn := '000'B,
 	 th_flags := f,
@@ -412,7 +412,7 @@ function test_tcp_codecs()
 
 	tcp_enc_dec(tcp, tcp2);
 
-	tcp.th_doff := 5;
+	tcp.th_off := 5;
 
 	tcp_compare(tcp, tcp2);
 
@@ -422,7 +422,7 @@ function test_tcp_codecs()
 
 	tcp_enc_dec(tcp, tcp2);
 
-	tcp.th_doff := 5;
+	tcp.th_off := 5;
 
 	tcp_compare(tcp, tcp2);
 
@@ -437,7 +437,7 @@ function test_tcp_codecs()
 
 	tcp_enc_dec(tcp, tcp2);
 
-	tcp.th_doff := 7;
+	tcp.th_off := 7;
 
 	tcp_compare(tcp, tcp2);
 
@@ -452,7 +452,7 @@ function test_tcp_codecs()
 
 	tcp_enc_dec(tcp, tcp2);
 
-	tcp.th_doff := 7;
+	tcp.th_off := 7;
 
 	tcp_compare(tcp, tcp2);
 }
