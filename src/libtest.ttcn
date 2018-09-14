@@ -308,7 +308,6 @@ function do_nbr_sol() runs on test_CT {
 
 	alt {
 		[] P_ICMP6.receive(tr_ICMP6(ICMP6_NEIGHBOR_SOLICIT)) -> value icmp6 {
-			log(icmp6);
 		}
 	}
 }
@@ -334,7 +333,6 @@ function do_ping6() runs on test_CT {
 
 	alt {
 		[] P_ICMP6.receive(tr_ICMP6(ICMP6_ECHO_REPLY)) -> value icmp6 {
-			log(icmp6);
 			setverdict(pass);
 		}
 	}
@@ -365,7 +363,6 @@ function do_ping() runs on test_CT {
 
 	alt {
 		[] P_ICMP.receive(?) -> value icmp {
-			log(icmp);
 			setverdict(pass);
 		}
 		[] T.timeout {
