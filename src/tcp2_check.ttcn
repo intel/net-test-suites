@@ -17,7 +17,6 @@
  * This is a sanity check for experimental TCP implementation for Zephyr RTOS:
  * https://github.com/ozhuraki/zephyr/blob/tcp2-dev/subsys/net/ip/tcp2.c
  */
-
 module tcp2_check {
 
 import from libtypes all;
@@ -135,17 +134,12 @@ label wait_for_data;
 		T.start; repeat; /* T * 2 */
 	}
 	[s == TCP_TIME_WAIT] T.timeout {
+		deactivate(d_as_unexpected_msg);
 		log(s);
 		s := TCP_CLOSED;
-		T.start; repeat;
-	}
-	[s == TCP_CLOSED] T.timeout {
 		log(s);
-		goto test_end;
 	}
-
 	}
-label test_end;
 	if (s == TCP_CLOSED and lengthof(data_to_send) == 0
 			and lengthof(data_unack) == 0) {
 		setverdict(pass);
