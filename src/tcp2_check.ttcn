@@ -27,7 +27,7 @@ import from libutils all;
 import from port_data_types all;
 
 modulepar {
-	float T_default := 2.0;
+	float T_default := 0.1;
 }
 
 type component tcp_ct extends test_CT {
