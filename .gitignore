@@ -20,6 +20,8 @@ kwinject.out
 /src/*_suite.hh
 /src/port*_module.cc
 /src/port*_module.hh
+/src/tcp2_check.cc
+/src/tcp2_check.hh
 /src/cons.cc
 /src/cons.hh
 /src/Makefile
