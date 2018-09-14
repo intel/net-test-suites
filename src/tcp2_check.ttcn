@@ -27,7 +27,7 @@ import from libutils all;
 import from port_data_types all;
 
 modulepar {
-	float T_default := 3.0;
+	float T_default := 2.0;
 }
 
 type component tcp_ct extends test_CT {
@@ -73,19 +73,20 @@ testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 	}
 	[s == TCP_SYN_SENT] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK,
 											 an := msn)) -> value tcp {
-		T.stop;
+		log(s); T.stop;
 		s := TCP_SYN_RECEIVED;
 		psn := tcp.th_seq;
 		P_TCP.send(ts_TCP(f := TH_ACK, sn := msn, an := pre_inc(psn)));
 		T.start; repeat;
 	}
 	[s == TCP_SYN_RECEIVED] T.timeout {
+		log(s);
 		s := TCP_ESTABLISHED;
 		deactivate(d_as_timeout); deactivate(d_as_unexpected_msg);
 		T.start; repeat;
 	}
 	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP) -> value tcp {
-		T.stop;
+		log(s); T.stop;
 		var tcp_t tcp2 := valueof(ts_TCP);
 		if (th_is_set(tcp, TH_PSH)) {
 			th_set(tcp2, TH_ACK);
@@ -105,6 +106,7 @@ testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 		T.start; repeat;
 	}
 	[s == TCP_ESTABLISHED] T.timeout {
+		log(s);
 		if (lengthof(data_unack) > 0) { goto wait_for_data; }
 		if (lengthof(data_to_send) > 0) {
 			data_unack := data_pop(data_to_send, data_step);
