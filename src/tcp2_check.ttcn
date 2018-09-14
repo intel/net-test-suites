@@ -127,7 +127,7 @@ label wait_for_data;
 	}
 	[s == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK)) {
 		log(s); T.stop;
-		P_TCP.send(ts_TCP(f := TH_ACK));
+		P_TCP.send(ts_TCP(f := TH_ACK, sn := msn, an := pre_inc(psn)));
 		s := TCP_TIME_WAIT;
 		d_as_unexpected_msg := activate(as_unexpected_msg());
 		T.start; repeat; /* T * 2 */
