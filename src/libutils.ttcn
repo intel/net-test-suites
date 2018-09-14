@@ -26,7 +26,6 @@ external function fx_inet6_pton(charstring addr) return octetstring;
 
 external function fx_inet6_chksum(octetstring data) return integer;
 
- 
 function pre_inc(inout integer i, integer step := 1) return integer
 {
 	i := i + step;
