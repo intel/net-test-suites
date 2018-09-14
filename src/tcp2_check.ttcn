@@ -49,8 +49,8 @@ altstep as_unexpected_msg() runs on tcp_ct
 }
 
 /**
- * Test TCP connection establishment, data transfer
- * (data echoing expected) and connection close.
+ * Test active TCP connection establishment,
+ * data transfer (data echoing expected) and active close
  */
 testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 {
@@ -113,22 +113,35 @@ testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 							  an := psn, d := data_unack));
 			goto wait_for_data;
 		}
-		/* Everything is sent and aknowledged, close the connection */
-		s := TCP_CLOSE_WAIT;
-		d_as_timeout := activate(as_timeout());
-		d_as_unexpected_msg := activate(as_unexpected_msg());
-		P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK,
-					sn := post_inc(msn), an := psn));
+		/* Everything is sent and aknowledged, do active close */
+		s := TCP_FIN_WAIT1;
+		P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK, sn := post_inc(msn),
+						  an := psn));
 label wait_for_data;
 		T.start; repeat;
 	}
-	[s == TCP_CLOSE_WAIT] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK,
-											   an := msn)) {
-		T.stop;
+	[s == TCP_FIN_WAIT1] P_TCP.receive(tr_TCP(f := TH_ACK)) {
+		log(s); T.stop;
+		s := TCP_FIN_WAIT2;
+		T.start; repeat;
+	}
+	[s == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK)) {
+		log(s); T.stop;
+		P_TCP.send(ts_TCP(f := TH_ACK));
+		s := TCP_TIME_WAIT;
+		d_as_unexpected_msg := activate(as_unexpected_msg());
+		T.start; repeat; /* T * 2 */
+	}
+	[s == TCP_TIME_WAIT] T.timeout {
+		log(s);
 		s := TCP_CLOSED;
-		P_TCP.send(ts_TCP(f := TH_ACK, sn := msn, an := pre_inc(psn)));
+		T.start; repeat;
+	}
+	[s == TCP_CLOSED] T.timeout {
+		log(s);
 		goto test_end;
 	}
+
 	}
 label test_end;
 	if (s == TCP_CLOSED and lengthof(data_to_send) == 0
