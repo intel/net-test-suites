@@ -48,9 +48,9 @@ function data_pop(inout octetstring d_in, integer len := 1) return octetstring
 	return d_out;
 }
 
-function data_push(inout octetstring d, octetstring d_new)
+function data_push(inout octetstring data, octetstring data_new)
 {
-	d := d & d_new;
+	data := data & data_new;
 }
 
-}
+} /* end of module */
