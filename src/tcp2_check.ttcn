@@ -16,7 +16,12 @@
 /*
  * This is a sanity check for experimental TCP implementation for Zephyr RTOS:
  * https://github.com/ozhuraki/zephyr/blob/tcp2-dev/subsys/net/ip/tcp2.c
+ *
+ * It is also an exploratory playground for bringing improvements
+ * to tcp_suite.ttcn (which aims to be abstract from the system under test).
+ *
  */
+
 module tcp2_check {
 
 import from libtypes all;
@@ -49,7 +54,7 @@ altstep as_unexpected_msg() runs on tcp_ct
 	[] P_TCP.receive(?) { setverdict(fail); stop; }
 }
 
-/* error on timeout and unexpected messages */ 
+/* error on timeout and unexpected messages */
 function catch_on() runs on tcp_ct
 {
 	d_as_timeout := activate(as_timeout());
@@ -67,6 +72,19 @@ function st(tcp_state_t new) runs on tcp_ct
 	log(s, " -> ", new);
 	s := new;
 }
+
+type record tcp_json {
+	charstring state
+} with {
+	encode "JSON";
+	variant(state) "JSON: name as state";
+}
+
+external function f_json_enc(in tcp_json x) return octetstring
+	with { extension "prototype(convert) encode(JSON)" }
+
+external function f_json_dec(in octetstring x) return tcp_json
+	with { extension "prototype(convert) decode(JSON)" }
 
 /**
  * Test active TCP connection establishment,
@@ -148,8 +166,28 @@ label wait_for_data;
 		st(TCP_CLOSED);
 	}
 	}
-	if (s == TCP_CLOSED and lengthof(data_to_send) == 0
-			and lengthof(data_unack) == 0) {
+
+	var tcp_state_t peer_target_state := TCP_CLOSED;
+	var udp_t udp;
+	var tcp_json json;
+
+	P_UDP.send(ts_UDP);
+	T.start;
+
+	alt {
+		[] P_UDP.receive(?) -> value udp {
+			T.stop;
+			json := f_json_dec(udp.data);
+		}
+		[] T.timeout {
+			setverdict(fail);
+		}
+	}
+
+	if (s == TCP_CLOSED and
+			lengthof(data_to_send) == 0 and
+			lengthof(data_unack) == 0 and
+			json.state == f_tcp_state_to_string(peer_target_state)) {
 		setverdict(pass);
 	}
 }
