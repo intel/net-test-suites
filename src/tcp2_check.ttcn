@@ -121,10 +121,12 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 			var tcp_json json := f_json_dec(udp.data);
 
 			if (json.state != tcp_state_to_string(state)) {
+				log("ASSERT: ", json.state, " != ", tcp_state_to_string(state));
 				setverdict(fail);
 			}
 		}
 		[] T.timeout {
+			log("peer_assert() timeout");
 			setverdict(fail);
 		}
 	}
@@ -197,13 +199,13 @@ label wait_for_data;
 	}
 	[s == TCP_FIN_WAIT1] P_TCP.receive(tr_TCP(f := TH_ACK)) {
 		T.stop;
+		//peer_assert(TCP_CLOSE_WAIT);
 		st(TCP_FIN_WAIT2);
-		//TODO: peer_assert();
 		T.start; repeat;
 	}
 	[s == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK)) {
 		T.stop;
-		//TODO: peer_assert();
+		peer_assert(TCP_LAST_ACK);
 		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
 		st(TCP_TIME_WAIT, fail_on := EV_NONE);
 		T.start; repeat; /* T * 2 */
