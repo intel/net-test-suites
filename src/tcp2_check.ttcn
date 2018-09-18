@@ -46,7 +46,7 @@ type component tcp_ct extends test_CT {
 	var tcp_state_t s := TCP_NONE;
 	var uint32_t seq := 0;
 	var uint32_t ack := 0;
-	var octetstring data_to_send := ''O;
+	var octetstring data := ''O;
 	var octetstring data_unack := ''O; /* split to rcv/snd data */
 	var integer data_step := 1;
 	timer T := T_default;
@@ -90,7 +90,7 @@ function fail_on_event(event_t event) runs on tcp_ct
 
 function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 {
-	log(f_tcp_state_to_string(s), " -> ", f_tcp_state_to_string(new));
+	log(tcp_state_to_string(s), " -> ", tcp_state_to_string(new));
 	s := new;
 	fail_on_event(fail_on);
 }
@@ -112,11 +112,11 @@ external function f_json_dec(in octetstring x) return tcp_json
  * Test active TCP connection establishment,
  * data transfer (data echoing expected) and active close
  */
-testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
+testcase tc_tcp_conn(octetstring data_to_send := ''O) runs on tcp_ct
 {
 	test_ct_init();
 
-	data_to_send := d;
+	data_push(data, data_to_send);
 
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
 	st(TCP_SYN_SENT, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
@@ -204,13 +204,13 @@ label wait_for_data;
 	if (s == TCP_CLOSED and
 			lengthof(data_to_send) == 0 and
 			lengthof(data_unack) == 0 and
-			json.state == f_tcp_state_to_string(peer_target_state)) {
+			json.state == tcp_state_to_string(peer_target_state)) {
 		setverdict(pass);
 	}
 }
 
 control {
-	execute(tc_tcp_conn(d := '01'O));
+	execute(tc_tcp_conn(data_to_send := '01'O));
 }
 
-}
+} /* end of module */
