@@ -108,6 +108,28 @@ external function f_json_enc(in tcp_json x) return octetstring
 external function f_json_dec(in octetstring x) return tcp_json
 	with { extension "prototype(convert) decode(JSON)" }
 
+function peer_assert(tcp_state_t state) runs on tcp_ct
+{
+	P_UDP.send(ts_UDP);
+	T.start;
+
+	var udp_t udp;
+
+	alt {
+		[] P_UDP.receive(?) -> value udp {
+			T.stop;
+			var tcp_json json := f_json_dec(udp.data);
+
+			if (json.state != tcp_state_to_string(state)) {
+				setverdict(fail);
+			}
+		}
+		[] T.timeout {
+			setverdict(fail);
+		}
+	}
+}
+
 /**
  * Test active TCP connection establishment,
  * data transfer (data echoing expected) and active close
@@ -126,14 +148,17 @@ testcase tc_tcp_conn(octetstring data_to_send := ''O) runs on tcp_ct
 	[s == TCP_SYN_SENT] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK,
 											 th_ack := seq)) -> value tcp {
 		T.stop;
-		ack := tcp.th_seq;
+		peer_assert(TCP_SYN_SENT);
 		st(TCP_SYN_RECEIVED);
+		ack := tcp.th_seq;
 		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
 		st(TCP_ESTABLISHED, fail_on := EV_NONE);
+		peer_assert(TCP_ESTABLISHED);
 		T.start; repeat;
 	}
 	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP) -> value tcp {
 		T.stop;
+		peer_assert(TCP_ESTABLISHED);
 		var tcp_t tcp2 := valueof(ts_TCP);
 		if (th_is_set(tcp, TH_PSH)) {
 			th_set(tcp2, TH_ACK);
@@ -153,6 +178,7 @@ testcase tc_tcp_conn(octetstring data_to_send := ''O) runs on tcp_ct
 		T.start; repeat;
 	}
 	[s == TCP_ESTABLISHED] T.timeout {
+		peer_assert(TCP_ESTABLISHED);
 		if (lengthof(data_unack) > 0) { goto wait_for_data; }
 		if (lengthof(data_to_send) > 0) {
 			data_unack := data_pop(data_to_send, data_step);
@@ -162,49 +188,35 @@ testcase tc_tcp_conn(octetstring data_to_send := ''O) runs on tcp_ct
 			goto wait_for_data;
 		}
 		/* Everything is sent and aknowledged, do active close */
-		st(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 		P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK, th_seq := post_inc(seq),
 						  th_ack := ack));
+		st(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
+		//TODO: peer_assert();
 label wait_for_data;
 		T.start; repeat;
 	}
 	[s == TCP_FIN_WAIT1] P_TCP.receive(tr_TCP(f := TH_ACK)) {
 		T.stop;
 		st(TCP_FIN_WAIT2);
+		//TODO: peer_assert();
 		T.start; repeat;
 	}
 	[s == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK)) {
 		T.stop;
+		//TODO: peer_assert();
 		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
 		st(TCP_TIME_WAIT, fail_on := EV_NONE);
 		T.start; repeat; /* T * 2 */
 	}
 	[s == TCP_TIME_WAIT] T.timeout {
 		st(TCP_CLOSED);
+		peer_assert(TCP_CLOSED);
 	}
-	}
-
-	var tcp_state_t peer_target_state := TCP_CLOSED;
-	var udp_t udp;
-	var tcp_json json;
-
-	P_UDP.send(ts_UDP);
-	T.start;
-
-	alt {
-		[] P_UDP.receive(?) -> value udp {
-			T.stop;
-			json := f_json_dec(udp.data);
-		}
-		[] T.timeout {
-			setverdict(fail);
-		}
 	}
 
 	if (s == TCP_CLOSED and
 			lengthof(data_to_send) == 0 and
-			lengthof(data_unack) == 0 and
-			json.state == tcp_state_to_string(peer_target_state)) {
+			lengthof(data_unack) == 0) {
 		setverdict(pass);
 	}
 }
