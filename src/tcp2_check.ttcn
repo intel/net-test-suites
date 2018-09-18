@@ -57,12 +57,12 @@ type component tcp_ct extends test_CT {
 
 altstep as_timeout() runs on tcp_ct
 {
-	[] T.timeout { setverdict(fail); stop; }
+	[] T.timeout { log("as_timeout()"); setverdict(fail); stop; }
 }
 
 altstep as_unexpected_msg() runs on tcp_ct
 {
-	[] P_TCP.receive(?) { setverdict(fail); stop; }
+	[] P_TCP.receive(?) { log("as_unexpected_msg()"); setverdict(fail); stop; }
 }
 
 function fail_on_event(event_t event) runs on tcp_ct
@@ -193,13 +193,15 @@ testcase tc_tcp_conn(octetstring data_to_send := ''O) runs on tcp_ct
 		P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK, th_seq := post_inc(seq),
 						  th_ack := ack));
 		st(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
-		//TODO: peer_assert();
+		/* TODO: peer_assert() here is tricky, since peer in active close
+		   sends ack and fin+ack immedeately */
 label wait_for_data;
 		T.start; repeat;
 	}
 	[s == TCP_FIN_WAIT1] P_TCP.receive(tr_TCP(f := TH_ACK)) {
 		T.stop;
-		//peer_assert(TCP_CLOSE_WAIT);
+		/* TODO: peer_assert() here is tricky, since peer in active close
+		   sends ack and fin+ack immedeately */
 		st(TCP_FIN_WAIT2);
 		T.start; repeat;
 	}
