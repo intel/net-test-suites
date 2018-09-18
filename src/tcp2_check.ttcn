@@ -96,10 +96,14 @@ function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 }
 
 type record tcp_json {
-	charstring state
+	charstring state,
+	integer seq,
+	integer ack
 } with {
 	encode "JSON";
-	variant(state) "JSON: name as state";
+	variant(state)	"JSON: name as state";
+	variant(seq)	"JSON: name as seq";
+	variant(ack)	"JSON: name as ack";
 }
 
 external function f_json_enc(in tcp_json x) return octetstring
@@ -119,6 +123,8 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 		[] P_UDP.receive(?) -> value udp {
 			T.stop;
 			var tcp_json json := f_json_dec(udp.data);
+
+			log(json);
 
 			if (json.state != tcp_state_to_string(state)) {
 				log("ASSERT: ", json.state, " != ", tcp_state_to_string(state));
