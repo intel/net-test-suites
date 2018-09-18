@@ -44,8 +44,11 @@ const event_t EV_UNEXPECTED_MSG :='010'B;
 type component tcp_ct extends test_CT {
 	var tcp_t tcp;
 	var tcp_state_t s := TCP_NONE;
-	var uint32_t msn := 0; /* my sequence number */
-	var uint32_t psn := 0; /* peer sequence number */
+	var uint32_t seq := 0;
+	var uint32_t ack := 0;
+	var octetstring data_to_send := ''O;
+	var octetstring data_unack := ''O; /* split to rcv/snd data */
+	var integer data_step := 1;
 	timer T := T_default;
 	var event_t events := EV_NONE;
 	var default d_as_timeout;
@@ -113,21 +116,19 @@ testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 {
 	test_ct_init();
 
-	var octetstring data_to_send := d;
-	var octetstring data_unack := ''O;
-	var integer data_step := 1;
+	data_to_send := d;
 
-	P_TCP.send(ts_TCP(f := TH_SYN, sn := post_inc(msn)));
+	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
 	st(TCP_SYN_SENT, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
 
 	alt {
 	[s == TCP_SYN_SENT] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK,
-											 an := msn)) -> value tcp {
+											 th_ack := seq)) -> value tcp {
 		T.stop;
-		psn := tcp.th_seq;
+		ack := tcp.th_seq;
 		st(TCP_SYN_RECEIVED);
-		P_TCP.send(ts_TCP(f := TH_ACK, sn := msn, an := pre_inc(psn)));
+		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
 		st(TCP_ESTABLISHED, fail_on := EV_NONE);
 		T.start; repeat;
 	}
@@ -136,17 +137,17 @@ testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 		var tcp_t tcp2 := valueof(ts_TCP);
 		if (th_is_set(tcp, TH_PSH)) {
 			th_set(tcp2, TH_ACK);
-			pre_inc(psn, lengthof(tcp.data));
+			pre_inc(ack, lengthof(tcp.data));
 		}
 		if (th_is_set(tcp, TH_ACK)) {
-			if (tcp.th_ack > msn - lengthof(data_unack)) {
-				var integer diff := tcp.th_ack - (msn - lengthof(data_unack));
+			if (tcp.th_ack > seq - lengthof(data_unack)) {
+				var integer diff := tcp.th_ack - (seq - lengthof(data_unack));
 				data_pop(data_unack, diff);
 			}
 		}
 		if (tcp2.th_flags != TH_NONE) {
-			tcp2.th_seq := msn;
-			tcp2.th_ack := psn;
+			tcp2.th_seq := seq;
+			tcp2.th_ack := ack;
 			P_TCP.send(tcp2);
 		}
 		T.start; repeat;
@@ -156,14 +157,14 @@ testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 		if (lengthof(data_to_send) > 0) {
 			data_unack := data_pop(data_to_send, data_step);
 			P_TCP.send(ts_TCP(f := TH_PSH,
-							  sn := post_inc(msn, lengthof(data_unack)),
-							  an := psn, d := data_unack));
+							  th_seq := post_inc(seq, lengthof(data_unack)),
+							  th_ack := ack, d := data_unack));
 			goto wait_for_data;
 		}
 		/* Everything is sent and aknowledged, do active close */
 		st(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
-		P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK, sn := post_inc(msn),
-						  an := psn));
+		P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK, th_seq := post_inc(seq),
+						  th_ack := ack));
 label wait_for_data;
 		T.start; repeat;
 	}
@@ -174,7 +175,7 @@ label wait_for_data;
 	}
 	[s == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK)) {
 		T.stop;
-		P_TCP.send(ts_TCP(f := TH_ACK, sn := msn, an := pre_inc(psn)));
+		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
 		st(TCP_TIME_WAIT, fail_on := EV_NONE);
 		T.start; repeat; /* T * 2 */
 	}
