@@ -34,12 +34,20 @@ modulepar {
 	float T_default := 0.1;
 }
 
+type bitstring event_t length(3);
+
+const event_t EV_NONE			:='000'B;
+const event_t EV_KEEP			:='111'B;
+const event_t EV_TIMEOUT		:='001'B;
+const event_t EV_UNEXPECTED_MSG :='010'B;
+
 type component tcp_ct extends test_CT {
 	var tcp_t tcp;
 	var tcp_state_t s := TCP_NONE;
 	var integer msn := 0; /* my sequence number */
 	var integer psn := 0; /* peer sequence number */
 	timer T := T_default;
+	var event_t events := EV_NONE;
 	var default d_as_timeout;
 	var default d_as_unexpected_msg;
 }
@@ -54,23 +62,34 @@ altstep as_unexpected_msg() runs on tcp_ct
 	[] P_TCP.receive(?) { setverdict(fail); stop; }
 }
 
-/* error on timeout and unexpected messages */
-function catch_on() runs on tcp_ct
+function fail_on_event(event_t event) runs on tcp_ct
 {
-	d_as_timeout := activate(as_timeout());
-	d_as_unexpected_msg := activate(as_unexpected_msg());
+	if (event == EV_KEEP) {
+		return;
+	}
+
+	if ((event and4b EV_TIMEOUT) == EV_TIMEOUT) {
+		d_as_timeout := activate(as_timeout());
+		events := events or4b EV_TIMEOUT;
+	} else {
+		deactivate(d_as_timeout);
+		events := events and4b (not4b EV_TIMEOUT);
+	}
+
+	if ((event and4b EV_UNEXPECTED_MSG) == EV_UNEXPECTED_MSG) {
+		d_as_unexpected_msg := activate(as_unexpected_msg());
+		events := events or4b EV_UNEXPECTED_MSG;
+	} else {
+		deactivate(d_as_unexpected_msg);
+		events := events and4b (not4b EV_UNEXPECTED_MSG);
+	}
 }
 
-function catch_off() runs on tcp_ct
+function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 {
-	deactivate(d_as_timeout);
-	deactivate(d_as_unexpected_msg);
-}
-
-function st(tcp_state_t new) runs on tcp_ct
-{
-	log(s, " -> ", new);
+	log(f_tcp_state_to_string(s), " -> ", f_tcp_state_to_string(new));
 	s := new;
+	fail_on_event(fail_on);
 }
 
 type record tcp_json {
@@ -99,8 +118,7 @@ testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 	var integer data_step := 1;
 
 	P_TCP.send(ts_TCP(f := TH_SYN, sn := post_inc(msn)));
-	st(TCP_SYN_SENT);
-	catch_on();
+	st(TCP_SYN_SENT, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
 
 	alt {
@@ -110,8 +128,8 @@ testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 		psn := tcp.th_seq;
 		st(TCP_SYN_RECEIVED);
 		P_TCP.send(ts_TCP(f := TH_ACK, sn := msn, an := pre_inc(psn)));
-		st(TCP_ESTABLISHED);
-		catch_off(); T.start; repeat;
+		st(TCP_ESTABLISHED, fail_on := EV_NONE);
+		T.start; repeat;
 	}
 	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP) -> value tcp {
 		T.stop;
@@ -143,10 +161,9 @@ testcase tc_tcp_conn(octetstring d := ''O) runs on tcp_ct
 			goto wait_for_data;
 		}
 		/* Everything is sent and aknowledged, do active close */
-		st(TCP_FIN_WAIT1);
+		st(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 		P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK, sn := post_inc(msn),
 						  an := psn));
-		catch_on();
 label wait_for_data;
 		T.start; repeat;
 	}
@@ -158,8 +175,7 @@ label wait_for_data;
 	[s == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK)) {
 		T.stop;
 		P_TCP.send(ts_TCP(f := TH_ACK, sn := msn, an := pre_inc(psn)));
-		st(TCP_TIME_WAIT);
-		catch_off();
+		st(TCP_TIME_WAIT, fail_on := EV_NONE);
 		T.start; repeat; /* T * 2 */
 	}
 	[s == TCP_TIME_WAIT] T.timeout {
