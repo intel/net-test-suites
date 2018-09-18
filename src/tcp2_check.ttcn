@@ -44,8 +44,8 @@ const event_t EV_UNEXPECTED_MSG :='010'B;
 type component tcp_ct extends test_CT {
 	var tcp_t tcp;
 	var tcp_state_t s := TCP_NONE;
-	var integer msn := 0; /* my sequence number */
-	var integer psn := 0; /* peer sequence number */
+	var uint32_t msn := 0; /* my sequence number */
+	var uint32_t psn := 0; /* peer sequence number */
 	timer T := T_default;
 	var event_t events := EV_NONE;
 	var default d_as_timeout;
