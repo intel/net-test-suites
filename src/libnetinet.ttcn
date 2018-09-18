@@ -194,7 +194,12 @@ type enumerated tcp_state_t {
 	TCP_LAST_ACK,
 	TCP_TIME_WAIT,
 	TCP_CLOSED
+} with {
+	encode "TEXT";
 }
+
+external function f_tcp_state_to_string(in tcp_state_t x) return charstring
+	with { extension "prototype(convert) encode(TEXT)"; }
 
 function th_is_set(tcp_t tcp, th_flags_t f) return boolean
 {
