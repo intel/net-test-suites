@@ -98,12 +98,14 @@ function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 type record tcp_json {
 	charstring state,
 	integer seq,
-	integer ack
+	integer ack,
+	charstring data
 } with {
 	encode "JSON";
 	variant(state)	"JSON: name as state";
 	variant(seq)	"JSON: name as seq";
 	variant(ack)	"JSON: name as ack";
+	variant(data)	"JSON: name as data";
 }
 
 external function f_json_enc(in tcp_json x) return octetstring
