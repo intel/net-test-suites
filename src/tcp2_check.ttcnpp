@@ -41,6 +41,15 @@ const event_t EV_KEEP			:='111'B;
 const event_t EV_TIMEOUT		:='001'B;
 const event_t EV_UNEXPECTED_MSG :='010'B;
 
+
+/* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */
+/* Also used for transparent debug */
+type component fuzzer_ct {
+	port port_tcp P_TCP_IN; /* from/to suite */
+	port port_tcp P_TCP_OUT; /* from/to system under test */
+	port port_cf P_CF; /* configuration port */
+}
+
 type component tcp_ct extends test_CT {
 	var tcp_t tcp;
 	var tcp_state_t s := TCP_NONE;
@@ -53,6 +62,27 @@ type component tcp_ct extends test_CT {
 	var event_t events := EV_NONE;
 	var default d_as_timeout;
 	var default d_as_unexpected_msg;
+	var fuzzer_ct ct_fuzzer;
+}
+
+function fuzzer() runs on fuzzer_ct
+{
+	var charstring cmd;
+	var tcp_t tcp;
+
+	while (true) {
+		alt {
+		[] P_CF.receive(?) -> value cmd { log("got command: ", cmd); }
+		[] P_TCP_IN.receive(?) -> value tcp {
+			log("sut <- suite");
+			P_TCP_OUT.send(tcp);
+		}
+		[] P_TCP_OUT.receive(?) -> value tcp {
+			log("sut -> suite");
+			P_TCP_IN.send(tcp);
+		}
+		}
+	}
 }
 
 altstep as_timeout() runs on tcp_ct
@@ -147,6 +177,15 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 testcase tc_tcp_conn(octetstring data_to_send := ''O) runs on tcp_ct
 {
 	test_ct_init();
+
+	ct_fuzzer := fuzzer_ct.create;
+
+	disconnect(self:P_TCP, eth_ct:P_TCP);
+
+	connect(self:P_TCP, ct_fuzzer:P_TCP_IN);
+	connect(ct_fuzzer:P_TCP_OUT, eth_ct:P_TCP);
+
+	ct_fuzzer.start(fuzzer());
 
 	data_push(data, data_to_send);
 
