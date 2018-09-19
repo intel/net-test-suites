@@ -144,6 +144,10 @@ type enumerated jtcp_msg_type_t {
 	encode "TEXT";
 }
 
+external function jtcp_msg_type_to_string(in jtcp_msg_type_t x)
+		return charstring
+	with { extension "prototype(convert) encode(TEXT)"; }
+
 type record tcp_json {
 	charstring msg_type,
 	charstring status,
@@ -169,10 +173,12 @@ external function f_json_dec(in octetstring x) return tcp_json
 
 function peer_assert(tcp_state_t state) runs on tcp_ct
 {
-	P_UDP.send(ts_UDP);
-	T.start;
-
+	/* TODO: check how to omit */
+	var tcp_json req := { msg_type := "JTCP_TCP_INTROSPECT_REQUEST", status := "", state := "", seq := 0, ack := 0, data := "" };
 	var udp_t udp;
+
+	P_UDP.send(ts_UDP(d := f_json_enc(req)));
+	T.start;
 
 	alt {
 		[] P_UDP.receive(?) -> value udp {
