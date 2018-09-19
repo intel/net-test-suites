@@ -125,13 +125,36 @@ function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 	fail_on_event(fail_on);
 }
 
+type enumerated jtcp_msg_type_t {
+	JTCP_TCP_INTROSPECT_REQUEST,
+	JTCP_TCP_INTROSPECT_RESPONSE,
+	JTCP_MEMORY_INTROSPECT_REQUEST,
+	JTCP_MEMORY_INTROSPECT_RESPONSE,
+	JTCP_PACKETS_INTROSPECT_REQUEST,
+	JTCP_PACKETS_INTROSPECT_RESPONSE,
+	JTCP_DEBUG_STOP,
+	JTCP_DEBUG_STEP,
+	JTCP_DEBUG_CONTINUE,
+	JTCP_DEBUG_RESPONSE,
+	JTCP_DEBUG_BREAKPOINT_ADD,
+	JTCP_DEBUG_BREAKPOINT_DELETE,
+	JTCP_TRACE_ADD,
+	JTCP_TRACE_DELETE
+} with {
+	encode "TEXT";
+}
+
 type record tcp_json {
+	charstring msg_type,
+	charstring status,
 	charstring state,
 	integer seq,
 	integer ack,
 	charstring data
 } with {
 	encode "JSON";
+	variant(msg_type)	"JSON: name as msg_type";
+	variant(status)	"JSON: name as status";
 	variant(state)	"JSON: name as state";
 	variant(seq)	"JSON: name as seq";
 	variant(ack)	"JSON: name as ack";
