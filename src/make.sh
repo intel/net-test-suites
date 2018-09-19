@@ -5,8 +5,10 @@ touch cversion.h
 
 ttcn3_makefilegen -e test_suite \
 		  -w \
+		  -p \
 		  *.cc \
-		  *.ttcn
+		  *.ttcn \
+		  *.ttcnpp
 
 sed -i 's#^CPPFLAGS =.*#CPPFLAGS += -D$(PLATFORM) -I. -I$(TTCN3_DIR)/include -I$(TTCN3_DIR)/include/titan#' Makefile
 
