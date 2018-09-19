@@ -328,6 +328,9 @@ testcase tc_tcp_debug() runs on tcp_ct
 
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
 
+	T.start;
+	T.timeout;
+
 	jtcp_cmd(JTCP_DEBUG_STEP);
 }
 
