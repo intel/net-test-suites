@@ -301,6 +301,36 @@ label wait_for_data;
 	}
 }
 
+function jtcp_cmd(jtcp_msg_type_t msg_type) runs on tcp_ct
+{
+	var charstring cmd := jtcp_msg_type_to_string(msg_type);
+	/* TODO: Template here? */
+ 	var tcp_json req := { msg_type := cmd, status := "",
+						  state := "", seq := 0, ack := 0, data := "" };
+	var udp_t udp;
+
+	P_UDP.send(ts_UDP(d := f_json_enc(req)));
+
+	/* alt { */
+	/* 	[] P_UDP.receive(?) -> value udp { } */
+	/* 	[] T.timeout { setverdict(fail); } */
+	/* } */
+}
+
+/**
+ * Test TCP debug
+ */
+testcase tc_tcp_debug() runs on tcp_ct
+{
+ 	test_ct_init();
+
+	jtcp_cmd(JTCP_DEBUG_STOP);
+
+	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
+
+	jtcp_cmd(JTCP_DEBUG_STEP);
+}
+
 control {
 	execute(tc_tcp_conn(data_to_send := '01'O));
 }
