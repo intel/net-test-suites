@@ -46,9 +46,9 @@ const event_t EV_UNEXPECTED_MSG :='010'B;
 /* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */
 /* Also used for transparent debug */
 type component fuzzer_ct {
-	port port_tcp P_TCP_IN; /* from/to suite */
-	port port_tcp P_TCP_OUT; /* from/to system under test */
-	port port_cf P_CF; /* configuration port */
+	port port_tcp P_TCP_IN;		/* from/to suite */
+	port port_tcp P_TCP_OUT;	/* from/to system under test */
+	port port_cf P_CF;			/* configuration port */
 }
 
 type component tcp_ct extends test_CT {
@@ -186,9 +186,7 @@ external function f_json_dec(in octetstring x) return tcp_json
 
 function peer_assert(tcp_state_t state) runs on tcp_ct
 {
-	if (not peer_assert_enabled) {
-		return;
-	}
+	if (not peer_assert_enabled) { return; }
 
 	/* TODO: check how to omit */
 	var tcp_json req := { msg_type := "JTCP_TCP_INTROSPECT_REQUEST", status := "", state := "", seq := 0, ack := 0, data := "" };
@@ -232,13 +230,11 @@ function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
  * Test active TCP connection establishment,
  * data transfer (data echoing expected) and active close
  */
-testcase tc_tcp_conn(octetstring data_to_send := ''O) runs on tcp_ct
+testcase test_tcp_connect(octetstring data_to_send := ''O) runs on tcp_ct
 {
 	test_ct_init();
 
-	if (fuzzer_enabled) {
-		fuzzer_on();
-	}
+	if (fuzzer_enabled) { fuzzer_on(); }
 
 	data_push(data, data_to_send);
 
@@ -325,6 +321,16 @@ label wait_for_data;
 	}
 }
 
+/**
+ * Test passive TCP connection establishment
+ */
+testcase test_tcp_listen(octetstring data_to_send := ''O) runs on tcp_ct
+{
+	test_ct_init();
+
+	data_push(data, data_to_send);
+}
+
 function jtcp_cmd(jtcp_msg_type_t msg_type) runs on tcp_ct
 {
 	var charstring cmd := jtcp_msg_type_to_string(msg_type);
@@ -359,7 +365,7 @@ testcase tc_tcp_debug() runs on tcp_ct
 }
 
 control {
-	execute(tc_tcp_conn(data_to_send := '01'O));
+	execute(test_tcp_connect(data_to_send := '01'O));
 }
 
 } /* end of module */
