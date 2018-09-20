@@ -32,6 +32,7 @@ import from port_data_types all;
 
 modulepar {
 	float T_default := 0.1;
+	boolean fuzzer_enabled := false;
 }
 
 type bitstring event_t length(3);
@@ -229,14 +230,8 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 	}
 }
 
-/**
- * Test active TCP connection establishment,
- * data transfer (data echoing expected) and active close
- */
-testcase tc_tcp_conn(octetstring data_to_send := ''O) runs on tcp_ct
+function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
 {
-	test_ct_init();
-
 	ct_fuzzer := fuzzer_ct.create;
 
 	disconnect(self:P_TCP, eth_ct:P_TCP);
@@ -245,6 +240,19 @@ testcase tc_tcp_conn(octetstring data_to_send := ''O) runs on tcp_ct
 	connect(ct_fuzzer:P_TCP_OUT, eth_ct:P_TCP);
 
 	ct_fuzzer.start(fuzzer());
+}
+
+/**
+ * Test active TCP connection establishment,
+ * data transfer (data echoing expected) and active close
+ */
+testcase tc_tcp_conn(octetstring data_to_send := ''O) runs on tcp_ct
+{
+	test_ct_init();
+
+	if (fuzzer_enabled) {
+		fuzzer_on();
+	}
 
 	data_push(data, data_to_send);
 
