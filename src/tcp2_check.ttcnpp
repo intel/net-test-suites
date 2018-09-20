@@ -41,7 +41,6 @@ const event_t EV_KEEP			:='111'B;
 const event_t EV_TIMEOUT		:='001'B;
 const event_t EV_UNEXPECTED_MSG :='010'B;
 
-
 /* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */
 /* Also used for transparent debug */
 type component fuzzer_ct {
@@ -95,26 +94,57 @@ altstep as_unexpected_msg() runs on tcp_ct
 	[] P_TCP.receive(?) { log("as_unexpected_msg()"); setverdict(fail); stop; }
 }
 
+function mask_is_present(bitstring val, bitstring mask) return boolean
+{
+	if ((val and4b mask) == mask) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+function mask_set(inout bitstring val, bitstring mask)
+{
+	val := val or4b mask;
+}
+
+function mask_clear(inout bitstring val, bitstring mask)
+{
+	val := val and4b (not4b mask);
+}
+
+#define EVENT_IS(_event, _kind) mask_is_present(_event, _kind)
+#define EVENT_IS_SET(_event, _kind) mask_is_present(_event, _kind)
+#define EVENT_SET(_event, _kind) mask_set(_event, _kind)
+#define EVENT_CLEAR(_event, _kind) mask_clear(_event, _kind)
+
 function fail_on_event(event_t event) runs on tcp_ct
 {
 	if (event == EV_KEEP) {
 		return;
 	}
 
-	if ((event and4b EV_TIMEOUT) == EV_TIMEOUT) {
+	if (EVENT_IS(event, EV_TIMEOUT) and not EVENT_IS_SET(events, EV_TIMEOUT)) {
 		d_as_timeout := activate(as_timeout());
-		events := events or4b EV_TIMEOUT;
-	} else {
-		deactivate(d_as_timeout);
-		events := events and4b (not4b EV_TIMEOUT);
+		EVENT_SET(events, EV_TIMEOUT);
 	}
 
-	if ((event and4b EV_UNEXPECTED_MSG) == EV_UNEXPECTED_MSG) {
+	if (not EVENT_IS_SET(event, EV_TIMEOUT) and
+			EVENT_IS_SET(events, EV_TIMEOUT)) {
+		deactivate(d_as_timeout);
+		EVENT_CLEAR(events, EV_TIMEOUT);
+	}
+
+	if (EVENT_IS(event, EV_UNEXPECTED_MSG) and not
+			EVENT_IS_SET(events, EV_UNEXPECTED_MSG)) {
 		d_as_unexpected_msg := activate(as_unexpected_msg());
-		events := events or4b EV_UNEXPECTED_MSG;
-	} else {
+		EVENT_SET(events, EV_UNEXPECTED_MSG);
+	}
+
+	if (not EVENT_IS_SET(event, EV_UNEXPECTED_MSG) and
+			EVENT_IS_SET(events, EV_UNEXPECTED_MSG)) {
 		deactivate(d_as_unexpected_msg);
-		events := events and4b (not4b EV_UNEXPECTED_MSG);
+		EVENT_CLEAR(events, EV_UNEXPECTED_MSG);
 	}
 }
 
