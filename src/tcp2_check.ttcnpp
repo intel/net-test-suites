@@ -118,7 +118,7 @@ function mask_clear(inout bitstring val, bitstring mask)
 #define EVENT_SET(_event, _kind) mask_set(_event, _kind)
 #define EVENT_CLEAR(_event, _kind) mask_clear(_event, _kind)
 
-function fail_on_event(event_t event) runs on tcp_ct
+function fail_on_events(event_t event) runs on tcp_ct
 {
 	if (event == EV_KEEP) {
 		return;
@@ -152,7 +152,7 @@ function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 {
 	log(tcp_state_to_string(s), " -> ", tcp_state_to_string(new));
 	s := new;
-	fail_on_event(fail_on);
+	fail_on_events(fail_on);
 }
 
 type enumerated jtcp_msg_type_t {
