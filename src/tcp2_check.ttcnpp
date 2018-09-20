@@ -96,25 +96,6 @@ altstep as_unexpected_msg() runs on tcp_ct
 	[] P_TCP.receive(?) { log("as_unexpected_msg()"); setverdict(fail); stop; }
 }
 
-function mask_is_present(bitstring val, bitstring mask) return boolean
-{
-	if ((val and4b mask) == mask) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-function mask_set(inout bitstring val, bitstring mask)
-{
-	val := val or4b mask;
-}
-
-function mask_clear(inout bitstring val, bitstring mask)
-{
-	val := val and4b (not4b mask);
-}
-
 #define EVENT_IS(_event, _kind) mask_is_present(_event, _kind)
 #define EVENT_IS_SET(_event, _kind) mask_is_present(_event, _kind)
 #define EVENT_SET(_event, _kind) mask_set(_event, _kind)

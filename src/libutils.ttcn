@@ -26,6 +26,25 @@ external function fx_inet6_pton(charstring addr) return octetstring;
 
 external function fx_inet6_chksum(octetstring data) return integer;
 
+function mask_is_present(bitstring val, bitstring mask) return boolean
+{
+	if ((val and4b mask) == mask) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+function mask_set(inout bitstring val, bitstring mask)
+{
+	val := val or4b mask;
+}
+
+function mask_clear(inout bitstring val, bitstring mask)
+{
+	val := val and4b (not4b mask);
+}
+
 function pre_inc(inout integer i, integer step := 1) return integer
 {
 	i := i + step;
