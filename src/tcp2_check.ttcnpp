@@ -33,6 +33,7 @@ import from port_data_types all;
 modulepar {
 	float T_default := 0.1;
 	boolean fuzzer_enabled := false;
+	boolean peer_assert_enabled := true;
 }
 
 type bitstring event_t length(3);
@@ -204,6 +205,10 @@ external function f_json_dec(in octetstring x) return tcp_json
 
 function peer_assert(tcp_state_t state) runs on tcp_ct
 {
+	if (not peer_assert_enabled) {
+		return;
+	}
+
 	/* TODO: check how to omit */
 	var tcp_json req := { msg_type := "JTCP_TCP_INTROSPECT_REQUEST", status := "", state := "", seq := 0, ack := 0, data := "" };
 	var udp_t udp;
