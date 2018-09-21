@@ -139,6 +139,7 @@ function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 }
 
 type enumerated jtcp_msg_type_t {
+	JTCP_COMMAND,
 	JTCP_TCP_INTROSPECT_REQUEST,
 	JTCP_TCP_INTROSPECT_RESPONSE,
 	JTCP_MEMORY_INTROSPECT_REQUEST,
@@ -321,22 +322,14 @@ label wait_for_data;
 	}
 }
 
-/**
- * Test passive TCP connection establishment
- */
-testcase test_tcp_listen(octetstring data_to_send := ''O) runs on tcp_ct
-{
-	test_ct_init();
 
-	data_push(data, data_to_send);
-}
-
-function jtcp_cmd(jtcp_msg_type_t msg_type) runs on tcp_ct
+function jtcp_cmd(jtcp_msg_type_t msg_type, charstring d := "")
+	runs on tcp_ct
 {
 	var charstring cmd := jtcp_msg_type_to_string(msg_type);
 	/* TODO: Template here? */
  	var tcp_json req := { msg_type := cmd, status := "",
-						  state := "", seq := 0, ack := 0, data := "" };
+						  state := "", seq := 0, ack := 0, data := d };
 	var udp_t udp;
 
 	P_UDP.send(ts_UDP(d := f_json_enc(req)));
@@ -345,6 +338,26 @@ function jtcp_cmd(jtcp_msg_type_t msg_type) runs on tcp_ct
 	/* 	[] P_UDP.receive(?) -> value udp { } */
 	/* 	[] T.timeout { setverdict(fail); } */
 	/* } */
+}
+
+/**
+ * Test passive TCP connection establishment
+ */
+testcase test_tcp_listen() runs on tcp_ct
+{
+	test_ct_init();
+
+	jtcp_cmd(JTCP_COMMAND, "CONNECT");
+
+	T.start;
+
+	alt {
+	[] P_TCP.receive(tr_TCP(f := TH_SYN)) -> value tcp {
+		T.stop;
+		setverdict(pass);
+	}
+	[] T.timeout { setverdict(fail); }
+	}
 }
 
 /**
