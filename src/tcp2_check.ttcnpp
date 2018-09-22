@@ -169,7 +169,8 @@ type record tcp_json {
 	charstring state,
 	integer seq,
 	integer ack,
-	charstring data
+	charstring data,
+	charstring op
 } with {
 	encode "JSON";
 	variant(msg_type)	"JSON: name as msg_type";
@@ -178,6 +179,7 @@ type record tcp_json {
 	variant(seq)	"JSON: name as seq";
 	variant(ack)	"JSON: name as ack";
 	variant(data)	"JSON: name as data";
+	variant(op)	"JSON: name as op";
 }
 
 external function f_json_enc(in tcp_json x) return octetstring
@@ -191,7 +193,7 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 	if (not peer_assert_enabled) { return; }
 
 	/* TODO: check how to omit */
-	var tcp_json req := { msg_type := "JTCP_TCP_INTROSPECT_REQUEST", status := "", state := "", seq := 0, ack := 0, data := "" };
+	var tcp_json req := { msg_type := "JTCP_TCP_INTROSPECT_REQUEST", status := "", state := "", seq := 0, ack := 0, data := "", op := "" };
 	var udp_t udp;
 
 	P_UDP.send(ts_UDP(d := f_json_enc(req)));
@@ -326,13 +328,14 @@ label wait_for_data;
 }
 
 
-function jtcp_cmd(jtcp_msg_type_t msg_type, charstring d := "")
-	runs on tcp_ct
+function jtcp_cmd(jtcp_msg_type_t msg_type, charstring o := "",
+				  charstring d := "") runs on tcp_ct
 {
 	var charstring cmd := jtcp_msg_type_to_string(msg_type);
 	/* TODO: Template here? */
  	var tcp_json req := { msg_type := cmd, status := "",
-						  state := "", seq := 0, ack := 0, data := d };
+						  state := "", seq := 0, ack := 0,
+						  data := d, op := o };
 	var udp_t udp;
 
 	P_UDP.send(ts_UDP(d := f_json_enc(req)));
