@@ -34,6 +34,7 @@ modulepar {
 	float T_default := 0.1;
 	boolean fuzzer_enabled := false;
 	boolean peer_assert_enabled := true;
+	integer number_of_runs := 1;
 }
 
 type bitstring event_t length(3);
@@ -401,8 +402,14 @@ testcase tc_tcp_debug() runs on tcp_ct
 }
 
 control {
-	execute(test_tcp_connect(data_to_send := '01'O));
-	execute(test_tcp_listen());
+
+	var integer i := number_of_runs;
+
+	while (i > 0) {
+		execute(test_tcp_connect(data_to_send := '01'O));
+		execute(test_tcp_listen());
+		i := i - 1;
+	}
 }
 
 } /* end of module */
