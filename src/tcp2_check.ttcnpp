@@ -320,6 +320,8 @@ label wait_for_data;
 			lengthof(data_unack) == 0) {
 		setverdict(pass);
 	}
+
+	jtcp_cmd(JTCP_COMMAND, "CLOSE");
 }
 
 
@@ -377,6 +379,8 @@ testcase test_tcp_listen() runs on tcp_ct
 	[s == TCP_ESTABLISHED] T.timeout {
 		setverdict(pass); }
 	}
+
+	jtcp_cmd(JTCP_COMMAND, "CLOSE");
 }
 
 /**
@@ -398,6 +402,7 @@ testcase tc_tcp_debug() runs on tcp_ct
 
 control {
 	execute(test_tcp_connect(data_to_send := '01'O));
+	execute(test_tcp_listen());
 }
 
 } /* end of module */
