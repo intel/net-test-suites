@@ -228,11 +228,29 @@ function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
 	ct_fuzzer.start(fuzzer());
 }
 
+function jtcp_cmd(jtcp_msg_type_t msg_type, charstring o := "",
+				  charstring d := "") runs on tcp_ct
+{
+	var charstring cmd := jtcp_msg_type_to_string(msg_type);
+	/* TODO: Template here? */
+ 	var tcp_json req := { msg_type := cmd, status := "",
+						  state := "", seq := 0, ack := 0,
+						  data := d, op := o };
+	var udp_t udp;
+
+	P_UDP.send(ts_UDP(d := f_json_enc(req)));
+
+	/* alt { */
+	/* 	[] P_UDP.receive(?) -> value udp { } */
+	/* 	[] T.timeout { setverdict(fail); } */
+	/* } */
+}
+
 /**
- * Test active TCP connection establishment,
+ * Active TCP connection establishment,
  * data transfer (data echoing expected) and active close
  */
-testcase test_tcp_connect(octetstring data_to_send := ''O) runs on tcp_ct
+function test_tcp_connect(octetstring data_to_send := ''O) runs on tcp_ct
 {
 	test_ct_init();
 
@@ -325,32 +343,15 @@ label wait_for_data;
 	jtcp_cmd(JTCP_COMMAND, "CLOSE");
 }
 
-function jtcp_cmd(jtcp_msg_type_t msg_type, charstring o := "",
-				  charstring d := "") runs on tcp_ct
-{
-	var charstring cmd := jtcp_msg_type_to_string(msg_type);
-	/* TODO: Template here? */
- 	var tcp_json req := { msg_type := cmd, status := "",
-						  state := "", seq := 0, ack := 0,
-						  data := d, op := o };
-	var udp_t udp;
-
-	P_UDP.send(ts_UDP(d := f_json_enc(req)));
-
-	/* alt { */
-	/* 	[] P_UDP.receive(?) -> value udp { } */
-	/* 	[] T.timeout { setverdict(fail); } */
-	/* } */
-}
-
 /**
- * Test passive TCP connection establishment
+ * Passive TCP connection establishment,
+ * data transfer and active close
  */
-testcase test_tcp_listen(octetstring data_to_send := '01'O) runs on tcp_ct
+function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
 {
 	test_ct_init();
 
-	jtcp_cmd(JTCP_COMMAND, "CONNECT", d := oct2str(data_to_send));
+	jtcp_cmd(JTCP_COMMAND, "CONNECT", d := oct2str(data_to_receive));
 
 	st(TCP_LISTEN, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
@@ -385,7 +386,7 @@ testcase test_tcp_listen(octetstring data_to_send := '01'O) runs on tcp_ct
 	}
 	[s == TCP_ESTABLISHED] T.timeout {
 		peer_assert(TCP_ESTABLISHED);
-		if (data == data_to_send) {
+		if (data == data_to_receive) {
 			/* Everything is received, do active close */
 			P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK, th_seq := post_inc(seq),
 							  th_ack := ack));
@@ -417,6 +418,24 @@ testcase test_tcp_listen(octetstring data_to_send := '01'O) runs on tcp_ct
 }
 
 /**
+ * Test active TCP connection establishment,
+ * data transfer (data echoing expected) and active close
+ */
+testcase test_tcp_connect_data_close() runs on tcp_ct
+{
+	test_tcp_connect(data_to_send := '01'O);
+}
+
+/**
+ * Test passive TCP connection establishment,
+ * data transfer and active close
+ */
+testcase test_tcp_listen_data_close() runs on tcp_ct
+{
+	test_tcp_listen(data_to_receive := '01'O);
+}
+
+/**
  * Test TCP debug
  */
 testcase tc_tcp_debug() runs on tcp_ct
@@ -438,8 +457,8 @@ control {
 	var integer i := number_of_runs;
 
 	while (i > 0) {
-		execute(test_tcp_connect(data_to_send := '01'O));
-		execute(test_tcp_listen(data_to_send := '01'O));
+		execute(test_tcp_connect_data_close());
+		execute(test_tcp_listen_data_close());
 		i := i - 1;
 	}
 }
