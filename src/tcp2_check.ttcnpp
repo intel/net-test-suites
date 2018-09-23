@@ -389,22 +389,23 @@ testcase test_tcp_listen(octetstring data_to_send := '01'O) runs on tcp_ct
 		peer_assert(TCP_ESTABLISHED);
 		if (data == data_to_send) {
 			/* Everything is received, do active close */
-			P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK, th_seq := seq,
+			P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK, th_seq := post_inc(seq),
 							  th_ack := ack));
 			st(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 		}
 		T.start; repeat;
 	}
-	[s == TCP_FIN_WAIT1] P_TCP.receive(tr_TCP(f := TH_ACK)) {//check seq nrs
+	[s == TCP_FIN_WAIT1] P_TCP.receive(tr_TCP(f := TH_ACK,
+											  th_seq := ack, th_ack := seq)) {
 		T.stop;
 		st(TCP_FIN_WAIT2);
 		T.start; repeat;
 	}
-	[s == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK)) {
+	[s == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK,
+											  th_seq := ack, th_ack := seq)) {
 		T.stop;
 		peer_assert(TCP_LAST_ACK);
-		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := pre_inc(seq),
-						  th_ack := pre_inc(ack)));
+		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
 		st(TCP_TIME_WAIT, fail_on := EV_NONE);
 		T.start; repeat; /* TODO: T * 2 */
 	}
