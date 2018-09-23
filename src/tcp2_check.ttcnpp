@@ -314,14 +314,16 @@ function test_tcp_connect(octetstring data_to_send := ''O) runs on tcp_ct
 label wait_for_data;
 		T.start; repeat;
 	}
-	[s == TCP_FIN_WAIT1] P_TCP.receive(tr_TCP(f := TH_ACK)) {
+	[s == TCP_FIN_WAIT1] P_TCP.receive(tr_TCP(f := TH_ACK,
+											  th_seq := ack, th_ack := seq)) {
 		T.stop;
 		/* TODO: peer_assert() here is tricky, since peer in active close
 		   sends ack and fin+ack immedeately */
 		st(TCP_FIN_WAIT2);
 		T.start; repeat;
 	}
-	[s == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK)) {
+	[s == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK,
+											  th_seq := ack, th_ack := seq)) {
 		T.stop;
 		peer_assert(TCP_LAST_ACK);
 		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
