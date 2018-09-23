@@ -456,11 +456,11 @@ control {
 
 	var integer i := number_of_runs;
 
-	while (i > 0) {
+	while (post_dec(i) > 0) {
 		execute(test_tcp_connect_data_close());
 		execute(test_tcp_listen_data_close());
-		i := i - 1;
 	}
-}
+
+} /* end of control */
 
 } /* end of module */
