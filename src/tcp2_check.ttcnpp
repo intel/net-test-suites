@@ -475,18 +475,39 @@ testcase test_tcp_listen_data_close() runs on tcp_ct
 /**
  * Test TCP debug
  */
-testcase tc_tcp_debug() runs on tcp_ct
+testcase test_tcp_debug() runs on tcp_ct
 {
  	test_ct_init();
+
+	TT.start;
 
 	jtcp_cmd(JTCP_DEBUG_STOP);
 
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
+	T.start;
+
+	alt {
+	[] P_TCP.receive(tr_TCP(?)) {
+		T.stop;
+		setverdict(fail);
+	}
+	[] T.timeout {
+		jtcp_cmd(JTCP_DEBUG_STEP);
+	}
+	} /* end of alt */
 
 	T.start;
-	T.timeout;
+	alt {
+	[] P_TCP.receive(tr_TCP(?)) {
+		T.stop;
+		setverdict(pass);
+	}
+	[] T.timeout {
+		setverdict(fail);
+	}
+	} /* end of alt */
 
-	jtcp_cmd(JTCP_DEBUG_STEP);
+	/* TODO: Release debug state, after that can be included into sanity */
 }
 
 control {
