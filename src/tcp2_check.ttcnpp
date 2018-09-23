@@ -446,6 +446,15 @@ testcase test_tcp_connect_data_close() runs on tcp_ct
 }
 
 /**
+ * Test active TCP connection establishment,
+ * "more data" data transfer (data echoing expected) and active close
+ */
+testcase test_tcp_connect_more_data_close() runs on tcp_ct
+{
+	test_tcp_connect(data_to_send := '010203'O);
+}
+
+/**
  * Test passive TCP connection establishment,
  * data transfer and active close
  */
