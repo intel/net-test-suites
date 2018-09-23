@@ -56,7 +56,7 @@ type component tcp_ct extends test_CT {
 	var uint32_t seq := 0;
 	var uint32_t ack := 0;
 	var octetstring data := ''O;
-	var octetstring data_unack := ''O; /* split to rcv/snd data */
+	var octetstring data_unack := ''O; /* TODO: split into rcv/snd data */
 	var integer data_step := 1;
 	timer T := T_default;
 	var event_t events := EV_NONE;
@@ -204,7 +204,7 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 			T.stop;
 			var tcp_json json := f_json_dec(udp.data);
 
-			log(json);
+			//log(json);
 
 			if (json.state != tcp_state_to_string(state)) {
 				log("ASSERT: ", json.state, " != ", tcp_state_to_string(state));
