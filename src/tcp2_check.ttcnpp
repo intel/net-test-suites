@@ -17,9 +17,7 @@
  * This is a sanity check for experimental TCP implementation for Zephyr RTOS:
  * https://github.com/ozhuraki/zephyr/blob/tcp2-dev/subsys/net/ip/tcp2.c
  *
- * It is also an exploratory playground for bringing improvements
- * to tcp_suite.ttcn (which aims to be abstract from the system under test).
- *
+ * It is also an exploratory playground for improvements to tcp_suite.ttcn
  */
 
 module tcp2_check {
@@ -316,7 +314,7 @@ label wait_for_data;
 		st(TCP_CLOSED);
 		peer_assert(TCP_CLOSED);
 	}
-	}
+	}  /* end of alt */
 
 	if (s == TCP_CLOSED and
 			lengthof(data_to_send) == 0 and
