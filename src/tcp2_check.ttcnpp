@@ -327,7 +327,6 @@ label wait_for_data;
 	jtcp_cmd(JTCP_COMMAND, "CLOSE");
 }
 
-
 function jtcp_cmd(jtcp_msg_type_t msg_type, charstring o := "",
 				  charstring d := "") runs on tcp_ct
 {
@@ -377,16 +376,43 @@ testcase test_tcp_listen(octetstring data_to_send := '01'O) runs on tcp_ct
 		st(TCP_ESTABLISHED, fail_on := EV_NONE);
 		T.start; repeat;
 	}
-	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := TH_PSH,
-												th_seq := ack)) -> value tcp {
+	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := TH_PSH, th_seq := ack,
+												d := ?)) -> value tcp {
 		T.stop;
-		if (tcp.data == data_to_send) {
-			setverdict(pass);
-		}
+		peer_assert(TCP_ESTABLISHED);
+		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq,
+						  th_ack := pre_inc(ack, lengthof(tcp.data))));
+		data_push(data, tcp.data);
+		T.start; repeat;
 	}
 	[s == TCP_ESTABLISHED] T.timeout {
-		setverdict(fail); }
+		peer_assert(TCP_ESTABLISHED);
+		if (data == data_to_send) {
+			/* Everything is received, do active close */
+			P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK, th_seq := seq,
+							  th_ack := ack));
+			st(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
+		}
+		T.start; repeat;
 	}
+	[s == TCP_FIN_WAIT1] P_TCP.receive(tr_TCP(f := TH_ACK)) {//check seq nrs
+		T.stop;
+		st(TCP_FIN_WAIT2);
+		T.start; repeat;
+	}
+	[s == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := TH_FIN or4b TH_ACK)) {
+		T.stop;
+		peer_assert(TCP_LAST_ACK);
+		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := pre_inc(seq),
+						  th_ack := pre_inc(ack)));
+		st(TCP_TIME_WAIT, fail_on := EV_NONE);
+		T.start; repeat; /* TODO: T * 2 */
+	}
+	[s == TCP_TIME_WAIT] T.timeout {
+		st(TCP_CLOSED);
+		peer_assert(TCP_CLOSED);
+	}
+	} /* end of alt */
 
 	jtcp_cmd(JTCP_COMMAND, "CLOSE");
 }
