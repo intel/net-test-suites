@@ -418,12 +418,29 @@ function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
 }
 
 /**
+ * Test active TCP connection establishment and active close
+ */
+testcase test_tcp_connect_no_data_close() runs on tcp_ct
+{
+	test_tcp_connect(data_to_send := ''O);
+}
+
+/**
  * Test active TCP connection establishment,
  * data transfer (data echoing expected) and active close
  */
 testcase test_tcp_connect_data_close() runs on tcp_ct
 {
 	test_tcp_connect(data_to_send := '01'O);
+}
+
+/**
+ * Test passive TCP connection establishment,
+ * data transfer and active close
+ */
+testcase test_tcp_listen_no_data_close() runs on tcp_ct
+{
+	test_tcp_listen(data_to_receive := '01'O);
 }
 
 /**
@@ -457,7 +474,9 @@ control {
 	var integer i := number_of_runs;
 
 	while (post_dec(i) > 0) {
+		execute(test_tcp_connect_no_data_close());
 		execute(test_tcp_connect_data_close());
+		execute(test_tcp_listen_no_data_close());
 		execute(test_tcp_listen_data_close());
 	}
 
