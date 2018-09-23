@@ -58,6 +58,13 @@ function post_inc(inout integer i, integer step := 1) return integer
 	return r;
 }
 
+function post_dec(inout integer i, integer step := 1) return integer
+{
+	var integer r := i;
+	i := i - step;
+	return r;
+}
+
 function data_pop(inout octetstring d_in, integer len := 1) return octetstring
 {
 	var octetstring d_out := substr(d_in, 0, len);
