@@ -63,6 +63,8 @@ type component tcp_ct extends test_CT {
 	var default d_as_timeout;
 	var default d_as_unexpected_msg;
 	var fuzzer_ct ct_fuzzer;
+	timer TT := 2.0; /* test case teardown, TODO: move into libtest
+						or integrate into fail_on_events() */
 }
 
 function fuzzer() runs on fuzzer_ct
@@ -258,6 +260,8 @@ function test_tcp_connect(octetstring data_to_send := ''O) runs on tcp_ct
 
 	data_push(data, data_to_send);
 
+	TT.start;
+
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
 	st(TCP_SYN_SENT, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
@@ -334,6 +338,8 @@ label wait_for_data;
 		st(TCP_CLOSED);
 		peer_assert(TCP_CLOSED);
 	}
+	[] TT.timeout { setverdict(fail); stop; }
+
 	}  /* end of alt */
 
 	if (s == TCP_CLOSED and
@@ -352,6 +358,8 @@ label wait_for_data;
 function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
 {
 	test_ct_init();
+
+	TT.start;
 
 	jtcp_cmd(JTCP_COMMAND, "CONNECT", d := oct2str(data_to_receive));
 
@@ -414,6 +422,7 @@ function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
 		st(TCP_CLOSED);
 		peer_assert(TCP_CLOSED);
 	}
+	[] TT.timeout { setverdict(fail); stop; }
 	} /* end of alt */
 
 	jtcp_cmd(JTCP_COMMAND, "CLOSE");
