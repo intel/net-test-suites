@@ -143,7 +143,8 @@ function fail_on_events(event_t event) runs on tcp_ct
 
 function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 {
-	log(tcp_state_to_string(s), " -> ", tcp_state_to_string(new));
+	/* TODO: Add debug levels */
+	//log(tcp_state_to_string(s), " -> ", tcp_state_to_string(new));
 	s := new;
 	fail_on_events(fail_on);
 }
