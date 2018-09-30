@@ -42,6 +42,15 @@ const event_t EV_KEEP			:='111'B;
 const event_t EV_TIMEOUT		:='001'B;
 const event_t EV_UNEXPECTED_MSG :='010'B;
 
+type bitstring log_mask_t length(3);
+
+#if 0
+const event_t EV_NONE			:='000'B;
+const event_t EV_KEEP			:='111'B;
+const event_t EV_TIMEOUT		:='001'B;
+const event_t EV_UNEXPECTED_MSG :='010'B;
+#endif
+
 /* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */
 /* Also used for transparent debug */
 type component fuzzer_ct {
@@ -141,10 +150,10 @@ function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 
 type enumerated jtcp_msg_type_t {
 	TP_COMMAND,
-	TP_TCP_INTROSPECT_REQUEST,
-	TP_TCP_INTROSPECT_RESPONSE,
-	TP_MEMORY_INTROSPECT_REQUEST,
-	TP_MEMORY_INTROSPECT_RESPONSE,
+	TP_INTROSPECT_TCP_REQUEST,
+	TP_INTROSPECT_TCP_REPLY,
+	TP_INTROSPECT_MEMORY_REQUEST,
+	TP_INTROSPECT_MEMORY_REPLY,
 	TP_PACKETS_INTROSPECT_REQUEST,
 	TP_PACKETS_INTROSPECT_RESPONSE,
 	TP_DEBUG_STOP,
@@ -193,7 +202,7 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 	if (not peer_assert_enabled) { return; }
 
 	/* TODO: check how to omit */
-	var tcp_json req := { msg_type := "TP_TCP_INTROSPECT_REQUEST", status := "", state := "", seq := 0, ack := 0, data := "", op := "" };
+	var tcp_json req := { msg_type := "TP_INTROSPECT_TCP_REQUEST", status := "", state := "", seq := 0, ack := 0, data := "", op := "" };
 	var udp_t udp;
 
 	P_UDP.send(ts_UDP(d := f_json_enc(req)));
