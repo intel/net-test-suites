@@ -140,21 +140,21 @@ function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 }
 
 type enumerated jtcp_msg_type_t {
-	JTCP_COMMAND,
-	JTCP_TCP_INTROSPECT_REQUEST,
-	JTCP_TCP_INTROSPECT_RESPONSE,
-	JTCP_MEMORY_INTROSPECT_REQUEST,
-	JTCP_MEMORY_INTROSPECT_RESPONSE,
-	JTCP_PACKETS_INTROSPECT_REQUEST,
-	JTCP_PACKETS_INTROSPECT_RESPONSE,
-	JTCP_DEBUG_STOP,
-	JTCP_DEBUG_STEP,
-	JTCP_DEBUG_CONTINUE,
-	JTCP_DEBUG_RESPONSE,
-	JTCP_DEBUG_BREAKPOINT_ADD,
-	JTCP_DEBUG_BREAKPOINT_DELETE,
-	JTCP_TRACE_ADD,
-	JTCP_TRACE_DELETE
+	TP_COMMAND,
+	TP_TCP_INTROSPECT_REQUEST,
+	TP_TCP_INTROSPECT_RESPONSE,
+	TP_MEMORY_INTROSPECT_REQUEST,
+	TP_MEMORY_INTROSPECT_RESPONSE,
+	TP_PACKETS_INTROSPECT_REQUEST,
+	TP_PACKETS_INTROSPECT_RESPONSE,
+	TP_DEBUG_STOP,
+	TP_DEBUG_STEP,
+	TP_DEBUG_CONTINUE,
+	TP_DEBUG_RESPONSE,
+	TP_DEBUG_BREAKPOINT_ADD,
+	TP_DEBUG_BREAKPOINT_DELETE,
+	TP_TRACE_ADD,
+	TP_TRACE_DELETE
 } with {
 	encode "TEXT";
 }
@@ -193,7 +193,7 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 	if (not peer_assert_enabled) { return; }
 
 	/* TODO: check how to omit */
-	var tcp_json req := { msg_type := "JTCP_TCP_INTROSPECT_REQUEST", status := "", state := "", seq := 0, ack := 0, data := "", op := "" };
+	var tcp_json req := { msg_type := "TP_TCP_INTROSPECT_REQUEST", status := "", state := "", seq := 0, ack := 0, data := "", op := "" };
 	var udp_t udp;
 
 	P_UDP.send(ts_UDP(d := f_json_enc(req)));
@@ -348,7 +348,7 @@ label wait_for_data;
 		setverdict(pass);
 	}
 
-	jtcp_cmd(JTCP_COMMAND, "CLOSE");
+	jtcp_cmd(TP_COMMAND, "CLOSE");
 }
 
 /**
@@ -361,7 +361,7 @@ function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
 
 	TT.start;
 
-	jtcp_cmd(JTCP_COMMAND, "CONNECT", d := oct2str(data_to_receive));
+	jtcp_cmd(TP_COMMAND, "CONNECT", d := oct2str(data_to_receive));
 
 	st(TCP_LISTEN, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
@@ -425,7 +425,7 @@ function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
 	[] TT.timeout { setverdict(fail); stop; }
 	} /* end of alt */
 
-	jtcp_cmd(JTCP_COMMAND, "CLOSE");
+	jtcp_cmd(TP_COMMAND, "CLOSE");
 }
 
 /**
@@ -481,7 +481,7 @@ testcase test_tcp_debug() runs on tcp_ct
 
 	TT.start;
 
-	jtcp_cmd(JTCP_DEBUG_STOP);
+	jtcp_cmd(TP_DEBUG_STOP);
 
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
 	T.start;
@@ -492,7 +492,7 @@ testcase test_tcp_debug() runs on tcp_ct
 		setverdict(fail);
 	}
 	[] T.timeout {
-		jtcp_cmd(JTCP_DEBUG_STEP);
+		jtcp_cmd(TP_DEBUG_STEP);
 	}
 	} /* end of alt */
 
