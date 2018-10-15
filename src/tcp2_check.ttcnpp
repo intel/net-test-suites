@@ -72,6 +72,7 @@ type component tcp_ct extends test_CT {
 	var default d_as_timeout;
 	var default d_as_unexpected_msg;
 	var fuzzer_ct ct_fuzzer;
+	port port_cf P_FZ;
 	timer TT := 2.0; /* test case teardown, TODO: move into libtest
 						or integrate into fail_on_events() */
 }
@@ -80,15 +81,24 @@ function fuzzer() runs on fuzzer_ct
 {
 	var charstring cmd;
 	var tcp_t tcp;
+	var boolean incoming_drop := false;
 
 	while (true) {
 		alt {
-		[] P_CF.receive(?) -> value cmd { log("got command: ", cmd); }
-		[] P_TCP_IN.receive(?) -> value tcp {
+		[] P_CF.receive("incoming_pass") {
+			incoming_drop := false;
+		}
+		[] P_CF.receive("incoming_drop") {
+			incoming_drop := true;
+		}
+		[] P_TCP_IN.receive(?) -> value tcp { /* data from suite */
 			log("sut <- suite");
 			P_TCP_OUT.send(tcp);
 		}
-		[] P_TCP_OUT.receive(?) -> value tcp {
+		[] P_TCP_OUT.receive(?) -> value tcp { /* data from peer */
+			if (incoming_drop) {
+				repeat;
+			}
 			log("sut -> suite");
 			P_TCP_IN.send(tcp);
 		}
@@ -236,6 +246,8 @@ function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
 
 	connect(self:P_TCP, ct_fuzzer:P_TCP_IN);
 	connect(ct_fuzzer:P_TCP_OUT, eth_ct:P_TCP);
+
+	connect(self:P_FZ, ct_fuzzer:P_CF);
 
 	ct_fuzzer.start(fuzzer());
 }
@@ -518,6 +530,36 @@ testcase test_tcp_debug() runs on tcp_ct
 	} /* end of alt */
 
 	/* TODO: Release debug state, after that can be included into sanity */
+}
+
+/**
+ * Test peer's retransmission
+ */
+testcase test_tcp_retransmit() runs on tcp_ct
+{
+	test_ct_init();
+
+	if (fuzzer_enabled) { fuzzer_on(); }
+
+	P_FZ.send("incoming_drop");
+
+	TT.start;
+
+	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
+	st(TCP_SYN_SENT);
+	T.start;
+
+	alt {
+	[] P_TCP.receive(tr_TCP(?)) {
+		T.stop;
+		setverdict(fail);
+	}
+	[] T.timeout {
+		setverdict(pass);
+	}
+	}
+
+	jtcp_cmd(TP_COMMAND, "CLOSE");
 }
 
 control {
