@@ -543,19 +543,22 @@ testcase test_tcp_retransmit() runs on tcp_ct
 
 	P_FZ.send("incoming_drop");
 
-	TT.start;
-
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
 	st(TCP_SYN_SENT);
-	T.start;
+	T.start(T_default * 3.0);
+	T.timeout;
+	P_FZ.send("incoming_pass");
+
+	TT.start;
+	T.start(T_default * 3.0);
 
 	alt {
-	[] P_TCP.receive(tr_TCP(?)) {
-		T.stop;
-		setverdict(fail);
+	[] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK,
+							th_ack := seq)) -> value tcp {
+		setverdict(pass);
 	}
 	[] T.timeout {
-		setverdict(pass);
+		setverdict(fail);
 	}
 	}
 
