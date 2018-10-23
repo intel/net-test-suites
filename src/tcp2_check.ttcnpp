@@ -106,6 +106,11 @@ function fuzzer() runs on fuzzer_ct
 	}
 }
 
+function tcp_dump() runs on tcp_ct
+{
+	log("state=", tcp_state_to_string(s), " seq=", seq, " ack=", ack);
+}
+
 altstep as_timeout() runs on tcp_ct
 {
 	[] T.timeout { log("as_timeout()"); setverdict(fail); stop; }
@@ -113,7 +118,12 @@ altstep as_timeout() runs on tcp_ct
 
 altstep as_unexpected_msg() runs on tcp_ct
 {
-	[] P_TCP.receive(?) { log("as_unexpected_msg()"); setverdict(fail); stop; }
+	[] P_TCP.receive(?) {
+		log("as_unexpected_msg()");
+		tcp_dump();
+		setverdict(fail);
+		stop;
+	}
 }
 
 #define EVENT_IS(_event, _kind) mask_is_present(_event, _kind)
@@ -495,6 +505,15 @@ testcase test_tcp_listen_data_close() runs on tcp_ct
 }
 
 /**
+ * Test passive TCP connection establishment,
+ * data transfer and active close
+ */
+testcase test_tcp_listen_more_data_close() runs on tcp_ct
+{
+	test_tcp_listen(data_to_receive := '010203'O);
+}
+
+/**
  * Test TCP debug
  */
 testcase test_tcp_debug() runs on tcp_ct
@@ -539,7 +558,7 @@ testcase test_tcp_retransmit() runs on tcp_ct
 {
 	test_ct_init();
 
-	if (fuzzer_enabled) { fuzzer_on(); }
+	fuzzer_on();
 
 	P_FZ.send("incoming_drop");
 
@@ -572,8 +591,10 @@ control {
 	while (post_dec(i) > 0) {
 		execute(test_tcp_connect_no_data_close());
 		execute(test_tcp_connect_data_close());
+		execute(test_tcp_connect_more_data_close());
 		execute(test_tcp_listen_no_data_close());
 		execute(test_tcp_listen_data_close());
+		execute(test_tcp_retransmit());
 	}
 
 } /* end of control */
