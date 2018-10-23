@@ -92,6 +92,18 @@ The test suite expects Ethernet frames encapsulated over UDP/IPv4.
 
 By default it listens to localhost:7777 and sends to localhost:7771.
 
+TCP suite expects Zephyr's echo_server app configured to listen at
+10.0.0.1, port 4242 and communicates from address 10.0.0.2, port 4241.
+
+This can be customized by setting module parameters of libtest.ttcn
+through the configuration file (tcp_suite.cfg), for example:
+
+```
+    [MODULE_PARAMETERS]
+    libtest.m_ip_dst := "10.0.0.1"
+    libtest.m_ip_src := "10.0.0.2"
+```
+
 ### 6. Running the Test Suites Against Zephyr app in QEMU
 
 #### 6.1 Get, build and start the net-test-tools
