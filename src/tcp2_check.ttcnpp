@@ -548,7 +548,7 @@ testcase test_tcp_debug() runs on tcp_ct
 	}
 	} /* end of alt */
 
-	/* TODO: Release debug state, after that can be included into sanity */
+	jtcp_cmd(TP_COMMAND, "CLOSE");
 }
 
 /**
@@ -596,6 +596,7 @@ control {
 		execute(test_tcp_listen_data_close());
 		execute(test_tcp_listen_more_data_close());
 		execute(test_tcp_retransmit());
+		execute(test_tcp_debug());
 	}
 
 } /* end of control */
