@@ -254,6 +254,23 @@ function peer_introspect() runs on tcp_ct return tp_json
 	var tp_json tp := { msg_type := "TP_INTROSPECT_TCP_REQUEST",
 						status := "", state := "", seq := 0, ack := 0,
 						rcv := "", data := "", op := "" };
+	var udp_t udp;
+
+	P_UDP.send(ts_UDP(d := f_json_enc(tp)));
+	T.start;
+
+	alt {
+		[] P_UDP.receive(?) -> value udp {
+			T.stop;
+			tp := f_json_dec(udp.data);
+		}
+		[] T.timeout {
+			log("peer_introspect() timeout");
+			setverdict(fail);
+			stop;
+		}
+	}
+
 	return tp;
 }
 
