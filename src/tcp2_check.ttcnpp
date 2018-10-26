@@ -169,7 +169,7 @@ function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 	fail_on_events(fail_on);
 }
 
-type enumerated jtcp_msg_type_t {
+type enumerated tp_msg_type_t {
 	TP_COMMAND,
 	TP_INTROSPECT_TCP_REQUEST,
 	TP_INTROSPECT_TCP_REPLY,
@@ -189,16 +189,16 @@ type enumerated jtcp_msg_type_t {
 	encode "TEXT";
 }
 
-external function jtcp_msg_type_to_string(in jtcp_msg_type_t x)
-		return charstring
+external function tp_msg_type_to_string(in tp_msg_type_t x) return charstring
 	with { extension "prototype(convert) encode(TEXT)"; }
 
-type record tcp_json {
+type record tp_json {
 	charstring msg_type,
 	charstring status,
 	charstring state,
 	integer seq,
 	integer ack,
+	charstring rcv,
 	charstring data,
 	charstring op
 } with {
@@ -208,14 +208,15 @@ type record tcp_json {
 	variant(state)	"JSON: name as state";
 	variant(seq)	"JSON: name as seq";
 	variant(ack)	"JSON: name as ack";
+	variant(rcv)	"JSON: name as rcv";
 	variant(data)	"JSON: name as data";
 	variant(op)	"JSON: name as op";
 }
 
-external function f_json_enc(in tcp_json x) return octetstring
+external function f_json_enc(in tp_json x) return octetstring
 	with { extension "prototype(convert) encode(JSON)"; }
 
-external function f_json_dec(in octetstring x) return tcp_json
+external function f_json_dec(in octetstring x) return tp_json
 	with { extension "prototype(convert) decode(JSON)"; }
 
 function peer_assert(tcp_state_t state) runs on tcp_ct
@@ -223,7 +224,7 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 	if (not peer_assert_enabled) { return; }
 
 	/* TODO: check how to omit */
-	var tcp_json req := { msg_type := "TP_INTROSPECT_TCP_REQUEST", status := "", state := "", seq := 0, ack := 0, data := "", op := "" };
+	var tp_json req := { msg_type := "TP_INTROSPECT_TCP_REQUEST", status := "", state := "", seq := 0, ack := 0, rcv := "", data := "", op := "" };
 	var udp_t udp;
 
 	P_UDP.send(ts_UDP(d := f_json_enc(req)));
@@ -232,7 +233,7 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 	alt {
 		[] P_UDP.receive(?) -> value udp {
 			T.stop;
-			var tcp_json json := f_json_dec(udp.data);
+			var tp_json json := f_json_dec(udp.data);
 
 			//log(json);
 
@@ -246,6 +247,14 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 			setverdict(fail);
 		}
 	}
+}
+
+function peer_introspect() runs on tcp_ct return tp_json
+{
+	var tp_json tp := { msg_type := "TP_INTROSPECT_TCP_REQUEST",
+						status := "", state := "", seq := 0, ack := 0,
+						rcv := "", data := "", op := "" };
+	return tp;
 }
 
 function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
@@ -262,14 +271,14 @@ function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
 	ct_fuzzer.start(fuzzer());
 }
 
-function jtcp_cmd(jtcp_msg_type_t msg_type, charstring o := "",
-				  charstring d := "") runs on tcp_ct
+function tp_cmd(tp_msg_type_t msg_type, charstring o := "",
+				charstring d := "") runs on tcp_ct
 {
-	var charstring cmd := jtcp_msg_type_to_string(msg_type);
+	var charstring cmd := tp_msg_type_to_string(msg_type);
 	/* TODO: Template here? */
- 	var tcp_json req := { msg_type := cmd, status := "",
-						  state := "", seq := 0, ack := 0,
-						  data := d, op := o };
+ 	var tp_json req := { msg_type := cmd, status := "",
+						 state := "", seq := 0, ack := 0,
+						 rcv := "", data := d, op := o };
 	var udp_t udp;
 
 	P_UDP.send(ts_UDP(d := f_json_enc(req)));
@@ -380,7 +389,7 @@ label wait_for_data;
 		setverdict(pass);
 	}
 
-	jtcp_cmd(TP_COMMAND, "CLOSE");
+	tp_cmd(TP_COMMAND, "CLOSE");
 }
 
 /**
@@ -393,7 +402,7 @@ function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
 
 	TT.start;
 
-	jtcp_cmd(TP_COMMAND, "CONNECT", d := oct2str(data_to_receive));
+	tp_cmd(TP_COMMAND, "CONNECT", d := oct2str(data_to_receive));
 
 	st(TCP_LISTEN, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
@@ -457,7 +466,7 @@ function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
 	[] TT.timeout { setverdict(fail); stop; }
 	} /* end of alt */
 
-	jtcp_cmd(TP_COMMAND, "CLOSE");
+	tp_cmd(TP_COMMAND, "CLOSE");
 }
 
 /**
@@ -522,7 +531,7 @@ testcase test_tcp_debug() runs on tcp_ct
 
 	TT.start;
 
-	jtcp_cmd(TP_DEBUG_STOP);
+	tp_cmd(TP_DEBUG_STOP);
 
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
 	T.start;
@@ -533,7 +542,7 @@ testcase test_tcp_debug() runs on tcp_ct
 		setverdict(fail);
 	}
 	[] T.timeout {
-		jtcp_cmd(TP_DEBUG_STEP);
+		tp_cmd(TP_DEBUG_STEP);
 	}
 	} /* end of alt */
 
@@ -548,7 +557,7 @@ testcase test_tcp_debug() runs on tcp_ct
 	}
 	} /* end of alt */
 
-	jtcp_cmd(TP_COMMAND, "CLOSE");
+	tp_cmd(TP_COMMAND, "CLOSE");
 }
 
 /**
@@ -581,7 +590,7 @@ testcase test_tcp_retransmit() runs on tcp_ct
 	}
 	}
 
-	jtcp_cmd(TP_COMMAND, "CLOSE");
+	tp_cmd(TP_COMMAND, "CLOSE");
 }
 
 control {
