@@ -310,7 +310,7 @@ function tp_cmd(tp_msg_type_t msg_type, charstring o := "",
  * Active TCP connection establishment,
  * data transfer (data echoing expected) and active close
  */
-function test_tcp_connect(octetstring data_to_send := ''O) runs on tcp_ct
+function test_tcp_connect(octetstring data_to_send := ''O, boolean close := true) runs on tcp_ct
 {
 	test_ct_init();
 
@@ -406,7 +406,9 @@ label wait_for_data;
 		setverdict(pass);
 	}
 
-	tp_cmd(TP_COMMAND, "CLOSE");
+	if (close == true) {
+		tp_cmd(TP_COMMAND, "CLOSE");
+	}
 }
 
 /**
@@ -606,6 +608,15 @@ testcase test_tcp_retransmit() runs on tcp_ct
 		setverdict(fail);
 	}
 	}
+
+	tp_cmd(TP_COMMAND, "CLOSE");
+}
+
+testcase test_tcp_recv() runs on tcp_ct
+{
+	test_tcp_connect(data_to_send := '01'O, close := false);
+
+	tp_cmd(TP_COMMAND, "RECV");
 
 	tp_cmd(TP_COMMAND, "CLOSE");
 }
