@@ -320,7 +320,7 @@ function test_tcp_connect(octetstring data_to_send := ''O,
 
 	data_push(data, data_to_send);
 
-	//TT.start;
+	TT.start;
 
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
 	st(TCP_SYN_SENT, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
@@ -404,7 +404,7 @@ label wait_for_data;
 		st(TCP_CLOSED);
 		peer_assert(TCP_CLOSED);
 	}
-	/* [] TT.timeout { setverdict(fail); stop; } */
+	[] TT.timeout { setverdict(fail); stop; }
 	}  /* end of alt */
 
 	if (s == TCP_CLOSED and
