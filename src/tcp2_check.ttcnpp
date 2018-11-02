@@ -623,19 +623,23 @@ testcase test_tcp_retransmit() runs on tcp_ct
 	tp_cmd(TP_COMMAND, "CLOSE");
 }
 
+template th_flags_t tr_TH_ACK	:='????1?'B;
+template th_flags_t tr_TH_PSH	:='???1??'B;
+
 function tcp_send(octetstring data := ''O) runs on tcp_ct
 {
 	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := post_inc(seq, lengthof(data)),
 					  th_ack := ack, d := data));
 	T.start;
 	alt {
-	[] P_TCP.receive(tr_TCP(f := (TH_ACK, TH_ACK or4b TH_PSH, TH_PSH)))
-		-> value tcp {
+	[] P_TCP.receive(tr_TCP(f := tr_TH_ACK, th_ack := seq)) {
 		T.stop;
 	}
-	[] T.timeout {
-		setverdict(fail);
+	[] P_TCP.receive(tr_TCP(f := tr_TH_PSH))  {
+		T.stop;
+		T.start; repeat;
 	}
+	[] T.timeout { setverdict(fail); }
 	} /* end of alt */
 }
 
