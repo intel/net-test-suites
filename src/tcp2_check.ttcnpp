@@ -64,7 +64,6 @@ type component tcp_ct extends test_CT {
 	var tcp_state_t s := TCP_NONE;
 	var uint32_t seq := 0;
 	var uint32_t ack := 0;
-	var octetstring data := ''O;
 	var octetstring data_unack := ''O; /* TODO: split into rcv/snd data */
 	var integer data_step := 1;
 	timer T := T_default;
@@ -310,15 +309,18 @@ function tp_cmd(tp_msg_type_t msg_type, charstring o := "",
  * Active TCP connection establishment,
  * data transfer (data echoing expected) and active close
  */
-function test_tcp_connect(octetstring data_to_send := ''O, boolean close := true) runs on tcp_ct
+function test_tcp_connect(octetstring data_to_send := ''O,
+						  boolean close := true) runs on tcp_ct
 {
+	var octetstring data := ''O;
+
 	test_ct_init();
 
 	if (fuzzer_enabled) { fuzzer_on(); }
 
 	data_push(data, data_to_send);
 
-	TT.start;
+	//TT.start;
 
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
 	st(TCP_SYN_SENT, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
@@ -367,10 +369,16 @@ function test_tcp_connect(octetstring data_to_send := ''O, boolean close := true
 							  th_ack := ack, d := data_unack));
 			goto wait_for_data;
 		}
+
+		if (close == false) {
+			goto exit;
+		}
+
 		/* Everything is sent and aknowledged, do active close */
 		P_TCP.send(ts_TCP(f := TH_FIN or4b TH_ACK, th_seq := post_inc(seq),
 						  th_ack := ack));
 		st(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
+
 		/* TODO: peer_assert() here is tricky, since peer in active close
 		   sends ack and fin+ack immedeately */
 label wait_for_data;
@@ -396,8 +404,7 @@ label wait_for_data;
 		st(TCP_CLOSED);
 		peer_assert(TCP_CLOSED);
 	}
-	[] TT.timeout { setverdict(fail); stop; }
-
+	/* [] TT.timeout { setverdict(fail); stop; } */
 	}  /* end of alt */
 
 	if (s == TCP_CLOSED and
@@ -409,6 +416,8 @@ label wait_for_data;
 	if (close == true) {
 		tp_cmd(TP_COMMAND, "CLOSE");
 	}
+
+label exit;
 }
 
 /**
@@ -417,6 +426,8 @@ label wait_for_data;
  */
 function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
 {
+	var octetstring data := ''O;
+
 	test_ct_init();
 
 	TT.start;
@@ -612,9 +623,31 @@ testcase test_tcp_retransmit() runs on tcp_ct
 	tp_cmd(TP_COMMAND, "CLOSE");
 }
 
+function tcp_send(octetstring data := ''O) runs on tcp_ct
+{
+	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := post_inc(seq, lengthof(data)),
+					  th_ack := ack, d := data));
+	T.start;
+	alt {
+	[] P_TCP.receive(tr_TCP(f := (TH_ACK, TH_ACK or4b TH_PSH, TH_PSH)))
+		-> value tcp {
+		T.stop;
+	}
+	[] T.timeout {
+		setverdict(fail);
+	}
+	} /* end of alt */
+}
+
 testcase test_tcp_recv() runs on tcp_ct
 {
-	test_tcp_connect(data_to_send := '01'O, close := false);
+	test_tcp_connect(close := false);
+
+	tcp_send('01'O);
+
+	tcp_send('02'O);
+
+	tcp_send('03'O);
 
 	tp_cmd(TP_COMMAND, "RECV");
 
