@@ -44,13 +44,6 @@ const event_t EV_UNEXPECTED_MSG :='010'B;
 
 type bitstring log_mask_t length(3);
 
-#if 0
-const event_t EV_NONE			:='000'B;
-const event_t EV_KEEP			:='111'B;
-const event_t EV_TIMEOUT		:='001'B;
-const event_t EV_UNEXPECTED_MSG :='010'B;
-#endif
-
 /* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */
 /* Also used for transparent debug */
 type component fuzzer_ct {
@@ -191,7 +184,7 @@ type enumerated tp_msg_type_t {
 external function tp_msg_type_to_string(in tp_msg_type_t x) return charstring
 	with { extension "prototype(convert) encode(TEXT)"; }
 
-type record tp_json {
+type record tp_t {
 	charstring msg_type,
 	charstring status,
 	charstring state,
@@ -212,32 +205,29 @@ type record tp_json {
 	variant(op)	"JSON: name as op";
 }
 
-external function f_json_enc(in tp_json x) return octetstring
+external function f_tp_enc(in tp_t x) return octetstring
 	with { extension "prototype(convert) encode(JSON)"; }
 
-external function f_json_dec(in octetstring x) return tp_json
+external function f_tp_dec(in octetstring x) return tp_t
 	with { extension "prototype(convert) decode(JSON)"; }
 
 function peer_assert(tcp_state_t state) runs on tcp_ct
 {
 	if (not peer_assert_enabled) { return; }
 
-	/* TODO: check how to omit */
-	var tp_json req := { msg_type := "TP_INTROSPECT_TCP_REQUEST", status := "", state := "", seq := 0, ack := 0, rcv := "", data := "", op := "" };
+	var tp_t tp := { msg_type := "TP_INTROSPECT_TCP_REQUEST", status := "", state := "", seq := 0, ack := 0, rcv := "", data := "", op := "" };
 	var udp_t udp;
 
-	P_UDP.send(ts_UDP(d := f_json_enc(req)));
+	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
 	T.start;
 
 	alt {
 		[] P_UDP.receive(?) -> value udp {
 			T.stop;
-			var tp_json json := f_json_dec(udp.data);
+			tp := f_tp_dec(udp.data);
 
-			//log(json);
-
-			if (json.state != tcp_state_to_string(state)) {
-				log("ASSERT: ", json.state, " != ", tcp_state_to_string(state));
+			if (tp.state != tcp_state_to_string(state)) {
+				log("ASSERT: ", tp.state, " != ", tcp_state_to_string(state));
 				setverdict(fail);
 			}
 		}
@@ -248,20 +238,20 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 	}
 }
 
-function peer_introspect() runs on tcp_ct return tp_json
+function peer_introspect() runs on tcp_ct return tp_t
 {
-	var tp_json tp := { msg_type := "TP_INTROSPECT_TCP_REQUEST",
+	var tp_t tp := { msg_type := "TP_INTROSPECT_TCP_REQUEST",
 						status := "", state := "", seq := 0, ack := 0,
 						rcv := "", data := "", op := "" };
 	var udp_t udp;
 
-	P_UDP.send(ts_UDP(d := f_json_enc(tp)));
+	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
 	T.start;
 
 	alt {
 		[] P_UDP.receive(?) -> value udp {
 			T.stop;
-			tp := f_json_dec(udp.data);
+			tp := f_tp_dec(udp.data);
 		}
 		[] T.timeout {
 			log("peer_introspect() timeout");
@@ -287,22 +277,32 @@ function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
 	ct_fuzzer.start(fuzzer());
 }
 
-function tp_cmd(tp_msg_type_t msg_type, charstring o := "",
-				charstring d := "") runs on tcp_ct
-{
-	var charstring cmd := tp_msg_type_to_string(msg_type);
-	/* TODO: Template here? */
- 	var tp_json req := { msg_type := cmd, status := "",
-						 state := "", seq := 0, ack := 0,
-						 rcv := "", data := d, op := o };
-	var udp_t udp;
+template tp_t ts_TP(tp_msg_type_t t, charstring d := "",
+					charstring o := "") := {
+	msg_type := tp_msg_type_to_string(t),
+	status := "",
+	state := "",
+	seq := 0,
+	ack := 0,
+	rcv := "",
+	data := d,
+	op := o
+}
 
-	P_UDP.send(ts_UDP(d := f_json_enc(req)));
+function tp_cmd(tp_msg_type_t msg_type, charstring o := "",
+				charstring d := "") runs on tcp_ct return tp_t
+{
+	var tp_t tp := valueof(ts_TP(msg_type, d, o));
+	//var udp_t udp;
+
+	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
 
 	/* alt { */
 	/* 	[] P_UDP.receive(?) -> value udp { } */
 	/* 	[] T.timeout { setverdict(fail); } */
 	/* } */
+
+	return tp;
 }
 
 /**
@@ -335,9 +335,9 @@ function test_tcp_connect(octetstring data_to_send := ''O,
 		ack := tcp.th_seq;
 		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
 		st(TCP_ESTABLISHED, fail_on := EV_NONE);
-		//peer_assert(TCP_ESTABLISHED); /* TODO: Handle when debug is ready */
 		T.start; repeat;
 	}
+
 	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP) -> value tcp {
 		T.stop;
 		peer_assert(TCP_ESTABLISHED);
