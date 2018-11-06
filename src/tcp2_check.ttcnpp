@@ -186,23 +186,28 @@ external function tp_msg_type_to_string(in tp_msg_type_t x) return charstring
 
 type record tp_t {
 	charstring msg_type,
-	charstring status,
-	charstring state,
-	integer seq,
-	integer ack,
-	charstring rcv,
-	charstring data,
-	charstring op
+	charstring status optional,
+	charstring state optional,
+	integer seq optional,
+	integer ack optional,
+	charstring rcv optional,
+	charstring data optional,
+	charstring op optional
 } with {
 	encode "JSON";
-	variant(msg_type)	"JSON: name as msg_type";
-	variant(status)	"JSON: name as status";
-	variant(state)	"JSON: name as state";
-	variant(seq)	"JSON: name as seq";
-	variant(ack)	"JSON: name as ack";
-	variant(rcv)	"JSON: name as rcv";
-	variant(data)	"JSON: name as data";
-	variant(op)	"JSON: name as op";
+}
+
+template tp_t ts_TP(tp_msg_type_t t,
+					template charstring d := omit,
+					template charstring o := omit) := {
+	msg_type := tp_msg_type_to_string(t),
+	status := omit,
+	state := omit,
+	seq := omit,
+	ack := omit,
+	rcv := omit,
+	data := d,
+	op := o
 }
 
 external function f_tp_enc(in tp_t x) return octetstring
@@ -215,7 +220,7 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 {
 	if (not peer_assert_enabled) { return; }
 
-	var tp_t tp := { msg_type := "TP_INTROSPECT_TCP_REQUEST", status := "", state := "", seq := 0, ack := 0, rcv := "", data := "", op := "" };
+	var tp_t tp := valueof(ts_TP(TP_INTROSPECT_TCP_REQUEST));
 	var udp_t udp;
 
 	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
@@ -275,18 +280,6 @@ function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
 	connect(self:P_FZ, ct_fuzzer:P_CF);
 
 	ct_fuzzer.start(fuzzer());
-}
-
-template tp_t ts_TP(tp_msg_type_t t, charstring d := "",
-					charstring o := "") := {
-	msg_type := tp_msg_type_to_string(t),
-	status := "",
-	state := "",
-	seq := 0,
-	ack := 0,
-	rcv := "",
-	data := d,
-	op := o
 }
 
 function tp_cmd(tp_msg_type_t msg_type, charstring o := "",
