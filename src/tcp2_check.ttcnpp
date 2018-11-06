@@ -216,7 +216,7 @@ external function f_tp_enc(in tp_t x) return octetstring
 external function f_tp_dec(in octetstring x) return tp_t
 	with { extension "prototype(convert) decode(JSON)"; }
 
-function tp_cmd(tp_msg_type_t msg_type,
+function tp_send(tp_msg_type_t msg_type,
 				charstring o := "",
 				charstring d := "") runs on tcp_ct return tp_t
 {
@@ -238,7 +238,7 @@ function tp_cmd(tp_msg_type_t msg_type,
 			tp := f_tp_dec(udp.data);
 	}
 	[] T.timeout {
-		log("tp_cmd() timeout");
+		log("tp_send() timeout");
 		setverdict(fail);
 	}
 	} /* end of alt */
@@ -252,7 +252,7 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 {
 	if (not peer_assert_enabled) { return; }
 
-	var tp_t tp := tp_cmd(TP_INTROSPECT_TCP_REQUEST);
+	var tp_t tp := tp_send(TP_INTROSPECT_TCP_REQUEST);
 
 	if (tp.state != tcp_state_to_string(state)) {
 		log("ASSERT: ", tp.state, " != ", tcp_state_to_string(state));
@@ -383,7 +383,7 @@ label wait_for_data;
 	}
 
 	if (close == true) {
-		tp_cmd(TP_COMMAND, "CLOSE");
+		tp_send(TP_COMMAND, "CLOSE");
 	}
 
 label exit;
@@ -401,7 +401,7 @@ function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
 
 	TT.start;
 
-	tp_cmd(TP_COMMAND, "CONNECT", d := oct2str(data_to_receive));
+	tp_send(TP_COMMAND, "CONNECT", d := oct2str(data_to_receive));
 
 	st(TCP_LISTEN, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
@@ -465,7 +465,7 @@ function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
 	[] TT.timeout { setverdict(fail); stop; }
 	} /* end of alt */
 
-	tp_cmd(TP_COMMAND, "CLOSE");
+	tp_send(TP_COMMAND, "CLOSE");
 }
 
 /**
@@ -530,7 +530,7 @@ testcase test_tcp_debug() runs on tcp_ct
 
 	TT.start;
 
-	tp_cmd(TP_DEBUG_STOP);
+	tp_send(TP_DEBUG_STOP);
 
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
 	T.start;
@@ -541,7 +541,7 @@ testcase test_tcp_debug() runs on tcp_ct
 		setverdict(fail);
 	}
 	[] T.timeout {
-		tp_cmd(TP_DEBUG_STEP);
+		tp_send(TP_DEBUG_STEP);
 	}
 	} /* end of alt */
 
@@ -556,7 +556,7 @@ testcase test_tcp_debug() runs on tcp_ct
 	}
 	} /* end of alt */
 
-	tp_cmd(TP_COMMAND, "CLOSE");
+	tp_send(TP_COMMAND, "CLOSE");
 }
 
 /**
@@ -589,7 +589,7 @@ testcase test_tcp_retransmit() runs on tcp_ct
 	}
 	}
 
-	tp_cmd(TP_COMMAND, "CLOSE");
+	tp_send(TP_COMMAND, "CLOSE");
 }
 
 template th_flags_t tr_TH_ACK	:='????1?'B;
@@ -622,9 +622,9 @@ testcase test_tcp_recv() runs on tcp_ct
 
 	tcp_send('03'O);
 
-	tp_cmd(TP_COMMAND, "RECV");
+	tp_send(TP_COMMAND, "RECV");
 
-	tp_cmd(TP_COMMAND, "CLOSE");
+	tp_send(TP_COMMAND, "CLOSE");
 }
 
 control {
