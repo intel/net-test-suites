@@ -216,56 +216,48 @@ external function f_tp_enc(in tp_t x) return octetstring
 external function f_tp_dec(in octetstring x) return tp_t
 	with { extension "prototype(convert) decode(JSON)"; }
 
+function tp_cmd(tp_msg_type_t msg_type,
+				charstring o := "",
+				charstring d := "") runs on tcp_ct return tp_t
+{
+	var tp_t tp := valueof(ts_TP(msg_type, d, o));
+	var udp_t udp;
+
+	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
+
+	if (msg_type != TP_INTROSPECT_TCP_REQUEST) {
+		tp := valueof(ts_TP(msg_type));
+		goto exit;
+	}
+
+	T.start;
+
+	alt {
+	[] P_UDP.receive(?) -> value udp {
+			T.stop;
+			tp := f_tp_dec(udp.data);
+	}
+	[] T.timeout {
+		log("tp_cmd() timeout");
+		setverdict(fail);
+	}
+	} /* end of alt */
+
+label exit;
+
+	return tp;
+}
+
 function peer_assert(tcp_state_t state) runs on tcp_ct
 {
 	if (not peer_assert_enabled) { return; }
 
-	var tp_t tp := valueof(ts_TP(TP_INTROSPECT_TCP_REQUEST));
-	var udp_t udp;
+	var tp_t tp := tp_cmd(TP_INTROSPECT_TCP_REQUEST);
 
-	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
-	T.start;
-
-	alt {
-		[] P_UDP.receive(?) -> value udp {
-			T.stop;
-			tp := f_tp_dec(udp.data);
-
-			if (tp.state != tcp_state_to_string(state)) {
-				log("ASSERT: ", tp.state, " != ", tcp_state_to_string(state));
-				setverdict(fail);
-			}
-		}
-		[] T.timeout {
-			log("peer_assert() timeout");
-			setverdict(fail);
-		}
+	if (tp.state != tcp_state_to_string(state)) {
+		log("ASSERT: ", tp.state, " != ", tcp_state_to_string(state));
+		setverdict(fail);
 	}
-}
-
-function peer_introspect() runs on tcp_ct return tp_t
-{
-	var tp_t tp := { msg_type := "TP_INTROSPECT_TCP_REQUEST",
-						status := "", state := "", seq := 0, ack := 0,
-						rcv := "", data := "", op := "" };
-	var udp_t udp;
-
-	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
-	T.start;
-
-	alt {
-		[] P_UDP.receive(?) -> value udp {
-			T.stop;
-			tp := f_tp_dec(udp.data);
-		}
-		[] T.timeout {
-			log("peer_introspect() timeout");
-			setverdict(fail);
-			stop;
-		}
-	}
-
-	return tp;
 }
 
 function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
@@ -280,22 +272,6 @@ function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
 	connect(self:P_FZ, ct_fuzzer:P_CF);
 
 	ct_fuzzer.start(fuzzer());
-}
-
-function tp_cmd(tp_msg_type_t msg_type, charstring o := "",
-				charstring d := "") runs on tcp_ct return tp_t
-{
-	var tp_t tp := valueof(ts_TP(msg_type, d, o));
-	//var udp_t udp;
-
-	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
-
-	/* alt { */
-	/* 	[] P_UDP.receive(?) -> value udp { } */
-	/* 	[] T.timeout { setverdict(fail); } */
-	/* } */
-
-	return tp;
 }
 
 /**
