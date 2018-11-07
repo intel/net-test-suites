@@ -627,6 +627,11 @@ testcase test_tcp_recv() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+testcase test_eth() runs on tcp_ct
+{
+	test_ct_init();
+}
+
 control {
 
 	var integer i := number_of_runs;
