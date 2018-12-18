@@ -28,6 +28,7 @@ modulepar {
 	charstring m_ip6_dst := "fe80::1";
 	charstring m_ip6_src := "fe80::2";
 	boolean ping_enabled := true;
+	boolean pass_arp := false;
 	ethertype_t m_ethertype := ETHERTYPE_IP;
 }
 
@@ -191,6 +192,7 @@ function eth_ct_start() runs on eth_CT {
 
 	var octetstring d;
 	var eth_t eth;
+	var arp_t arp;
 	var udp_t udp;
 	var tcp_t tcp;
 	var icmp6_t icmp6;
@@ -213,12 +215,21 @@ function eth_ct_start() runs on eth_CT {
 				eth_ct_ip6_input(eth);
 			}
 			case(ETHERTYPE_ARP) {
-				eth_ct_arp_input(eth);
+				if (pass_arp) {
+					arp := arp_dec(eth.data);
+					P_ARP.send(arp);
+				} else {
+					eth_ct_arp_input(eth);
+				}
 			}
 			case(ETHERTYPE_IP) {
 				eth_ct_ip_input(eth);
 			}
 			}
+		}
+		[] P_ARP.receive(?) -> value arp {
+			eth := valueof(ts_ETH(ETHERTYPE_ARP, arp_enc(arp)));
+			eth_ct_eth_send(eth);
 		}
 		[] P_ICMP.receive(?) -> value icmp {
 			eth := eth_ip_new(IPPROTO_ICMP, icmp_enc(icmp));
