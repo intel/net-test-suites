@@ -27,6 +27,7 @@ modulepar {
 	charstring m_ip_src := "10.0.0.2";
 	charstring m_ip6_dst := "fe80::1";
 	charstring m_ip6_src := "fe80::2";
+	boolean ping_enabled := true;
 	ethertype_t m_ethertype := ETHERTYPE_IP;
 }
 
@@ -62,7 +63,9 @@ function test_ct_init() runs on test_CT {
 
 	eth_ct.start(eth_ct_start());
 
-	do_ping();
+	if (ping_enabled) {
+		do_ping();
+	}
 }
 
 template eth_t ts_ETH (ethertype_t proto, template octetstring d := omit) := {
