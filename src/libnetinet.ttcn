@@ -39,6 +39,7 @@ type record eth_t {
 	octetstring	data optional
 } with {
 	variant(h_proto) "BYTEORDER(last)";
+	variant(vlan) "PRESENCE(h_proto = ETHERTYPE_VLAN)";
 }
 
 type record ip_t {
