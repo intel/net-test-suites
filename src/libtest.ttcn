@@ -266,7 +266,7 @@ function eth_ct_start() runs on eth_CT {
 }
 
 template udp_t ts_UDP (template octetstring d := omit) := {
-	uh_sport := 4241,
+	uh_sport := 4242,
 	uh_dport := 4242,
 	uh_ulen := 0,
 	uh_sum := 0,
