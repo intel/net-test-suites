@@ -582,12 +582,20 @@ testcase test_tcp_retransmit() runs on tcp_ct
 	alt {
 	[] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK,
 							th_ack := seq)) -> value tcp {
+		T.stop;
+		ack := tcp.th_seq;
+		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
 		setverdict(pass);
 	}
 	[] T.timeout {
 		setverdict(fail);
 	}
 	}
+
+	T.start(T_default);
+	T.timeout;
+
+	st(TCP_ESTABLISHED, fail_on := EV_NONE);
 
 	tp_send(TP_COMMAND, "CLOSE");
 }
@@ -643,7 +651,7 @@ control {
 		execute(test_tcp_listen_no_data_close());
 		execute(test_tcp_listen_data_close());
 		execute(test_tcp_listen_more_data_close());
-		//execute(test_tcp_retransmit());
+		execute(test_tcp_retransmit());
 		//execute(test_tcp_debug());
 	}
 
