@@ -7,9 +7,9 @@ if [ ! -z "${1}" ]; then
 fi
 
 if [ -f /etc/lsb-release ]; then
-    FILE=ttcn3-6.4.pl0-linux64-gcc5.4-ubuntu16.04.tgz
+    FILE=ttcn3-6.5.pl0-linux64-gcc5.4.0-ubuntu16.04.tgz
 elif [ -f /etc/redhat-release ]; then
-    FILE=ttcn3-6.4.pl0-linux64-gcc7.2-fedora27.tgz
+    FILE=ttcn3-6.5.pl0-linux64-gcc4.8.2-RHEL7.tgz
 fi
 
 if [ -z "${FILE}" ]; then
