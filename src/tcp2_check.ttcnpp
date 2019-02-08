@@ -255,7 +255,7 @@ function peer_assert(tcp_state_t state) runs on tcp_ct
 	var tp_t tp := tp_send(TP_INTROSPECT_REQUEST);
 
 	if (tp.state != tcp_state_to_string(state)) {
-		log("ASSERT: ", tp.state, " != ", tcp_state_to_string(state));
+		log("ASSERT: peer: ", tp.state, " != ", tcp_state_to_string(state));
 		setverdict(fail);
 	}
 }
