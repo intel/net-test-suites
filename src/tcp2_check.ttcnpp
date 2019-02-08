@@ -279,9 +279,12 @@ function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
  * data transfer (data echoing expected) and active close
  */
 function test_tcp_connect(octetstring data_to_send := ''O,
-						  boolean close := true) runs on tcp_ct
+								boolean close := true,
+								integer isn := 0) runs on tcp_ct
 {
 	var octetstring data := ''O;
+
+	seq := isn;
 
 	test_ct_init();
 
@@ -393,7 +396,8 @@ label exit;
  * Passive TCP connection establishment,
  * data transfer and active close
  */
-function test_tcp_listen(octetstring data_to_receive := ''O) runs on tcp_ct
+function test_tcp_listen(octetstring data_to_receive := ''O,
+								integer isn := 0) runs on tcp_ct
 {
 	var octetstring data := ''O;
 
@@ -519,6 +523,16 @@ testcase test_tcp_listen_data_close() runs on tcp_ct
 testcase test_tcp_listen_more_data_close() runs on tcp_ct
 {
 	test_tcp_listen(data_to_receive := '010203'O);
+}
+
+testcase test_tcp_listen_isn() runs on tcp_ct
+{
+	test_tcp_listen(data_to_receive := ''O, isn := 333);
+}
+
+testcase test_tcp_connect_isn() runs on tcp_ct
+{
+	test_tcp_connect(data_to_send := ''O, isn := 333);
 }
 
 /**
