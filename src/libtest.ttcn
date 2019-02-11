@@ -143,6 +143,14 @@ function eth_ct_ip_input(eth_t eth) runs on eth_CT {
 	}
 	case(IPPROTO_TCP) {
 		var tcp_t tcp := tcp_dec(ip.data);
+		var integer csum := fx_tcp_csum(eth.data);
+
+		if (csum != tcp.th_sum) {
+				log("Error: Wrong TCP checksum, got: ", tcp.th_sum,
+						", expected: ", csum);
+				stop;
+		}
+
 		P_TCP.send(tcp);
 	}
 	case(IPPROTO_UDP) {
