@@ -307,6 +307,9 @@ function test_tcp_connect(octetstring data_to_send := ''O,
 		ack := tcp.th_seq;
 		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
 		st(TCP_ESTABLISHED, fail_on := EV_NONE);
+		if (close == false) {
+			goto end;
+		}
 		T.start; repeat;
 	}
 
@@ -343,7 +346,7 @@ function test_tcp_connect(octetstring data_to_send := ''O,
 		}
 
 		if (close == false) {
-			goto exit;
+			goto end;
 		}
 
 		/* Everything is sent and aknowledged, do active close */
@@ -385,11 +388,8 @@ label wait_for_data;
 		setverdict(pass);
 	}
 
-	if (close == true) {
-		tp_send(TP_COMMAND, "CLOSE");
-	}
-
-label exit;
+	tp_send(TP_COMMAND, "CLOSE");
+label end;
 }
 
 /**
@@ -397,6 +397,7 @@ label exit;
  * data transfer and active close
  */
 function test_tcp_listen(octetstring data_to_receive := ''O,
+								boolean close := true,
 								integer isn := 0) runs on tcp_ct
 {
 	var octetstring data := ''O;
@@ -427,6 +428,9 @@ function test_tcp_listen(octetstring data_to_receive := ''O,
 		st(TCP_SYN_RECEIVED);
 		ack := tcp.th_seq;
 		st(TCP_ESTABLISHED, fail_on := EV_NONE);
+		if (close == false) {
+			goto end;
+		}
 		T.start; repeat;
 	}
 	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := TH_PSH, th_seq := ack,
@@ -470,6 +474,7 @@ function test_tcp_listen(octetstring data_to_receive := ''O,
 	} /* end of alt */
 
 	tp_send(TP_COMMAND, "CLOSE");
+label end;
 }
 
 /**
@@ -527,12 +532,48 @@ testcase test_tcp_listen_more_data_close() runs on tcp_ct
 
 testcase test_tcp_listen_isn() runs on tcp_ct
 {
-	test_tcp_listen(data_to_receive := ''O, isn := 333);
+	test_tcp_listen(isn := 333);
 }
 
 testcase test_tcp_connect_isn() runs on tcp_ct
 {
-	test_tcp_connect(data_to_send := ''O, isn := 333);
+	test_tcp_connect(isn := 333);
+}
+
+testcase test_tcp_listen_no_data_reset() runs on tcp_ct
+{
+	test_tcp_listen(close := false);
+
+	P_TCP.send(ts_TCP(f := TH_RST, th_seq := seq));
+
+	st(TCP_CLOSED);
+
+	T.start; T.timeout;
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
+testcase test_tcp_connect_no_data_reset() runs on tcp_ct
+{
+	test_tcp_connect(close := false);
+
+	P_TCP.send(ts_TCP(f := TH_RST, th_seq := seq));
+
+	st(TCP_CLOSED);
+
+	T.start; T.timeout;
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
+testcase test_tcp_listen_data_reset() runs on tcp_ct
+{
+	test_tcp_listen(data_to_receive := '01'O);
+}
+
+testcase test_tcp_connect_data_reset() runs on tcp_ct
+{
+	test_tcp_connect(data_to_send := '01'O);
 }
 
 /**
@@ -660,9 +701,11 @@ control {
 
 	while (post_dec(i) > 0) {
 		execute(test_tcp_connect_no_data_close());
+		execute(test_tcp_connect_no_data_reset());
 		execute(test_tcp_connect_data_close());
 		execute(test_tcp_connect_more_data_close());
 		execute(test_tcp_listen_no_data_close());
+		execute(test_tcp_listen_no_data_reset());
 		execute(test_tcp_listen_data_close());
 		execute(test_tcp_listen_more_data_close());
 		execute(test_tcp_retransmit());
