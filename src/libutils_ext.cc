@@ -17,6 +17,7 @@
 #include <sys/types.h>
 
 #include <netinet/ether.h>
+#include <netinet/ip.h>
 #include <netinet/ip6.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -58,7 +59,6 @@ OCTETSTRING fx__inet__aton(CHARSTRING const &s)
 	return OCTETSTRING(sizeof(struct in_addr), (uint8_t *) &addr);
 }
 
-
 int32_t _cs(void *data, size_t data_len)
 {
 	int32_t s = 0;
@@ -75,6 +75,25 @@ int32_t _cs(void *data, size_t data_len)
 uint16_t cs(int32_t s)
 {
 	return ~((s & 0xFFFF) + (s >> 16));
+}
+
+INTEGER fx__tcp__csum(OCTETSTRING& msg)
+{
+	const uint8_t *data = msg;
+	struct ip *ip = (struct ip *) data;
+	struct tcphdr *tcp = (struct tcphdr *) (ip + 1);
+	uint16_t len = ntohs(ip->ip_len) - sizeof(struct ip);
+	int32_t s;
+
+	s = _cs(&ip->ip_src, sizeof(struct in_addr) * 2);
+
+	s += htons(ip->ip_p);
+	s += htons(len);
+
+	tcp->th_sum = 0;
+	s += _cs(tcp, len);
+
+	return cs(s);
 }
 
 INTEGER fx__inet6__chksum(const OCTETSTRING& msg)

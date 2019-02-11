@@ -24,6 +24,7 @@ external function fx_ether_aton(charstring addr) return octetstring;
 external function fx_inet_aton(charstring addr) return octetstring;
 external function fx_inet6_pton(charstring addr) return octetstring;
 
+external function fx_tcp_csum(inout octetstring data) return integer;
 external function fx_inet6_chksum(octetstring data) return integer;
 
 function mask_is_present(bitstring val, bitstring mask) return boolean
