@@ -341,7 +341,7 @@ function test_tcp_connect(octetstring data_to_send := ''O,
 			data_unack := data_pop(data_to_send, data_step);
 			P_TCP.send(ts_TCP(f := TH_PSH,
 							  th_seq := post_inc(seq, lengthof(data_unack)),
-							  th_ack := ack, d := data_unack));
+							  d := data_unack));
 			goto wait_for_data;
 		}
 
