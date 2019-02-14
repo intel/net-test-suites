@@ -163,6 +163,8 @@ function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 
 type enumerated tp_msg_type_t {
 	TP_COMMAND,
+	TP_CONFIG_REQUEST,
+	TP_CONFIG_REPLY,
 	TP_INTROSPECT_REQUEST,
 	TP_INTROSPECT_REPLY,
 	TP_INTROSPECT_MEMORY_REQUEST,
@@ -242,9 +244,7 @@ function tp_send(tp_msg_type_t msg_type,
 		setverdict(fail);
 	}
 	} /* end of alt */
-
 label exit;
-
 	return tp;
 }
 
@@ -702,6 +702,13 @@ testcase test_tcp_undersized() runs on tcp_ct
 	var ip_t ip := valueof(ts_IP(IPPROTO_TCP, ''O));
 
 	P_IP.send(ip);
+}
+
+testcase test_config() runs on tcp_ct
+{
+	test_ct_init();
+
+	var tp_t tp := tp_send(TP_CONFIG_REQUEST);
 }
 
 control {
