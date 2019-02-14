@@ -114,6 +114,11 @@ function eth_ip_new(ipproto_t proto, octetstring d) return eth_t {
 	return e;
 }
 
+function eth_new(ethertype_t ethertype, octetstring d) return eth_t {
+	var eth_t e := valueof(ts_ETH(ethertype, d));
+	return e;
+}
+
 function eth_ct_ip6_input(eth_t eth) runs on eth_CT {
 	var ip6_t ip6 := ip6_dec(eth.data);
 
@@ -201,6 +206,7 @@ function eth_ct_start() runs on eth_CT {
 	var octetstring d;
 	var eth_t eth;
 	var arp_t arp;
+	var ip_t ip;
 	var udp_t udp;
 	var tcp_t tcp;
 	var icmp6_t icmp6;
@@ -268,6 +274,10 @@ function eth_ct_start() runs on eth_CT {
 			}
 			}
 			eth_ct_eth_send(eth);
+		}
+		[] P_IP.receive(?) -> value ip {
+				eth := eth_new(ETHERTYPE_IP, ip_enc(ip));
+				eth_ct_eth_send(eth);
 		}
 		}
 	}
