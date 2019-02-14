@@ -695,11 +695,21 @@ testcase test_eth() runs on tcp_ct
 	test_ct_init();
 }
 
+testcase test_tcp_undersized() runs on tcp_ct
+{
+	test_ct_init();
+
+	var ip_t ip := valueof(ts_IP(IPPROTO_TCP, ''O));
+
+	P_IP.send(ip);
+}
+
 control {
 
 	var integer i := number_of_runs;
 
 	while (post_dec(i) > 0) {
+		execute(test_tcp_undersized());
 		execute(test_tcp_connect_no_data_close());
 		execute(test_tcp_connect_no_data_reset());
 		execute(test_tcp_connect_data_close());
