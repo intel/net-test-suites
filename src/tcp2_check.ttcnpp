@@ -161,7 +161,7 @@ function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 	fail_on_events(fail_on);
 }
 
-type enumerated tp_msg_type_t {
+type enumerated tp_msg_t {
 	TP_COMMAND,
 	TP_CONFIG_REQUEST,
 	TP_CONFIG_REPLY,
@@ -183,7 +183,7 @@ type enumerated tp_msg_type_t {
 	encode "TEXT";
 }
 
-external function tp_msg_type_to_string(in tp_msg_type_t x) return charstring
+external function tp_msg_to_string(in tp_msg_t x) return charstring
 	with { extension "prototype(convert) encode(TEXT)"; }
 
 type record tp_t {
@@ -199,10 +199,10 @@ type record tp_t {
 	encode "JSON";
 }
 
-template tp_t ts_TP(tp_msg_type_t t,
+template tp_t ts_TP(tp_msg_t t,
 					template charstring d := omit,
 					template charstring o := omit) := {
-	msg := tp_msg_type_to_string(t),
+	msg := tp_msg_to_string(t),
 	status := omit,
 	state := omit,
 	seq := omit,
@@ -218,7 +218,7 @@ external function f_tp_enc(in tp_t x) return octetstring
 external function f_tp_dec(in octetstring x) return tp_t
 	with { extension "prototype(convert) decode(JSON)"; }
 
-function tp_send(tp_msg_type_t msg_type,
+function tp_send(tp_msg_t msg_type,
 				charstring o := "",
 				charstring d := "") runs on tcp_ct return tp_t
 {
