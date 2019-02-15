@@ -704,11 +704,61 @@ testcase test_tcp_undersized() runs on tcp_ct
 	P_IP.send(ip);
 }
 
+type record tp_new_t {
+	charstring msg,
+	charstring data
+} with {
+	encode "JSON";
+}
+
+template tp_new_t ts_TP_new(tp_msg_t t, charstring d) := {
+	msg := tp_msg_to_string(t),
+	data := d
+}
+
+external function f_tp_new_enc(in tp_new_t x) return octetstring
+	with { extension "prototype(convert) encode(JSON)"; }
+
+external function f_tp_new_dec(in octetstring x) return tp_t
+	with { extension "prototype(convert) decode(JSON)"; }
+
+function tp_send_new(tp_msg_t msg, octetstring d := ''O) runs on tcp_ct
+{
+	var tp_new_t tp := valueof(ts_TP_new(msg, oct2char(d)));
+
+	P_UDP.send(ts_UDP(d := f_tp_new_enc(tp)));
+}
+
+type record map_entry_t {
+	universal charstring key,
+	union {
+		integer i,
+		charstring s
+	} val
+} with {
+	encode "JSON";
+	variant(val) "JSON: as value"
+}
+
+type set of map_entry_t map_t with {
+	encode "JSON";
+	variant "as map";
+}
+
+external function f_enc_map(in map_t x) return octetstring
+	with { extension "prototype(convert) encode(JSON)" }
+
 testcase test_config() runs on tcp_ct
 {
+	var map_t x := {
+		{ "tcp_echo", { i := 1 } }
+	};
+
+	var octetstring d := f_enc_map(x)
+
 	test_ct_init();
 
-	var tp_t tp := tp_send(TP_CONFIG_REQUEST);
+	tp_send_new(TP_CONFIG_REQUEST, d);
 }
 
 control {
