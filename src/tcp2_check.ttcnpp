@@ -704,16 +704,28 @@ testcase test_tcp_undersized() runs on tcp_ct
 	P_IP.send(ip);
 }
 
+type record map_entry_t {
+	charstring key,
+	charstring val /* "value" is a reserved word in TTCN-3 */
+} with {
+	encode "JSON";
+	variant(val) "JSON: name as value";
+}
+
+type record of map_entry_t map_t with {
+	encode "JSON";
+}
+
 type record tp_new_t {
 	charstring msg,
-	charstring data
+	map_t data
 } with {
 	encode "JSON";
 }
 
-template tp_new_t ts_TP_new(tp_msg_t t, charstring d) := {
-	msg := tp_msg_to_string(t),
-	data := d
+template tp_new_t ts_TP_new(tp_msg_t msg, map_t data) := {
+	msg := tp_msg_to_string(msg),
+	data := data
 }
 
 external function f_tp_new_enc(in tp_new_t x) return octetstring
@@ -722,27 +734,11 @@ external function f_tp_new_enc(in tp_new_t x) return octetstring
 external function f_tp_new_dec(in octetstring x) return tp_t
 	with { extension "prototype(convert) decode(JSON)"; }
 
-function tp_send_new(tp_msg_t msg, octetstring d := ''O) runs on tcp_ct
+function tp_send_new(tp_msg_t msg, map_t data) runs on tcp_ct
 {
-	var tp_new_t tp := valueof(ts_TP_new(msg, oct2char(d)));
+	var tp_new_t tp := valueof(ts_TP_new(msg, data));
 
 	P_UDP.send(ts_UDP(d := f_tp_new_enc(tp)));
-}
-
-type record map_entry_t {
-	universal charstring key,
-	union {
-		integer i,
-		charstring s
-	} val
-} with {
-	encode "JSON";
-	variant(val) "JSON: as value"
-}
-
-type set of map_entry_t map_t with {
-	encode "JSON";
-	variant "as map";
 }
 
 external function f_enc_map(in map_t x) return octetstring
@@ -750,15 +746,11 @@ external function f_enc_map(in map_t x) return octetstring
 
 testcase test_config() runs on tcp_ct
 {
-	var map_t x := {
-		{ "tcp_echo", { i := 1 } }
-	};
-
-	var octetstring d := f_enc_map(x)
+	var map_t data := { { "tcp_echo", "1" } };
 
 	test_ct_init();
 
-	tp_send_new(TP_CONFIG_REQUEST, d);
+	tp_send_new(TP_CONFIG_REQUEST, data);
 }
 
 control {
