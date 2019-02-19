@@ -286,7 +286,7 @@ function test_tcp_connect(octetstring data_to_send := ''O,
 
 	seq := isn;
 
-	test_ct_init();
+	tcp_init();
 
 	if (fuzzer_enabled) { fuzzer_on(); }
 
@@ -402,7 +402,7 @@ function test_tcp_listen(octetstring data_to_receive := ''O,
 {
 	var octetstring data := ''O;
 
-	test_ct_init();
+	tcp_init();
 
 	TT.start;
 
@@ -581,7 +581,7 @@ testcase test_tcp_connect_data_reset() runs on tcp_ct
  */
 testcase test_tcp_debug() runs on tcp_ct
 {
- 	test_ct_init();
+	tcp_init();
 
 	TT.start;
 
@@ -619,7 +619,7 @@ testcase test_tcp_debug() runs on tcp_ct
  */
 testcase test_tcp_retransmit() runs on tcp_ct
 {
-	test_ct_init();
+	tcp_init();
 
 	fuzzer_on();
 
@@ -692,12 +692,12 @@ testcase test_tcp_recv() runs on tcp_ct
 
 testcase test_eth() runs on tcp_ct
 {
-	test_ct_init();
+	tcp_init();
 }
 
 testcase test_tcp_undersized() runs on tcp_ct
 {
-	test_ct_init();
+	tcp_init();
 
 	var ip_t ip := valueof(ts_IP(IPPROTO_TCP, ''O));
 
@@ -744,13 +744,26 @@ function tp_send_new(tp_msg_t msg, map_t data) runs on tcp_ct
 external function f_enc_map(in map_t x) return octetstring
 	with { extension "prototype(convert) encode(JSON)" }
 
+
+function tcp_config(map_t cfg) runs on tcp_ct
+{
+	tp_send_new(TP_CONFIG_REQUEST, cfg);
+}
+
 testcase test_config() runs on tcp_ct
 {
-	var map_t data := { { "tcp_echo", "1" } };
+	var map_t cfg := { { "tcp_echo", "1" } };
 
 	test_ct_init();
 
-	tp_send_new(TP_CONFIG_REQUEST, data);
+	tcp_config(cfg);
+}
+
+function tcp_init() runs on tcp_ct
+{
+	test_ct_init();
+
+	tcp_config({ { "tcp_echo", "1" } });
 }
 
 control {
