@@ -393,14 +393,13 @@ label end;
 }
 
 /**
- * Passive TCP connection establishment,
- * data transfer and active close
+ * Test peer's passive connection establishment, data transfer and close
  */
 function test_tcp_listen(octetstring data_to_receive := ''O,
 								boolean close := true,
 								integer isn := 0) runs on tcp_ct
 {
-	var octetstring data := ''O;
+	var octetstring data := ''O; /* data received from the peer */
 
 	tcp_init();
 
