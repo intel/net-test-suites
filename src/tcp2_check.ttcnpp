@@ -279,10 +279,12 @@ function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
  * (data echoing expected) and suite's active close
  */
 function test_tcp_connect(octetstring data_to_send := ''O,
+						  octetstring data_to_receive := ''O,
 								boolean close := true,
 								integer isn := 0) runs on tcp_ct
 {
 	var octetstring data := ''O;
+	var octetstring data_received := ''O;
 
 	seq := isn;
 
@@ -318,6 +320,7 @@ function test_tcp_connect(octetstring data_to_send := ''O,
 		peer_assert(TCP_ESTABLISHED);
 		var tcp_t tcp2 := valueof(ts_TCP);
 		if (th_is_set(tcp, TH_PSH)) {
+			data_push(data_received, tcp.data);
 			th_set(tcp2, TH_ACK);
 			pre_inc(ack, lengthof(tcp.data));
 		}
@@ -384,8 +387,13 @@ label wait_for_data;
 
 	if (s == TCP_CLOSED and
 			lengthof(data_to_send) == 0 and
-			lengthof(data_unack) == 0) {
+			lengthof(data_unack) == 0 and
+			data_received == data_to_receive) {
 		setverdict(pass);
+	} else {
+		log("Error: data_to_receive=", data_to_receive, " ",
+			"data_received=", data_received);
+		setverdict(fail);
 	}
 
 	tp_send(TP_COMMAND, "CLOSE");
@@ -490,7 +498,7 @@ testcase test_tcp_connect_no_data_close() runs on tcp_ct
  */
 testcase test_tcp_connect_data_close() runs on tcp_ct
 {
-	test_tcp_connect(data_to_send := '01'O);
+	test_tcp_connect(data_to_send := '01'O, data_to_receive := '01'O);
 }
 
 /**
@@ -499,7 +507,7 @@ testcase test_tcp_connect_data_close() runs on tcp_ct
  */
 testcase test_tcp_connect_more_data_close() runs on tcp_ct
 {
-	test_tcp_connect(data_to_send := '010203'O);
+	test_tcp_connect(data_to_send := '010203'O, data_to_receive := '010203'O);
 }
 
 /**
