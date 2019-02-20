@@ -480,6 +480,14 @@ function test_tcp_listen(octetstring data_to_receive := ''O,
 	[] TT.timeout { setverdict(fail); stop; }
 	} /* end of alt */
 
+	if (s == TCP_CLOSED and data_to_receive == data) {
+		setverdict(pass);
+	} else {
+		log("Error: data_to_receive=", data_to_receive, " ",
+			"data=", data);
+		setverdict(fail);
+	}
+
 	tp_send(TP_COMMAND, "CLOSE");
 label end;
 }
