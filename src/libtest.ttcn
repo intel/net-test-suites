@@ -385,17 +385,14 @@ template icmp_t ts_ICMP := {
 
 function do_ping() runs on test_CT {
 
-	var icmp_t icmp := valueof(ts_ICMP);
-
 	timer T := 3.0;
 
-	P_ICMP.send(icmp);
+	P_ICMP.send(valueof(ts_ICMP));
 
 	T.start;
 
 	alt {
-		[] P_ICMP.receive(?) -> value icmp {
-			setverdict(pass);
+		[] P_ICMP.receive(?) {
 		}
 		[] T.timeout {
 			setverdict(fail);
