@@ -705,6 +705,8 @@ testcase test_tcp_undersized() runs on tcp_ct
 	var ip_t ip := valueof(ts_IP(IPPROTO_TCP, ''O));
 
 	P_IP.send(ip);
+
+	setverdict(pass); /* TODO: check peer's state */
 }
 
 type record map_entry_t {
