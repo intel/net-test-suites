@@ -684,28 +684,77 @@ function tcp_send(octetstring data := ''O) runs on tcp_ct
 					  th_ack := ack, d := data));
 	T.start;
 	alt {
-	[] P_TCP.receive(tr_TCP(f := tr_TH_ACK, th_ack := seq)) {
+	[] P_TCP.receive(tr_TCP(f := TH_ACK, th_seq := ack, th_ack := seq)) {
 		T.stop;
 	}
-	[] P_TCP.receive(tr_TCP(f := tr_TH_PSH))  {
-		T.stop;
-		T.start; repeat;
-	}
+	[] P_TCP.receive(?) { T.stop; setverdict(fail); }
 	[] T.timeout { setverdict(fail); }
 	} /* end of alt */
 }
 
+#define assert(_cond, args...) do {							\
+	if ((_cond) == false) {									\
+		log("Assertion failed: ", #_cond, " ", ## args);	\
+		setverdict(fail);									\
+		tp_send(TP_COMMAND, "CLOSE");						\
+		stop;												\
+	}														\
+} while (false)
+
+function peer_assert_new(tcp_state_t exp_state := TCP_NONE,
+						 integer exp_seq := -1,
+						 integer exp_ack := -1) runs on tcp_ct return tp_t
+{
+	var tp_t peer := tp_send(TP_INTROSPECT_REQUEST);
+
+	if (exp_state != TCP_NONE) {
+			assert(peer.state == tcp_state_to_string(exp_state),
+				   "peer.state=", peer.state, " exp_state=", exp_state);
+	}
+
+	if (exp_seq >= 0) {
+		assert(peer.seq == exp_seq,
+			   "peer.seq=", peer.seq, ", exp_seq=", exp_seq);
+	}
+
+	if (exp_ack >= 0) {
+		assert(peer.ack == exp_ack,
+			   "peer.ack=", peer.ack, ", exp_ack=", exp_ack);
+	}
+
+	return peer;
+}
+
+/**
+ * Test reception of data with variable chunks and verify peer's seq and ack
+ */
+/* TODO: Enhance this one with out of order data */
 testcase test_tcp_recv() runs on tcp_ct
 {
 	test_tcp_connect(close := false);
 
+	tcp_config({{ "tcp_echo", "0" }});
+
+	var tp_t peer := peer_assert_new(); /* get peer's seq */
+
 	tcp_send('01'O);
 
-	tcp_send('02'O);
+	peer_assert_new(exp_seq := peer.seq,
+					exp_ack := pre_inc(peer.ack, lengthof('01'O)));
 
-	tcp_send('03'O);
+	tcp_send('0203'O);
 
-	tp_send(TP_COMMAND, "RECV");
+	peer_assert_new(exp_seq := peer.seq,
+					exp_ack := pre_inc(peer.ack, lengthof('0203'O)));
+
+	tcp_send('040506'O);
+
+	peer_assert_new(exp_seq := peer.seq,
+					exp_ack := pre_inc(peer.ack, lengthof('040506'O)));
+
+	//tp_send(TP_COMMAND, "RECV");
+
+	setverdict(pass);
 
 	tp_send(TP_COMMAND, "CLOSE");
 }
@@ -803,6 +852,7 @@ control {
 		execute(test_tcp_listen_data_close());
 		execute(test_tcp_listen_more_data_close());
 		execute(test_tcp_retransmit());
+		execute(test_tcp_recv());
 		//execute(test_tcp_debug());
 	}
 
