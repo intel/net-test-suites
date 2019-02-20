@@ -275,8 +275,8 @@ function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
 }
 
 /**
- * Active TCP connection establishment,
- * data transfer (data echoing expected) and active close
+ * Peer's active connection establishment, data transfer
+ * (data echoing expected) and suite's active close
  */
 function test_tcp_connect(octetstring data_to_send := ''O,
 								boolean close := true,
@@ -485,8 +485,8 @@ testcase test_tcp_connect_no_data_close() runs on tcp_ct
 }
 
 /**
- * Test active TCP connection establishment,
- * data transfer (data echoing expected) and active close
+ * Test peer's active TCP connection establishment,
+ * data transfer (data echoing expected) and suite's active close
  */
 testcase test_tcp_connect_data_close() runs on tcp_ct
 {
