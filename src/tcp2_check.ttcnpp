@@ -547,6 +547,8 @@ testcase test_tcp_listen_no_data_reset() runs on tcp_ct
 
 	st(TCP_CLOSED);
 
+	setverdict(pass); /* st(TCP_CLOSED) checks peer's state and
+						 fails on error, this pass won't override that */
 	T.start; T.timeout;
 
 	tp_send(TP_COMMAND, "CLOSE");
@@ -560,6 +562,8 @@ testcase test_tcp_connect_no_data_reset() runs on tcp_ct
 
 	st(TCP_CLOSED);
 
+	setverdict(pass); /* st(TCP_CLOSED) checks peer's state and
+						 fails on error, this pass won't override that */
 	T.start; T.timeout;
 
 	tp_send(TP_COMMAND, "CLOSE");
