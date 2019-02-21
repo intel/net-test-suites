@@ -836,6 +836,134 @@ function tcp_init() runs on tcp_ct
 	tcp_config({ { "tcp_echo", "1" } });
 }
 
+#define assert(_cond, args...) do {							\
+	if ((_cond) == false) {									\
+		log("Assertion failed: ", #_cond, " ", ## args);	\
+		setverdict(fail);									\
+		stop;												\
+	}														\
+} while (false)
+
+type record win_t {
+	integer len,
+	octetstring data
+}
+
+function win_init(inout win_t w)
+{
+	w.len := 0;
+	w.data := ''O;
+}
+
+function win_push(inout win_t w, octetstring data)
+{
+	assert(lengthof(data) > 0, "data=", data);
+
+	w.len := w.len + lengthof(data);
+	w.data := w.data & data;
+}
+
+function win_pop(inout win_t w, integer len) return octetstring
+{
+	var octetstring data;
+
+	assert(len <= w.len, "len=", len, ", w.len=", w.len);
+
+	w.len := w.len - len;
+	data := substr(w.data, 0, len);
+	w.data := replace(w.data, 0, len, ''O);
+
+	return data;
+}
+
+function win_peek(inout win_t w, integer len) return octetstring
+{
+	assert(len <= w.len, "len=", len, ", w.len=", w.len);
+
+	return substr(w.data, 0, len);
+}
+
+type record of integer vec_t;
+
+/**
+ * Experimental test with the send window and data resend
+ */
+testcase test_tcp_window() runs on tcp_ct
+{
+	var win_t to_send, unack;
+	var vec_t step := { 1, 2, 3, 4, 1, 2, 3, 4 };
+	var integer i := 0;
+	var octetstring data;
+
+	win_init(to_send);
+	win_init(unack);
+
+	test_tcp_connect(close := false);
+
+	tcp_config({{ "tcp_echo", "0" }});
+
+	win_push(to_send, '0102030405060708081011121314151617181920'O);
+
+	P_FZ.send("incoming_drop");
+
+	while (to_send.len > 0) {
+
+		data := win_pop(to_send, step[i]);
+
+		P_TCP.send(ts_TCP(f := TH_PSH,
+						  th_seq := (seq + unack.len),
+						  d := data));
+
+		win_push(unack, data);
+
+		pre_inc(i);
+	}
+
+	T.start(T_default * 3.0); T.timeout;
+
+	P_FZ.send("incoming_pass");
+
+	i := 0;
+
+label resend;
+	while (unack.len > 0) {
+		data := win_peek(unack, 1);
+
+		P_TCP.send(ts_TCP(f := TH_PSH,
+						  th_seq := seq + lengthof(data),
+						  d := data));
+		alt {
+		[] P_TCP.receive(tr_TCP(f := TH_ACK, th_seq := ack)) -> value tcp {
+
+			var integer acked := tcp.th_ack - seq;
+
+			assert(acked > 0);
+			assert(acked <= unack.len);
+
+			log("acked=", acked);
+
+			seq := seq + acked;
+			win_pop(unack, acked);
+
+			goto resend;
+		}
+		[] P_TCP.receive(?) -> value tcp {
+			assert(false, "tcp=", tcp);
+		}
+		} /* end of alt */
+	}
+
+	var tp_t peer := peer_assert_new(); /* get peer's received data */
+
+	log(peer.data);
+
+	/* TODO: Implement a check here */
+
+	setverdict(pass);
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 control {
 
 	var integer i := number_of_runs;
@@ -852,6 +980,8 @@ control {
 		execute(test_tcp_listen_more_data_close());
 		execute(test_tcp_retransmit());
 		execute(test_tcp_recv());
+		/* execute(test_tcp_window());	TODO: Fix the issue with the test
+										global teardown timer and include */
 		//execute(test_tcp_debug());
 	}
 
