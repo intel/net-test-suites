@@ -73,26 +73,25 @@ function fuzzer() runs on fuzzer_ct
 {
 	var charstring cmd;
 	var tcp_t tcp;
-	var boolean incoming_drop := false;
+	var boolean recv := true;
 
 	while (true) {
 		alt {
 		[] P_CF.receive("incoming_pass") {
-			incoming_drop := false;
+			recv := true;
 		}
 		[] P_CF.receive("incoming_drop") {
-			incoming_drop := true;
+			recv := false;
 		}
 		[] P_TCP_IN.receive(?) -> value tcp { /* data from suite */
 			log("sut <- suite");
 			P_TCP_OUT.send(tcp);
 		}
 		[] P_TCP_OUT.receive(?) -> value tcp { /* data from peer */
-			if (incoming_drop) {
-				repeat;
+			if (recv) {
+				log("sut -> suite");
+				P_TCP_IN.send(tcp);
 			}
-			log("sut -> suite");
-			P_TCP_IN.send(tcp);
 		}
 		}
 	}
