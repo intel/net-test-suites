@@ -691,13 +691,13 @@ function tcp_send(octetstring data := ''O) runs on tcp_ct
 	} /* end of alt */
 }
 
-#define assert(_cond, args...) do {							\
-	if ((_cond) == false) {									\
-		log("Assertion failed: ", #_cond, " ", ## args);	\
-		setverdict(fail);									\
-		tp_send(TP_COMMAND, "CLOSE");						\
-		stop;												\
-	}														\
+#define tcp_assert(_cond, args...) do {							\
+	if ((_cond) == false) {										\
+		log("Assertion failed: ", #_cond, " ", ## args);		\
+		setverdict(fail);										\
+		tp_send(TP_COMMAND, "CLOSE");							\
+		stop;													\
+	}															\
 } while (false)
 
 function peer_assert_new(tcp_state_t exp_state := TCP_NONE,
@@ -707,17 +707,17 @@ function peer_assert_new(tcp_state_t exp_state := TCP_NONE,
 	var tp_t peer := tp_send(TP_INTROSPECT_REQUEST);
 
 	if (exp_state != TCP_NONE) {
-			assert(peer.state == tcp_state_to_string(exp_state),
+			tcp_assert(peer.state == tcp_state_to_string(exp_state),
 				   "peer.state=", peer.state, " exp_state=", exp_state);
 	}
 
 	if (exp_seq >= 0) {
-		assert(peer.seq == exp_seq,
+		tcp_assert(peer.seq == exp_seq,
 			   "peer.seq=", peer.seq, ", exp_seq=", exp_seq);
 	}
 
 	if (exp_ack >= 0) {
-		assert(peer.ack == exp_ack,
+		tcp_assert(peer.ack == exp_ack,
 			   "peer.ack=", peer.ack, ", exp_ack=", exp_ack);
 	}
 
