@@ -919,6 +919,7 @@ testcase test_tcp_window() runs on tcp_ct
 		pre_inc(i);
 	}
 
+	/* TODO: Timing shouldn't be hardcoded, find a method for adaptive timing */
 	T.start(T_default * 3.0); T.timeout;
 
 	P_FZ.send("incoming_pass");
