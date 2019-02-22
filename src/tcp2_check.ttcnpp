@@ -965,6 +965,66 @@ label resend;
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+#undef assert
+#define assert(_cond, args...) do {							\
+	if ((_cond) == false) {									\
+		log(__FILE__, ":", __LINE__, " ",					\
+			"Assertion failed: ", #_cond, ", ", ## args);	\
+		setverdict(fail);									\
+		stop;												\
+	}														\
+} while (false)
+
+/* Convert float value in seconds to integer in milliseconds */
+#define TO_MSEC(_t) float2int((_t) * 1000.0)
+
+/**
+ * Fork of the retransmission test for experimentation
+ * TODO: retransmit should be checked in all required states and points
+ */
+testcase test_tcp_retransmit2() runs on tcp_ct
+{
+	tcp_init();
+
+	fuzzer_on();
+
+	var integer tcp_rto := TO_MSEC(T_default) * 2;
+
+	tcp_config({{ "tcp_rto",  int2str(tcp_rto) }});
+
+	P_FZ.send("incoming_drop");
+
+	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
+	st(TCP_SYN_SENT);
+
+	T.start(T_default * 3.0);
+	T.timeout;
+	P_FZ.send("incoming_pass");
+
+	TT.start;
+	T.start(T_default * 3.0);
+
+	alt {
+	[] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK,
+							th_ack := seq)) -> value tcp {
+		T.stop;
+		ack := tcp.th_seq;
+		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
+		setverdict(pass);
+	}
+	[] T.timeout {
+		setverdict(fail);
+	}
+	}
+
+	T.start(T_default);
+	T.timeout;
+
+	st(TCP_ESTABLISHED, fail_on := EV_NONE);
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 control {
 
 	var integer i := number_of_runs;
