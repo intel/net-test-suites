@@ -3,12 +3,12 @@
 
 Net-test-suites includes the TCP protocol test suite written in TTCN-3 language.
 
-The test suites can be compiled with the TTCN-3 compiler and executed
-with the TTCN-3 runtime (Eclipse titan.core).
+This and other included sample and experimental test suites can be compiled
+and executed with the [titan.core](https://projects.eclipse.org/projects/tools.titan), an open source TTCN-3 compiler and runtime.
 
 ## Building and Running the TCP Test Suite
 
-### 1. Install the Dependencies
+### 1. Install Dependencies
 
 Ubuntu:
 
@@ -22,7 +22,7 @@ Fedora:
     # sudo dnf install gcc-c++ libxml2-devel openssl-devel expect
 ```
 
-### 2. Download and Install the titan.core TTCN-3 Runtime
+### 2. Download and Install the titan.core
 
 Follow one of the following options to install Eclipse titan.core on your
 Linux host system:
@@ -43,10 +43,6 @@ and unpack to the desired location.
 * titan.core can be also compiled and installed from the source
 from https://github.com/eclipse/titan.core
 
-    Note: The newest upstream versions require "-e" to be added
-    to the COMPILER_FLAGS in the generated makefile for the TCP test suite
-    to compile (legacy RAW codec behaivior).
-
 * Ubuntu's default titan.core:
 
 ```
@@ -56,13 +52,13 @@ from https://github.com/eclipse/titan.core
 Note: Ubuntu’s default titan.core is packaged incorrectly and pulls extra
 dependencies, this option isn't recommended.
 
-### 3. Set the Project Environment
+### 3. Set the Environment
 
 ```
     # . titan-env.sh
 ```
 
-Or simply add the following to your ```~/.bashrc```:
+Or simply add the following into your ```~/.bashrc```:
 
 ```
     export TTCN3_DIR=~/titan
@@ -104,7 +100,7 @@ through the configuration file (tcp_suite.cfg), for example:
     libtest.m_ip_src := "10.0.0.2"
 ```
 
-### 6. Running the Test Suites Against Zephyr app in QEMU
+### 6. Running the Test Suite Against Zephyr app in QEMU
 
 #### 6.1 Get, build and start the net-test-tools
 
