@@ -49,6 +49,8 @@ type bitstring log_mask_t length(3);
 type component fuzzer_ct {
 	port port_tcp P_TCP_IN;		/* from/to suite */
 	port port_tcp P_TCP_OUT;	/* from/to system under test */
+	port port_udp P_UDP_IN;		/* from/to suite */
+	port port_udp P_UDP_OUT;	/* from/to system under test */
 	port port_cf P_CF;			/* configuration port */
 }
 
@@ -73,16 +75,13 @@ function fuzzer() runs on fuzzer_ct
 {
 	var charstring cmd;
 	var tcp_t tcp;
+	var udp_t udp;
 	var boolean recv := true;
 
 	while (true) {
 		alt {
-		[] P_CF.receive("incoming_pass") {
-			recv := true;
-		}
-		[] P_CF.receive("incoming_drop") {
-			recv := false;
-		}
+		[] P_CF.receive("incoming_pass") { recv := true; }
+		[] P_CF.receive("incoming_drop") { recv := false; }
 		[] P_TCP_IN.receive(?) -> value tcp { /* data from suite */
 			log("sut <- suite");
 			P_TCP_OUT.send(tcp);
@@ -93,7 +92,13 @@ function fuzzer() runs on fuzzer_ct
 				P_TCP_IN.send(tcp);
 			}
 		}
+		[] P_UDP_IN.receive(?) -> value udp { /* data from suite */
+			P_UDP_OUT.send(udp);
 		}
+		[] P_UDP_OUT.receive(?) -> value udp { /* data from peer */
+			P_UDP_IN.send(udp);
+		}
+		} /* end of alt */
 	}
 }
 
@@ -267,6 +272,11 @@ function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
 
 	connect(self:P_TCP, ct_fuzzer:P_TCP_IN);
 	connect(ct_fuzzer:P_TCP_OUT, eth_ct:P_TCP);
+
+	disconnect(self:P_UDP, eth_ct:P_UDP);
+
+	connect(self:P_UDP, ct_fuzzer:P_UDP_IN);
+	connect(ct_fuzzer:P_UDP_OUT, eth_ct:P_UDP);
 
 	connect(self:P_FZ, ct_fuzzer:P_CF);
 
