@@ -45,7 +45,7 @@ const event_t EV_UNEXPECTED_MSG :='010'B;
 type bitstring log_mask_t length(3);
 
 /* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */
-/* Also used for transparent debug */
+/* Can also be used for transparent trace */
 type component fuzzer_ct {
 	port port_tcp P_TCP_IN;		/* from/to suite */
 	port port_tcp P_TCP_OUT;	/* from/to system under test */
