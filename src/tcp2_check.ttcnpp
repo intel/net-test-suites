@@ -807,13 +807,19 @@ testcase test_tcp_undersized() runs on tcp_ct
 }
 
 /**
- * Send undersized data in ESTABLISHED
+ * Send an undersized data in ESTABLISHED
  */
+/* TODO: Implement fuzzying of ip_len/th_off/data */
 testcase test_tcp_undersized2() runs on tcp_ct
 {
 	test_tcp_connect(close := false);
 
+	tcp_config({{ "tp_trace", "1" }, { "tp_conn_delete", "0" }});
+
 	var octetstring data := ''O;
+
+	T.start;
+	T.timeout;
 
 	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := post_inc(seq, lengthof(data)),
 					  d := data));
