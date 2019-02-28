@@ -231,7 +231,10 @@ function tp_send(tp_msg_t msg_type,
 
 	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
 
-	if (msg_type != TP_INTROSPECT_REQUEST) {
+	/* Currently only introspect and certain command messages expect response */
+	/* TODO: rework and get rid of the following if ()*/
+	if (not (msg_type == TP_INTROSPECT_REQUEST or
+			 (msg_type == TP_COMMAND and o == "RECV"))) {
 		tp := valueof(ts_TP(msg_type));
 		goto exit;
 	}
@@ -735,9 +738,12 @@ function peer_assert_new(tcp_state_t exp_state := TCP_NONE,
 }
 
 /**
- * Test reception of data with variable chunks and verify peer's seq and ack
+ * Test reception of data with variable chunks, verify peer's seq and ack,
+ * and check what the peer has received with the TP_COMMAND/RECV
  */
 /* TODO: Enhance this one with out of order data */
+/* TODO: The implementation of this test is somwehat redundant,
+ *       peer_assert_new() can be moved into tcp_send() */
 testcase test_tcp_recv() runs on tcp_ct
 {
 	test_tcp_connect(close := false);
@@ -761,9 +767,11 @@ testcase test_tcp_recv() runs on tcp_ct
 	peer_assert_new(exp_seq := peer.seq,
 					exp_ack := pre_inc(peer.ack, lengthof('040506'O)));
 
-	//tp_send(TP_COMMAND, "RECV");
+	peer := tp_send(TP_COMMAND, "RECV");
 
-	setverdict(pass);
+	if (str2oct(peer.data) == '010203040506'O) {
+		setverdict(pass);
+	}
 
 	tp_send(TP_COMMAND, "CLOSE");
 }
