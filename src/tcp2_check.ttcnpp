@@ -692,16 +692,22 @@ template th_flags_t tr_TH_PSH	:='???1??'B;
 
 function tcp_send(octetstring data := ''O) runs on tcp_ct
 {
+	/* This check might be too restrictive for out of sync tests */
+	peer_assert_new(exp_seq := ack, exp_ack := seq);
+
 	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := post_inc(seq, lengthof(data)),
 					  th_ack := ack, d := data));
 	T.start;
+
 	alt {
-	[] P_TCP.receive(tr_TCP(f := TH_ACK, th_seq := ack, th_ack := seq)) {
-		T.stop;
-	}
-	[] P_TCP.receive(?) { T.stop; setverdict(fail); }
-	[] T.timeout { setverdict(fail); }
+		[] P_TCP.receive(tr_TCP(f := TH_ACK, th_seq := ack, th_ack := seq)) {
+			T.stop;
+		}
+		[] P_TCP.receive(?) { T.stop; setverdict(fail); }
+		[] T.timeout { setverdict(fail); }
 	} /* end of alt */
+
+	peer_assert_new(exp_seq := ack, exp_ack := seq);
 }
 
 #define tcp_assert(_cond, args...) do {							\
@@ -738,36 +744,23 @@ function peer_assert_new(tcp_state_t exp_state := TCP_NONE,
 }
 
 /**
- * Test reception of data with variable chunks, verify peer's seq and ack,
+ * Test the reception of data with variable chunks, verify peer's seq and ack,
  * and check what the peer has received with the TP_COMMAND/RECV
  */
 /* TODO: Enhance this one with out of order data */
-/* TODO: The implementation of this test is somwehat redundant,
- *       peer_assert_new() can be moved into tcp_send() */
 testcase test_tcp_recv() runs on tcp_ct
 {
 	test_tcp_connect(close := false);
 
 	tcp_config({{ "tcp_echo", "0" }});
 
-	var tp_t peer := peer_assert_new(); /* get peer's seq */
-
 	tcp_send('01'O);
-
-	peer_assert_new(exp_seq := peer.seq,
-					exp_ack := pre_inc(peer.ack, lengthof('01'O)));
 
 	tcp_send('0203'O);
 
-	peer_assert_new(exp_seq := peer.seq,
-					exp_ack := pre_inc(peer.ack, lengthof('0203'O)));
-
 	tcp_send('040506'O);
 
-	peer_assert_new(exp_seq := peer.seq,
-					exp_ack := pre_inc(peer.ack, lengthof('040506'O)));
-
-	peer := tp_send(TP_COMMAND, "RECV");
+	var tp_t peer := tp_send(TP_COMMAND, "RECV");
 
 	if (str2oct(peer.data) == '010203040506'O) {
 		setverdict(pass);
