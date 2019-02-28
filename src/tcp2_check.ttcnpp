@@ -806,6 +806,23 @@ testcase test_tcp_undersized() runs on tcp_ct
 	setverdict(pass); /* TODO: check peer's state */
 }
 
+/**
+ * Send undersized data in ESTABLISHED
+ */
+testcase test_tcp_undersized2() runs on tcp_ct
+{
+	test_tcp_connect(close := false);
+
+	var octetstring data := ''O;
+
+	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := post_inc(seq, lengthof(data)),
+					  d := data));
+
+	peer_assert_new(exp_seq := ack, exp_ack := seq);
+
+	setverdict(pass);
+}
+
 type record map_entry_t {
 	charstring key,
 	charstring val /* "value" is a reserved word in TTCN-3 */
