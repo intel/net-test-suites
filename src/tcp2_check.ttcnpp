@@ -44,6 +44,8 @@ const event_t EV_UNEXPECTED_MSG :='010'B;
 
 type bitstring log_mask_t length(3);
 
+type record of octetstring tcp_test_data_t;
+
 /* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */
 /* Can also be used for transparent trace */
 type component fuzzer_ct {
@@ -750,19 +752,21 @@ function peer_assert_new(tcp_state_t exp_state := TCP_NONE,
 /* TODO: Enhance this one with out of order data */
 testcase test_tcp_recv() runs on tcp_ct
 {
+	var tcp_test_data_t data := { '01'O, '0203'O, '040506'O };
+	var octetstring data_total := ''O;
+
 	test_tcp_connect(close := false);
 
 	tcp_config({{ "tcp_echo", "0" }});
 
-	tcp_send('01'O);
-
-	tcp_send('0203'O);
-
-	tcp_send('040506'O);
+	for (var integer i := 0; i < sizeof(data); i := i + 1) {
+		data_total := data_total & data[i];
+		tcp_send(data[i]);
+	}
 
 	var tp_t peer := tp_send(TP_COMMAND, "RECV");
 
-	if (str2oct(peer.data) == '010203040506'O) {
+	if (str2oct(peer.data) == data_total) {
 		setverdict(pass);
 	}
 
