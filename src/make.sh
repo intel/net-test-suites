@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 [ -f Makefile ] && make clean && rm -f Makefile* cversion.h
 
@@ -22,4 +23,6 @@ sed -i 's/\($(CXX) -c\)/\t@echo \"   CXX\t\" $<\n\t@\1/' Makefile
 
 sed -i 's/\(if $(CXX)\)/\@echo "   LD\t" $(EXECUTABLE)\n\t@\1/' Makefile
 
-make
+echo "libutils_ext.cc: libutils.hh" >> Makefile
+
+make -j $(( $(nproc) - 2 ))
