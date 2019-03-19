@@ -1041,43 +1041,64 @@ testcase test_tcp_retransmit2() runs on tcp_ct
 {
 	tcp_init();
 
-	fuzzer_on();
+	var udp_t udp;
+	var tp_t tp;
 
-	var integer tcp_rto := TO_MSEC(T_default) * 2;
+	var integer tcp_retries := 10;
+	var float tcp_rto := T_default/4.0;
+	var boolean peer_deleted := false;
 
-	tcp_config({{ "tcp_rto",  int2str(tcp_rto) }});
+	ack := -1;
 
-	P_FZ.send("incoming_drop");
+	tcp_config({
+			{ "tcp_rto", int2str(TO_MSEC(tcp_rto)) },
+			{ "tcp_retries", int2str(tcp_retries) },
+			{ "tp_trace", int2str(1) }
+	});
 
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
 	st(TCP_SYN_SENT);
+	T.start;
 
-	T.start(T_default * 3.0);
-	T.timeout;
-	P_FZ.send("incoming_pass");
-
-	TT.start;
-	T.start(T_default * 3.0);
+	tcp_retries := tcp_retries + 1; /* account non retransmit */
 
 	alt {
-	[] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK,
+	[tcp_retries > 0] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK,
 							th_ack := seq)) -> value tcp {
+		log("tcp_rto=", tcp_rto, " sec, actual=", T.read, " sec");
 		T.stop;
-		ack := tcp.th_seq;
-		P_TCP.send(ts_TCP(f := TH_ACK, th_seq := seq, th_ack := pre_inc(ack)));
-		setverdict(pass);
+
+		if (ack < 0) {
+			ack := tcp.th_seq;
+		}
+
+		assert(tcp.th_seq == ack);
+
+		if (tcp_retries == 0) {
+			peer_assert(TCP_SYN_SENT);
+		}
+
+		tcp_retries := tcp_retries - 1;
+		T.start;
+		repeat;
 	}
-	[] T.timeout {
+	[tcp_retries <= 0] P_TCP.receive(?) -> value tcp {
+		log("Extra retransmit");
 		setverdict(fail);
 	}
+	[tcp_retries == 0] P_UDP.receive(?) -> value udp {
+		T.stop;
+		tp := f_tp_dec(udp.data);
+		peer_deleted := true;
+		setverdict(pass);
 	}
+	[] T.timeout { setverdict(fail); }
+	} /* end of alt */
 
-	T.start(T_default);
-	T.timeout;
 
-	st(TCP_ESTABLISHED, fail_on := EV_NONE);
-
-	tp_send(TP_COMMAND, "CLOSE");
+	
+	//label end;
+	//tp_send(TP_COMMAND, "CLOSE");
 }
 
 control {
