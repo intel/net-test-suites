@@ -1034,8 +1034,16 @@ label resend;
 #define TO_MSEC(_t) float2int((_t) * 1000.0)
 
 /**
- * Fork of the retransmission test for experimentation
- * TODO: retransmit should be checked in all required states and points
+ * This a fork of the retransmission test for an experimentation
+ * with what is the best approach here.
+ * Currently it checks peer's retransmission in TCP_SYN_RECEIVED
+ * TODO:
+ *  - Check the retransmission in peer's TCP_SYN_SENT, TCP_ESTABLISHED,
+ *    TCP_LAST_ACK
+ *  - During peer's retransmission, input messages from the previous
+ *    and next state
+ *  - Reply before the peer's retransmission count is reached and
+ *    verify that peer can recover
  */
 testcase test_tcp_retransmit2() runs on tcp_ct
 {
