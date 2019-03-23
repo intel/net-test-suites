@@ -29,10 +29,11 @@ import from libutils all;
 import from port_data_types all;
 
 modulepar {
-	float T_default := 0.1;
+	float T_default := 0.1; /* default message timeout, sec */
 	boolean fuzzer_enabled := false;
 	boolean peer_assert_enabled := true;
 	integer number_of_runs := 1;
+	integer max_tests_failed := 1;
 }
 
 type bitstring event_t length(3);
@@ -1109,21 +1110,17 @@ testcase test_tcp_retransmit2() runs on tcp_ct
 #define setverdict(args...) do { } while (false)
 
 #define execute(args...) do {								\
-															\
 	if (execute(args) != pass) {							\
-		pre_inc(number_of_failed);							\
+		pre_inc(tests_failed);								\
 	}														\
-															\
-	assert(number_of_failed < max_number_of_failed,			\
+	assert(tests_failed < max_tests_failed,					\
 		   "Maximum number of failed tests reached");		\
-															\
 } while (false)
 
 control {
 
 	var integer i := number_of_runs;
-	var integer max_number_of_failed := 2; /* TODO: into conf parameter? */
-	var integer number_of_failed := 0;
+	var integer tests_failed := 0;
 
 	while (post_dec(i) > 0) {
 		execute(test_tcp_undersized());
