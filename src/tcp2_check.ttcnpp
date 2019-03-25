@@ -575,32 +575,62 @@ testcase test_tcp_connect_isn() runs on tcp_ct
 	test_tcp_connect(isn := 333);
 }
 
+/**
+ * Test that RST works in ESTABLISHED
+ * TODO: Generalize to other states
+ */
 testcase test_tcp_listen_no_data_reset() runs on tcp_ct
 {
+	var udp_t udp;
+	var tp_new_t tp;
+
 	test_tcp_listen(close := false);
 
+	tcp_config({{ "tp_trace", "1" }});
+
 	P_TCP.send(ts_TCP(f := TH_RST, th_seq := seq));
+	T.start;
 
-	st(TCP_CLOSED);
-
-	setverdict(pass); /* st(TCP_CLOSED) checks peer's state and
-						 fails on error, this pass won't override that */
-	T.start; T.timeout;
+	alt {
+	[] P_UDP.receive(?) -> value udp {
+		T.stop;
+		tp := f_tp_new_dec(udp.data);
+		if (tp.data[0].val == "CONN_DELETE") {
+			setverdict(pass);
+		}
+	}
+	[] T.timeout { setverdict(fail); }
+	} /* end of alt */
 
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+/**
+ * Test that RST works in ESTABLISHED
+ * TODO: Generalize to other states
+ */
 testcase test_tcp_connect_no_data_reset() runs on tcp_ct
 {
+	var udp_t udp;
+	var tp_new_t tp;
+
 	test_tcp_connect(close := false);
 
+	tcp_config({{ "tp_trace", "1" }});
+
 	P_TCP.send(ts_TCP(f := TH_RST, th_seq := seq));
+	T.start;
 
-	st(TCP_CLOSED);
-
-	setverdict(pass); /* st(TCP_CLOSED) checks peer's state and
-						 fails on error, this pass won't override that */
-	T.start; T.timeout;
+	alt {
+	[] P_UDP.receive(?) -> value udp {
+		T.stop;
+		tp := f_tp_new_dec(udp.data);
+		if (tp.data[0].val == "CONN_DELETE") {
+			setverdict(pass);
+		}
+	}
+	[] T.timeout { setverdict(fail); }
+	} /* end of alt */
 
 	tp_send(TP_COMMAND, "CLOSE");
 }
