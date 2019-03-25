@@ -857,7 +857,7 @@ template tp_new_t ts_TP_new(tp_msg_t msg, map_t data) := {
 external function f_tp_new_enc(in tp_new_t x) return octetstring
 	with { extension "prototype(convert) encode(JSON) printing(pretty)"; }
 
-external function f_tp_new_dec(in octetstring x) return tp_t
+external function f_tp_new_dec(in octetstring x) return tp_new_t
 	with { extension "prototype(convert) decode(JSON)"; }
 
 function tp_send_new(tp_msg_t msg, map_t data) runs on tcp_ct
