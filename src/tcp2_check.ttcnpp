@@ -889,7 +889,7 @@ function tcp_init() runs on tcp_ct
 {
 	test_ct_init();
 
-	tcp_config({ { "tcp_echo", "1" } });
+	tcp_config({ { "tcp_echo", "1" }, { "tp_tcp_conn_delete", "0" } });
 }
 
 #define assert(_cond, args...) do {							\
