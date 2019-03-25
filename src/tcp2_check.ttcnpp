@@ -232,6 +232,10 @@ function tp_send(tp_msg_t msg_type,
 	var tp_t tp := valueof(ts_TP(msg_type, d, o));
 	var udp_t udp;
 
+	if (msg_type == TP_COMMAND and o == "CLOSE") {
+		tcp_config({{ "tp_trace", "0" }, { "tp_tcp_conn_delete", "1" }});
+	}
+
 	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
 
 	/* Currently only introspect and certain command messages expect response */
