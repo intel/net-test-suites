@@ -635,6 +635,41 @@ testcase test_tcp_connect_no_data_reset() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+/**
+ * Test that peer sends RST on missing data in ESTABLISHED
+ */
+testcase test_tcp_connect_data_gap() runs on tcp_ct
+{
+	var udp_t udp;
+	var tp_new_t tp;
+	var boolean reset_received := false;
+
+	test_tcp_connect(close := false);
+
+	tcp_config({{ "tp_trace", "1" }});
+
+	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := seq + 42));
+	T.start;
+
+	alt {
+	[] P_TCP.receive(tr_TCP(f := TH_RST)) {
+		T.stop;
+		reset_received := true;
+		T.start; repeat;
+	}
+	[reset_received] P_UDP.receive(?) -> value udp {
+		T.stop;
+		tp := f_tp_new_dec(udp.data);
+		if (tp.data[0].val == "CONN_DELETE") {
+			setverdict(pass);
+		}
+	}
+	[] T.timeout { setverdict(fail); }
+	} /* end of alt */
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 testcase test_tcp_listen_data_reset() runs on tcp_ct
 {
 	test_tcp_listen(data_to_receive := '01'O);
@@ -1162,6 +1197,7 @@ control {
 		execute(test_tcp_connect_no_data_reset());
 		execute(test_tcp_connect_data_close());
 		execute(test_tcp_connect_more_data_close());
+		execute(test_tcp_connect_data_gap());
 		execute(test_tcp_listen_no_data_close());
 		execute(test_tcp_listen_no_data_reset());
 		execute(test_tcp_listen_data_close());
