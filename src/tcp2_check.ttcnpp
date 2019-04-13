@@ -30,6 +30,7 @@ import from port_data_types all;
 
 modulepar {
 	float T_default := 0.1; /* default message timeout, sec */
+	float TT_default := 2.0; /* default test teardonw timeout, sec */
 	boolean fuzzer_enabled := false;
 	boolean peer_assert_enabled := true;
 	integer number_of_runs := 1;
@@ -65,13 +66,12 @@ type component tcp_ct extends test_CT {
 	var octetstring data_unack := ''O; /* TODO: split into rcv/snd data */
 	var integer data_step := 1;
 	timer T := T_default;
+	timer TT := TT_default; /* TODO: move into libtest */
 	var event_t events := EV_NONE;
 	var default d_as_timeout;
 	var default d_as_unexpected_msg;
 	var fuzzer_ct ct_fuzzer;
 	port port_cf P_FZ;
-	timer TT := 2.0; /* test case teardown, TODO: move into libtest
-						or integrate into fail_on_events() */
 }
 
 function fuzzer() runs on fuzzer_ct
