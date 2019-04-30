@@ -1188,8 +1188,7 @@ testcase test_tcp_retransmit2() runs on tcp_ct
 
 control {
 
-	var integer i := number_of_runs;
-	var integer tests_failed := 0;
+	var integer i := number_of_runs, tests_failed := 0;
 
 	while (post_dec(i) > 0) {
 		execute(test_tcp_undersized());
