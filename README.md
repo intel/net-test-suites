@@ -1,159 +1,109 @@
 
 # Net-test-suites
 
-Net-test-suites includes the TCP protocol test suite written in TTCN-3 language.
+Net-test-suites includes a few TCP protocol test suites written in [TTCN-3](https://www.netdevconf.org/2.2/papers/welte-ttcn3-talk.pdf) for [Eclipse titan.core](https://projects.eclipse.org/projects/tools.titan) (open source TTCN-3 compiler and runtime).
 
-This and other included sample and experimental test suites can be compiled
-and executed with the [titan.core](https://projects.eclipse.org/projects/tools.titan), an open source TTCN-3 compiler and runtime.
+**Contents**
 
-## Building and Running the TCP Test Suite
+Test suite | Description
+--------|--------
+[tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn) | Example TCP suite
+[tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp) | Sanity check suite for [experimental TCP (TCP2)](https://github.com/ozhuraki/zephyr)
 
-### 1. Install Dependencies
+# 1 Build and Run
+
+## 1.1 Install Dependencies
 
 Ubuntu:
 
 ```
-    # sudo apt-get install g++ libxml2-dev libssl-dev expect
+# sudo apt-get install g++ libxml2-dev libssl-dev expect
 ```
-
 Fedora:
 
 ```
-    # sudo dnf install gcc-c++ libxml2-devel openssl-devel expect
+# sudo dnf install gcc-c++ libxml2-devel openssl-devel expect
 ```
+## 1.2 Install titan.core
 
-### 2. Download and Install the titan.core
+Follow one of the options to install titan.core on your Linux host:
 
-Follow one of the following options to install Eclipse titan.core on your
-Linux host system:
-
-* To install into the default location ```~/titan```, run the supplied
-titan-instal.sh script:
+* Install with the supplied script (```~/titan```):
 
 ```
-    # cd net-test-suites.git
-    # . titan-install.sh
+# . titan-install.sh
 ```
-
-* Alternatively, visit the project's download page, get a suitable version
-and unpack to the desired location.
-
-    https://projects.eclipse.org/projects/tools.titan/downloads
-
-* titan.core can be also compiled and installed from the source
-from https://github.com/eclipse/titan.core
-
-* Ubuntu's default titan.core:
+* Get a suitable version from [project's download](https://projects.eclipse.org/projects/tools.titan/downloads) page.
+* Install from the [source](https://github.com/eclipse/titan.core).
+* Ubuntu's default titan.core (packaged incorrectly, not recommended):
+```
+# sudo apt-get install eclipse-titan
+```
+## 1.3 Set the Environment
 
 ```
-    # sudo apt-get install eclipse-titan
+# . titan-env.sh
 ```
-
-Note: Ubuntu’s default titan.core is packaged incorrectly and pulls extra
-dependencies, this option isn't recommended.
-
-### 3. Set the Environment
+Or add into ```~/.bashrc```:
 
 ```
-    # . titan-env.sh
+# export TTCN3_DIR=~/titan
+# export PATH=${TTCN3_DIR}/bin:${PATH}
+```
+Note: In case of Ubuntu's packaged titan.core, ```TTCN3_DIR=/usr```.
+
+## 1.4 Build
+```
+# cd src
+# . make.sh
+```
+## 1.5 Run
+```
+# ttcn3_start test_suite tcp_suite.cfg
+```
+or
+```
+# ttcn3_start test_suite tcp2_check_3_runs.cfg
 ```
 
-Or simply add the following into your ```~/.bashrc```:
+# 2 Description
 
-```
-    export TTCN3_DIR=~/titan
-    export PATH=${TTCN3_DIR}/bin:${PATH}
-```
+The test suites expect Ethernet frames encapsulated over IPv4/UDP.
 
-Note: In case of Ubuntu's default titan.core:
+IPv4/UDP Endpoint | Purpose
+--------|--------
+localhost:7777 | Test suite
+localhost:7771 | System under test (SUT)
 
-```
-    export TTCN3_DIR=/usr
-```
+Ethernet Endpoint | Purpose
+--------|--------
+00:00:00:00:00:02 | Test suite
+00:00:00:00:00:01 | System under test (SUT)
 
-### 4. Build the Test Suite
+Endpoints are configureable.
 
-```
-    # cd src
-    # . make.sh
-```
+## 2.1 TCP Suite
 
-### 5. Run the Test Suite
+TCP Endpoint | Purpose
+--------|--------
+10.0.0.2:4242 | Example TCP suite, [tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn)
+10.0.0.1:4242 | System under test (SUT), [Zephyr OS](https://www.zephyrproject.org) samples/net/sockets/echo app
 
-```
-    # ttcn3_start test_suite tcp_suite.cfg
-```
+Endpoints are [configureable](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.cfg#L6).
 
-The test suite expects Ethernet frames encapsulated over UDP/IPv4.
+Follow the [guide](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.md).
 
-By default it listens to localhost:7777 and sends to localhost:7771.
+## 2.2 TCP2 Sanity Check
 
-TCP suite expects Zephyr's echo_server app configured to listen at
-10.0.0.1, port 4242 and communicates from address 10.0.0.2, port 4242.
+TCP Endpoint | Purpose
+--------|--------
+192.0.2.2:4242 | TCP2 Sanity Check, [tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp)
+192.0.2.1:4242 | System under test (SUT), [experimental TCP (TCP2)](https://github.com/ozhuraki/zephyr)
 
-This can be customized by setting module parameters of libtest.ttcn
-through the configuration file (tcp_suite.cfg), for example:
+Follow the [guide](https://github.com/ozhuraki/zephyr).
 
-```
-    [MODULE_PARAMETERS]
-    libtest.m_ip_dst := "10.0.0.1"
-    libtest.m_ip_src := "10.0.0.2"
-```
-
-### 6. Running the Test Suite Against Zephyr app in QEMU
-
-#### 6.1 Get, build and start the net-test-tools
-
-```
-   # git clone https://github.com/intel/net-test-tools.git
-   # cd net-test-tools
-   # ./autogen.sh
-   # make
-```
-
-Start net-test-tools:
-
-```
-   # ./loop-slipcat.sh
-```
-
-#### 6.3 Configure and Run echo-server Application in QEMU
-
-Add the following entries to the prj.conf:
-
-```
-CONFIG_NET_CONFIG_NEED_IPV6=n
-CONFIG_NET_CONFIG_NEED_IPV4=n
-
-CONFIG_NET_CONFIG_MY_IPV6_ADDR="fe80::1"
-CONFIG_NET_CONFIG_PEER_IPV6_ADDR="fe80::2"
-
-CONFIG_NET_CONFIG_MY_IPV4_ADDR="10.0.0.1"
-CONFIG_NET_CONFIG_PEER_IPV4_ADDR="10.0.0.2"
-
-CONFIG_NET_SLIP_TAP=y
-CONFIG_SLIP_MAC_ADDR="00:00:00:00:00:01"
-```
-
-```
-   # mkdir build
-   # cd build
-   # cmake -DBOARD=qemu_x86 ..
-   # make
-   # make run
-```
-
-#### 6.4 Wireshark
-
-Observe the traffic with Wireshark:
-
-```
-    # sudo apt-get install wireshark-gtk
-    # wireshark-gtk -p -i lo -f "udp port 5555" -d udp.port==5555,eth -k &
-```
-
-#### Reporting a Security Issue
+### Reporting a Security Issue
 
 If you have information about a security issue or vulnerability,
-please follow the process at https://01.org/security
+please follow the [process](https://01.org/security).
 
