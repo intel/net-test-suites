@@ -25,7 +25,7 @@ Options to install titan.core onto your Linux host:
 ```
 # . titan-env.sh
 ```
-Note: For Ubuntu's packaged titan.core, ```TTCN3_DIR=/usr```.
+For Ubuntu's packaged titan.core, ```TTCN3_DIR=/usr```.
 ## 1.4 Build
 ```
 # cd src
