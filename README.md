@@ -25,7 +25,7 @@ Options to install titan.core onto your Linux host:
 ```
 # . titan-env.sh
 ```
-Note: In case of Ubuntu's packaged titan.core, ```TTCN3_DIR=/usr```.
+Note: For Ubuntu's packaged titan.core, ```TTCN3_DIR=/usr```.
 ## 1.4 Build
 ```
 # cd src
@@ -40,7 +40,7 @@ Test suite | Command
 
 # 2 Description
 
-Test suites send Ethernet frames encapsulated over IPv4/UDP to [net-test-tools](https://github.com/intel/net-test-tools) that support:
+Test suites send Ethernet frames over UDP/IPv4 to [net-test-tools](https://github.com/intel/net-test-tools) that support:
 
 SUT interface | Default | Encapsulation
 --------|--------|--------
