@@ -6,7 +6,7 @@ Net-test-suites include a few TCP test suites written in [TTCN-3](https://www.ne
 Test suite | Description
 --------|--------
 [tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn) | Example TCP suite
-[tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp) | Sanity check suite for [experimental TCP (TCP2)](https://github.com/ozhuraki/zephyr)
+[tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp) | Sanity check suite for [experimental TCP](https://github.com/ozhuraki/zephyr) (TCP2)
 
 # 1 Build and Run
 
@@ -52,7 +52,7 @@ TAP | - | -
 
 IPv4/UDP Endpoint | Purpose
 --------|--------
-localhost:7771 | System under test interfaced to [net-test-tools](https://github.com/intel/net-test-tools)
+localhost:7771 | [net-test-tools](https://github.com/intel/net-test-tools) interfaced to system under test
 localhost:7777 | Test suite
 
 Ethernet MAC | TCP Endpoint | Purpose | Manual
