@@ -5,8 +5,9 @@ Net-test-suites include a few TCP test suites written in [TTCN-3](https://www.ne
 
 Test suite | Description
 --------|--------
-[tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn) | Example TCP suite
-[tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp) | Sanity check suite for [experimental TCP](https://github.com/ozhuraki/zephyr) (TCP2)
+[tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn) | This is an example TCP suite using black box testing approach.
+[tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp) | This a sanity check suite for [experimental TCP](https://github.com/ozhuraki/zephyr) (TCP2) using white box testing approach.
+
 
 # 1 Build and Run
 
