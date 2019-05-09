@@ -14,10 +14,8 @@
  */
 
 /*
- * This is a sanity check for experimental TCP implementation for Zephyr RTOS:
- * https://github.com/ozhuraki/zephyr/blob/tcp2-dev/subsys/net/ip/tcp2.c
- *
- * It is also an exploratory playground for improvements to tcp_suite.ttcn
+ * This is a sanity check for experimental TCP for Zephyr OS:
+ * https://github.com/ozhuraki/zephyr/blob/tcp2-dev/README.md
  */
 
 module tcp2_check {
