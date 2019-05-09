@@ -1088,6 +1088,14 @@ label resend;
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+/**
+ * Test sequence wraps/overflows
+ */
+testcase test_tcp_seq_wrap() runs on tcp_ct
+{
+	test_tcp_connect(close := false, isn := hex2int('FFFFFFFE'H));
+}
+
 #undef assert
 #define assert(_cond, args...) do {							\
 	if ((_cond) == false) {									\
