@@ -8,6 +8,10 @@ Test suite | Description
 [tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn) | This is an example TCP suite using black box testing approach.
 [tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp) | This a sanity check suite for [experimental TCP](https://github.com/ozhuraki/zephyr) (TCP2) realizing a white box testing model with the help of JSON based [test protocol](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp#L169).
 
+Both suites will be merged and use a hybrid approach, i.e. black box model with optionally enablable white box features.
+
+Test protocol will be transformed into reusable component (at both sides), suitable for testing of other network protocols/technologies.
+
 # 1 Build and Run
 
 ## 1.1 Install Dependencies
