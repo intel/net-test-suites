@@ -39,6 +39,11 @@ Test suite | Command
 [tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn) | ```# ttcn3_start test_suite tcp_suite.cfg```
 [tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp) | ```# ttcn3_start test_suite tcp2_check_3_runs.cfg```
 
+To run any single test from the suite:
+```
+# ttcn3_start test_suite tcp2_check_3_runs.cfg tcp2_check.test_tcp_connect_data_close
+```
+
 # 2 Description
 
 Test suites send Ethernet frames over UDP/IPv4 to [net-test-tools](https://github.com/intel/net-test-tools) that support:
