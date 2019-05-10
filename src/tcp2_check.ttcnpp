@@ -1093,7 +1093,9 @@ label resend;
  */
 testcase test_tcp_seq_wrap() runs on tcp_ct
 {
-	test_tcp_connect(close := false, isn := hex2int('FFFFFFFE'H));
+	test_tcp_connect(data_to_send := '01'O, isn := hex2int('FFFFFFFE'H));
+
+	tp_send(TP_COMMAND, "CLOSE");
 }
 
 #undef assert
