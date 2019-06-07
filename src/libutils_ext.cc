@@ -28,7 +28,7 @@ CHARSTRING fx__ether__ntoa(OCTETSTRING const &addr)
 {
 	const uint8_t *d = addr;
 	char *s = ether_ntoa((const struct ether_addr *) d);
-	return CHARSTRING(strlen(s) , s);
+	return CHARSTRING(strlen(s), s);
 }
 
 CHARSTRING fx__inet6__ntop(OCTETSTRING const &addr)
@@ -36,7 +36,7 @@ CHARSTRING fx__inet6__ntop(OCTETSTRING const &addr)
 	const uint8_t *d = addr;
 	char s[INET6_ADDRSTRLEN];
 	inet_ntop(AF_INET6, d, s, sizeof(s));
-	return CHARSTRING(strlen(s) , s);
+	return CHARSTRING(strlen(s), s);
 }
 
 OCTETSTRING fx__ether__aton(CHARSTRING const &s)
