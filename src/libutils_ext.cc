@@ -16,6 +16,53 @@
 
 namespace libutils {
 
+#define E(fmt, args...)	do {						\
+	TTCN_error("%s:%s() Error: " fmt , __FILE__, __func__, ## args);\
+} while (0)
+
+INTEGER u32__pre__inc(INTEGER &a, const INTEGER &b)
+{
+	int64_t a_i64 = a.get_long_long_val(), b_i64 = b.get_long_long_val();
+
+	if (a_i64 & 0xFFFFFFFF00000000) {
+		E("Out of range: a: %ld", a_i64);
+	}
+	if (b_i64 & 0xFFFFFFFF00000000) {
+		E("Out of range: b: %ld", b_i64);
+	}
+
+	{
+		uint32_t a_u32 = a_i64, b_u32 = b_i64;
+		a_u32 = a_u32 + b_u32;
+		a.set_long_long_val(a_u32);
+	}
+
+	return a;
+}
+
+INTEGER u32__post__inc(INTEGER &a, const INTEGER &b)
+{
+	int64_t a_i64 = a.get_long_long_val(), b_i64 = b.get_long_long_val();
+	INTEGER c;
+
+	if (a_i64 & 0xFFFFFFFF00000000) {
+		E("Out of range: a: %ld", a_i64);
+	}
+	if (b_i64 & 0xFFFFFFFF00000000) {
+		E("Out of range: b: %ld", b_i64);
+	}
+
+	c.set_long_long_val(a.get_long_long_val());
+
+	{
+		uint32_t a_u32 = a_i64, b_u32 = b_i64;
+		a_u32 = a_u32 + b_u32;
+		a.set_long_long_val(a_u32);
+	}
+
+	return c;
+}
+
 CHARSTRING fx__ether__ntoa(OCTETSTRING const &addr)
 {
 	const uint8_t *d = addr;

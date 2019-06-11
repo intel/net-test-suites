@@ -9,6 +9,9 @@ module libutils {
 
 import from libnetinet all;
 
+external function u32_pre_inc(inout integer a, integer b := 1) return integer;
+external function u32_post_inc(inout integer a, integer b := 1) return integer;
+
 external function fx_ether_ntoa(octetstring addr) return charstring;
 external function fx_inet6_ntop(octetstring addr) return charstring;
 
