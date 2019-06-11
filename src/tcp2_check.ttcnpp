@@ -1090,6 +1090,35 @@ testcase test_tcp_seq_wrap() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+testcase test_u32_wrap() runs on tcp_ct
+{
+	var integer x := 4294967295;
+
+	log(x);
+
+	u32_pre_inc(x);
+
+	log(x);
+
+	if (x != 0) {
+		setverdict(fail);
+	}
+
+	x := 4294967295;
+
+	log(x);
+
+	u32_pre_inc(x, 2);
+
+	log(x);
+
+	if (x != 1) {
+		setverdict(fail);
+	}
+
+	setverdict(pass);
+}
+
 #undef assert
 #define assert(_cond, args...) do {							\
 	if ((_cond) == false) {									\
