@@ -24,6 +24,8 @@ import from port_data_types all;
 modulepar {
 	float T_default := 0.1; /* default message timeout, sec */
 	float TT_default := 2.0; /* default test teardonw timeout, sec */
+	float T_peer_default := -1.0; /* default peer's retransmission timeout,
+									 sec (optional, negative value: unused) */
 	boolean fuzzer_enabled := false;
 	boolean peer_assert_enabled := true;
 	integer number_of_runs := 1;
@@ -949,9 +951,18 @@ testcase test_config() runs on tcp_ct
 
 function tcp_init() runs on tcp_ct
 {
+	var map_t cfg := {
+		{ "tcp_echo", "1" },
+		{ "tp_tcp_conn_delete", "0" }
+	};
+
+	if (T_peer_default > 0.0) {
+		cfg[lengthof(cfg)] := { "tcp_rto", int2str(TO_MSEC(T_peer_default)) };
+	}
+
 	test_ct_init();
 
-	tcp_config({ { "tcp_echo", "1" }, { "tp_tcp_conn_delete", "0" } });
+	tcp_config(cfg);
 }
 
 #define assert(_cond, args...) do {							\
