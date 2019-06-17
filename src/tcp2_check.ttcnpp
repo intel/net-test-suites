@@ -18,6 +18,9 @@ import from libtest all;
 import from libutils all;
 import from port_data_types all;
 
+/* Convert float value in seconds to integer in milliseconds */
+#define TO_MSEC(_t) float2int((_t) * 1000.0)
+
 modulepar {
 	float T_default := 0.1; /* default message timeout, sec */
 	float TT_default := 2.0; /* default test teardonw timeout, sec */
@@ -1127,9 +1130,6 @@ testcase test_u32_wrap() runs on tcp_ct
 		stop;												\
 	}														\
 } while (false)
-
-/* Convert float value in seconds to integer in milliseconds */
-#define TO_MSEC(_t) float2int((_t) * 1000.0)
 
 /**
  * This a fork of the retransmission test for an experimentation
