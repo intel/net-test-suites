@@ -1097,10 +1097,15 @@ label resend;
 /**
  * Test sequence wraps/overflows
  */
-testcase test_tcp_seq_wrap() runs on tcp_ct
+testcase test_tcp_connect_seq_wrap() runs on tcp_ct
 {
 	test_tcp_connect(data_to_send := '01'O, data_to_receive := '01'O,
 					 isn := hex2int('FFFFFFFE'H));
+}
+
+testcase test_tcp_listen_seq_wrap() runs on tcp_ct
+{
+	test_tcp_listen(data_to_receive := '01'O, isn := hex2int('FFFFFFFE'H));
 }
 
 testcase test_u32_wrap() runs on tcp_ct
@@ -1240,9 +1245,10 @@ control {
 		execute(test_tcp_listen_no_data_reset());
 		execute(test_tcp_listen_data_close());
 		execute(test_tcp_listen_more_data_close());
+		execute(test_tcp_connect_seq_wrap());
+		execute(test_tcp_listen_seq_wrap());
 		execute(test_tcp_retransmit());
 		execute(test_tcp_recv());
-		execute(test_tcp_seq_wrap());
 		/* execute(test_tcp_window());	TODO: Fix the issue with the test
 										global teardown timer and include */
 		//execute(test_tcp_debug());
