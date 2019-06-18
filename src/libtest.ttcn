@@ -389,7 +389,9 @@ function do_ping() runs on test_CT {
 			T.stop;
 		}
 		[] T.timeout {
+			log("ping timeout");
 			setverdict(fail);
+			stop;
 		}
 	}
 }
