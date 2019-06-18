@@ -385,6 +385,7 @@ function do_ping() runs on test_CT {
 
 	alt {
 		[] P_ICMP.receive(?) {
+			T.stop;
 		}
 		[] T.timeout {
 			setverdict(fail);
