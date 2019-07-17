@@ -643,7 +643,7 @@ testcase test_tcp_connect_data_gap() runs on tcp_ct
 
 	tcp_config({{ "tp_trace", "1" }});
 
-	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := seq + 42));
+	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := seq + 42, d := '01'O));
 	T.start;
 
 	alt {
