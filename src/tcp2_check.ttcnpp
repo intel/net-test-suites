@@ -871,6 +871,15 @@ testcase test_tcp_undersized() runs on tcp_ct
 	setverdict(pass); /* TODO: check peer's state */
 }
 
+testcase test_tcp_no_flags() runs on tcp_ct
+{
+	tcp_init();
+
+	P_TCP.send(ts_TCP(f := TH_NONE));
+
+	setverdict(pass); /* TODO: check peer's state */
+}
+
 /**
  * Send an undersized data in ESTABLISHED
  */
@@ -1236,6 +1245,7 @@ control {
 
 	while (post_dec(i) > 0) {
 		execute(test_tcp_undersized());
+		execute(test_tcp_no_flags());
 		execute(test_tcp_connect_no_data_close());
 		execute(test_tcp_connect_no_data_reset());
 		execute(test_tcp_connect_data_close());
