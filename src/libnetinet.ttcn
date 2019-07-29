@@ -463,6 +463,49 @@ testcase test_tcp_codecs() runs on dummy_ct
 	tcp_compare(tcp, tcp2);
 }
 
+type record tcp2_t {
+	uint16_t	th_sport,
+	uint16_t	th_dport,
+	uint32_t	th_seq,
+	uint32_t	th_ack,
+	uint4_t		th_off,
+	bit3_t		th_res,
+	bit3_t		th_ecn,
+	th_flags_t	th_flags,
+	uint16_t	th_win,
+	uint16_t	th_sum,
+	uint16_t	th_urp,
+	octetstring data
+} with {
+	variant(th_sport, th_dport, th_seq, th_ack, th_win) "BYTEORDER(last)";
+}
+
+template tcp2_t ts_TCP2(th_flags_t fl := '000000'B,
+						uint32_t seq := 0,
+						uint32_t ack := 0,
+						integer off := 5,
+						template octetstring data := ''O) := {
+	th_sport := 4242,
+	th_dport := 4242,
+	th_seq := seq,
+	th_ack := ack,
+	th_off := off,
+	th_res := '000'B,
+	th_ecn := '000'B,
+	th_flags := fl,
+	th_win := 1280,
+	th_sum := 0,
+	th_urp := 0,
+	data := data
+}
+
+external function tcp2_enc(in tcp2_t packet) return octetstring
+	with { extension "prototype(convert) encode(RAW)" };
+external function tcp2_dec(in octetstring data) return tcp2_t
+	with { extension "prototype(convert) decode(RAW)" };
+
+type port port_tcp2 message { inout tcp2_t; } with { extension "internal"; }
+
 /**
  * TODO: Add templates test here
  */
