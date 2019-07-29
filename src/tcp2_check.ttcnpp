@@ -535,12 +535,11 @@ testcase test_tcp_connect_more_data_close() runs on tcp_ct
 }
 
 /**
- * Test passive TCP connection establishment,
- * data transfer and active close
+ * Test passive TCP connection establishment and active close
  */
 testcase test_tcp_listen_no_data_close() runs on tcp_ct
 {
-	test_tcp_listen(data_to_receive := '01'O);
+	test_tcp_listen(data_to_receive := ''O);
 }
 
 /**
