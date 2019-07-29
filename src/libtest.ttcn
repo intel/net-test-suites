@@ -20,6 +20,7 @@ modulepar {
 	charstring m_ip6_dst := "fe80::1";
 	charstring m_ip6_src := "fe80::2";
 	boolean ping_enabled := true;
+	boolean ping_repeat := false;
 	float T_ping := 2.0; /* default ping timeout, sec */
 	boolean pass_arp := false;
 	ethertype_t m_ethertype := ETHERTYPE_IP;
@@ -380,6 +381,7 @@ function do_ping() runs on test_CT {
 
 	timer T := T_ping;
 
+label again;
 	P_ICMP.send(valueof(ts_ICMP));
 
 	T.start;
@@ -390,6 +392,9 @@ function do_ping() runs on test_CT {
 		}
 		[] T.timeout {
 			log("ping timeout");
+			if (ping_repeat) {
+				goto again;
+			}
 			setverdict(fail);
 			stop;
 		}
