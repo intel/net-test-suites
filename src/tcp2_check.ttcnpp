@@ -831,6 +831,29 @@ label end;
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+/**
+ * Test a reaction on SYN with incorrect th_off
+ */
+testcase test_tcp_incorrect_offset() runs on tcp_ct
+{
+	tcp_init();
+
+	P_TCP2.send(ts_TCP2(fl := TH_SYN, seq := u32_post_inc(seq), off := 3));
+
+	T.start;
+	alt {
+	[] P_TCP.receive(tr_TCP(f := TH_RST)) {
+		T.stop;
+		setverdict(pass);
+	}
+	[] T.timeout {
+		setverdict(fail);
+	}
+	} /* end of alt */
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 template th_flags_t tr_TH_ACK	:='????1?'B;
 template th_flags_t tr_TH_PSH	:='???1??'B;
 
@@ -1323,6 +1346,7 @@ control {
 	while (post_dec(i) > 0) {
 		execute(test_tcp_codecs());
 		execute(test_tcp_undersized());
+		execute(test_tcp_incorrect_offset());
 		execute(test_tcp_no_flags());
 		execute(test_tcp_connect_no_data_close());
 		execute(test_tcp_connect_no_data_reset());
