@@ -222,10 +222,13 @@ external function f_tp_dec(in octetstring x) return tp_t
 
 function tp_send(tp_msg_t msg_type,
 				charstring o := "",
-				charstring d := "") runs on tcp_ct return tp_t
+				 charstring d := "",
+				integer isn := 0) runs on tcp_ct return tp_t
 {
 	var tp_t tp := valueof(ts_TP(msg_type, d, o));
 	var udp_t udp;
+
+	tp.seq := isn;
 
 	if (msg_type == TP_COMMAND and o == "CLOSE") {
 		tcp_config({{ "tp_trace", "0" }, { "tp_tcp_conn_delete", "1" }});
@@ -428,7 +431,7 @@ function test_tcp_listen(octetstring data_to_receive := ''O,
 
 	TT.start;
 
-	tp_send(TP_COMMAND, "CONNECT", d := oct2str(data_to_receive));
+	tp_send(TP_COMMAND, "CONNECT", d := oct2str(data_to_receive), isn := isn);
 
 	st(TCP_LISTEN, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
