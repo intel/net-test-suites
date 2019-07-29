@@ -799,20 +799,19 @@ label end;
 }
 
 /**
- * Test a reaction on TCP data packets with incorrectly packed options
+ * Test a reaction on TCP data packets with incorrect options
  */
 testcase test_tcp_data_incorrect_options() runs on tcp_ct
 {
 	test_tcp_connect(close := false);
 
-	var octetstring data_to_send := '01'O;
+	var octetstring data_to_send := '010203'O;
 
 	tcp := valueof(ts_TCP(f := TH_PSH,
 						  th_seq := u32_post_inc(seq, lengthof(data_to_send)),
 						  d := data_to_send));
 	tcp.opt := {
-		{ TO_MSS, 4, '0000'O },
-		{ TO_MSS, 3, '00'O } /* Incorrect option */
+		{ TO_MSS, 3, '00'O } /* Incorrect option length */
 	}
 
 	P_TCP.send(tcp);
