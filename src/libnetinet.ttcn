@@ -408,7 +408,7 @@ function tcp_compare(tcp_t msg1, tcp_t msg2)
 /**
  * Test TCP RAW encoder and decoder
  */
-function test_tcp_codecs()
+testcase test_tcp_codecs() runs on dummy_ct
 {
 	var tcp_t tcp, tcp2;
 
