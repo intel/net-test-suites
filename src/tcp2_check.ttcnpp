@@ -1324,6 +1324,7 @@ control {
 	var integer i := number_of_runs, tests_failed := 0;
 
 	while (post_dec(i) > 0) {
+		execute(test_tcp_codecs());
 		execute(test_tcp_undersized());
 		execute(test_tcp_no_flags());
 		execute(test_tcp_connect_no_data_close());
