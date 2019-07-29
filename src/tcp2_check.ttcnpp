@@ -39,8 +39,6 @@ const event_t EV_KEEP			:='111'B;
 const event_t EV_TIMEOUT		:='001'B;
 const event_t EV_UNEXPECTED_MSG :='010'B;
 
-type bitstring log_mask_t length(3);
-
 type record of octetstring tcp_test_data_t;
 
 /* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */
