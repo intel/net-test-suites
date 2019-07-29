@@ -16,4 +16,8 @@ type bitstring bit3_t length(3) with { variant "FIELDLENGTH(3)" };
 type bitstring bit4_t length(4) with { variant "FIELDLENGTH(4)" };
 type bitstring bit12_t length(12) with { variant "FIELDLENGTH(12)" };
 
+type component dummy_ct {
+	var integer dummy;
+}
+
 } with { encode "RAW"; }
