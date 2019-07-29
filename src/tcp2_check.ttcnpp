@@ -832,6 +832,37 @@ label end;
 }
 
 /**
+ * Test a reaction on TCP data with incorrect offset
+ */
+testcase test_tcp_data_incorrect_offset() runs on tcp_ct
+{
+	var octetstring data_to_send := '010203'O;
+
+	test_tcp_connect(close := false);
+
+	var tcp2_t tcp2 := valueof(ts_TCP2(fl := TH_PSH,
+							seq := u32_post_inc(seq, lengthof(data_to_send)),
+							off := 3,
+							data := data_to_send));
+	P_TCP2.send(tcp2);
+
+	T.start;
+
+	alt {
+	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := TH_RST)) {
+		T.stop;
+		peer_assert(TCP_CLOSED);
+		setverdict(pass);
+	}
+	[s == TCP_ESTABLISHED] T.timeout {
+		setverdict(fail);
+	}
+	} /* end of alt */
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
+/**
  * Test a reaction on SYN with incorrect th_off
  */
 testcase test_tcp_incorrect_offset() runs on tcp_ct
@@ -1363,6 +1394,7 @@ control {
 		execute(test_tcp_recv());
 		execute(test_tcp_data_options());
 		execute(test_tcp_data_incorrect_options());
+		execute(test_tcp_data_incorrect_offset());
 		/* execute(test_tcp_window());	TODO: Fix the issue with the test
 										global teardown timer and include */
 		//execute(test_tcp_debug());
