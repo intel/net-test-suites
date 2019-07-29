@@ -755,6 +755,49 @@ testcase test_tcp_retransmit() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+/**
+ * Test a reaction on TCP data packets with options
+ */
+testcase test_tcp_data_options() runs on tcp_ct
+{
+	test_tcp_connect(close := false);
+
+	var octetstring data_to_send := '010203'O;
+
+	tcp := valueof(ts_TCP(f := TH_PSH,
+						  th_seq := u32_post_inc(seq, lengthof(data_to_send)),
+						  d := data_to_send));
+	tcp.opt := {
+		{ TO_MSS, 4, '0000'O }
+	}
+
+	P_TCP.send(tcp);
+	T.start;
+
+	alt {
+	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := TH_ACK, th_ack := seq)) {
+		T.stop;
+		T.start; repeat;
+	}
+	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP) -> value tcp {
+		T.stop;
+		if (th_is_set(tcp, TH_PSH) and tcp.data == data_to_send) {
+			setverdict(pass);
+			goto end;
+		}
+	}
+	[s == TCP_ESTABLISHED] T.timeout {
+		setverdict(fail);
+		goto end;
+	}
+	} /* end of alt */
+
+	peer_assert(TCP_ESTABLISHED);
+
+label end;
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 template th_flags_t tr_TH_ACK	:='????1?'B;
 template th_flags_t tr_TH_PSH	:='???1??'B;
 
@@ -1260,6 +1303,7 @@ control {
 		execute(test_tcp_listen_seq_wrap());
 		execute(test_tcp_retransmit());
 		execute(test_tcp_recv());
+		execute(test_tcp_data_options());
 		/* execute(test_tcp_window());	TODO: Fix the issue with the test
 										global teardown timer and include */
 		//execute(test_tcp_debug());
