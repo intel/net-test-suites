@@ -34,6 +34,7 @@ type component eth_CT {
 	port port_ip6		P_IP6;
 	port port_icmp6		P_ICMP6;
 	port port_tcp		P_TCP;
+	port port_tcp2		P_TCP2;
 	port port_udp		P_UDP;
 	port port_cf		P_CF;
 	var ethertype_t ethertype := m_ethertype;
@@ -54,6 +55,7 @@ function test_ct_init() runs on test_CT {
 	connect(self:P_ICMP6, eth_ct:P_ICMP6);
 	connect(self:P_UDP, eth_ct:P_UDP);
 	connect(self:P_TCP, eth_ct:P_TCP);
+	connect(self:P_TCP2, eth_ct:P_TCP2);
 	connect(self:P_CF, eth_ct:P_CF);
 
 	eth_ct.start(eth_ct_start());
@@ -203,6 +205,7 @@ function eth_ct_start() runs on eth_CT {
 	var ip_t ip;
 	var udp_t udp;
 	var tcp_t tcp;
+	var tcp2_t tcp2;
 	var icmp6_t icmp6;
 	var icmp_t icmp;
 
@@ -265,6 +268,17 @@ function eth_ct_start() runs on eth_CT {
 			}
 			case(ETHERTYPE_IP) {
 				eth := eth_ip_new(IPPROTO_TCP, tcp_enc(tcp));
+			}
+			}
+			eth_ct_eth_send(eth);
+		}
+		[] P_TCP2.receive(?) -> value tcp2 {
+			select(ethertype) {
+			case(ETHERTYPE_IPV6) {
+				eth := eth_ip6_new(IPPROTO_TCP, tcp2_enc(tcp2));
+			}
+			case(ETHERTYPE_IP) {
+				eth := eth_ip_new(IPPROTO_TCP, tcp2_enc(tcp2));
 			}
 			}
 			eth_ct_eth_send(eth);
