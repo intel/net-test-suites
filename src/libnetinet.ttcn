@@ -183,7 +183,6 @@ template tcp_t tr_TCP(template th_flags_t f := TH_ANY,
 }
 
 type enumerated tcp_state_t {
-	TCP_NONE,
 	TCP_LISTEN,
 	TCP_SYN_SENT,
 	TCP_SYN_RECEIVED,
