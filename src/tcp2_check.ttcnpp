@@ -1014,24 +1014,26 @@ testcase test_tcp_no_flags() runs on tcp_ct
 /**
  * Send an undersized data in ESTABLISHED
  */
-/* TODO: Implement fuzzying of ip_len/th_off/data */
-testcase test_tcp_undersized2() runs on tcp_ct
+testcase test_tcp_data_undersized() runs on tcp_ct
 {
 	test_tcp_connect(close := false);
 
-	tcp_config({{ "tp_trace", "1" }, { "tp_conn_delete", "0" }});
-
-	var octetstring data := ''O;
+	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := seq, d := ''O));
 
 	T.start;
-	T.timeout;
 
-	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := post_inc(seq, lengthof(data)),
-					  d := data));
+	alt {
+	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := TH_RST)) {
+		T.stop;
+		peer_assert(TCP_CLOSED);
+		setverdict(pass);
+	}
+	[s == TCP_ESTABLISHED] T.timeout {
+		setverdict(fail);
+	}
+	} /* end of alt */
 
-	peer_assert_new(exp_seq := ack, exp_ack := seq);
-
-	setverdict(pass);
+	tp_send(TP_COMMAND, "CLOSE");
 }
 
 type record map_entry_t {
@@ -1392,6 +1394,7 @@ control {
 		execute(test_tcp_listen_seq_wrap());
 		execute(test_tcp_retransmit());
 		execute(test_tcp_recv());
+		execute(test_tcp_data_undersized());
 		execute(test_tcp_data_options());
 		execute(test_tcp_data_incorrect_options());
 		execute(test_tcp_data_incorrect_offset());
