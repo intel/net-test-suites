@@ -18,12 +18,11 @@ import from libtest all;
 import from libutils all;
 import from port_data_types all;
 
-/* Convert float value in seconds to integer in milliseconds */
-#define TO_MSEC(_t) float2int((_t) * 1000.0)
+#define TO_MSEC(_sec) float2int((_sec) * 1000.0)
 
 modulepar {
-	float T_default := 0.1; /* default message timeout, sec */
-	float TT_default := 2.0; /* default test teardonw timeout, sec */
+	float T_default := 0.1; /* default TCP message timeout, sec */
+	float TT_default := 2.0; /* default test teardown timeout, sec */
 	float T_peer_default := -1.0; /* default peer's retransmission timeout,
 									 sec (optional, negative value: unused) */
 	boolean fuzzer_enabled := false;
