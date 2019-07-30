@@ -53,7 +53,7 @@ type component fuzzer_ct {
 
 type component tcp_ct extends test_CT {
 	var tcp_t tcp;
-	var tcp_state_t s := TCP_NONE;
+	var tcp_state_t s := TCP_LISTEN;
 	var uint32_t seq := 0;
 	var uint32_t ack := 0;
 	var octetstring data_unack := ''O; /* TODO: split into rcv/snd data */
@@ -917,16 +917,10 @@ function tcp_send(octetstring data := ''O) runs on tcp_ct
 	}															\
 } while (false)
 
-function peer_assert_new(tcp_state_t exp_state := TCP_NONE,
-						 integer exp_seq := -1,
-						 integer exp_ack := -1) runs on tcp_ct return tp_t
+function peer_assert_new(integer exp_seq := -1, integer exp_ack := -1)
+	runs on tcp_ct return tp_t
 {
 	var tp_t peer := tp_send(TP_INTROSPECT_REQUEST);
-
-	if (exp_state != TCP_NONE) {
-			tcp_assert(peer.state == tcp_state_to_string(exp_state),
-				   "peer.state=", peer.state, " exp_state=", exp_state);
-	}
 
 	if (exp_seq >= 0) {
 		tcp_assert(peer.seq == exp_seq,
