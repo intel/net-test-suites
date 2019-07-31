@@ -20,7 +20,6 @@ import from libtest all;
 import from libutils all;
 import from port_data_types all;
 
-
 modulepar {
 	float T_default := 0.1; /* default TCP message timeout, sec */
 	float TT_default := 2.0; /* default test teardown timeout, sec */
@@ -117,11 +116,6 @@ altstep as_unexpected_msg() runs on tcp_ct
 		stop;
 	}
 }
-
-#define EVENT_IS(_event, _kind) mask_is_present(_event, _kind)
-#define EVENT_IS_SET(_event, _kind) mask_is_present(_event, _kind)
-#define EVENT_SET(_event, _kind) mask_set(_event, _kind)
-#define EVENT_CLEAR(_event, _kind) mask_clear(_event, _kind)
 
 function fail_on_events(event_t event) runs on tcp_ct
 {
@@ -908,15 +902,6 @@ function tcp_send(octetstring data := ''O) runs on tcp_ct
 	peer_assert_new(exp_seq := ack, exp_ack := seq);
 }
 
-#define tcp_assert(_cond, args...) do {							\
-	if ((_cond) == false) {										\
-		log("Assertion failed: ", #_cond, " ", ## args);		\
-		setverdict(fail);										\
-		tp_send(TP_COMMAND, "CLOSE");							\
-		stop;													\
-	}															\
-} while (false)
-
 function peer_assert_new(integer exp_seq := -1, integer exp_ack := -1)
 	runs on tcp_ct return tp_t
 {
@@ -1101,14 +1086,6 @@ function tcp_init() runs on tcp_ct
 	tcp_config(cfg);
 }
 
-#define assert(_cond, args...) do {							\
-	if ((_cond) == false) {									\
-		log("Assertion failed: ", #_cond, " ", ## args);	\
-		setverdict(fail);									\
-		stop;												\
-	}														\
-} while (false)
-
 type record win_t {
 	integer len,
 	octetstring data
@@ -1273,16 +1250,6 @@ testcase test_u32_wrap() runs on tcp_ct
 	setverdict(pass);
 }
 
-#undef assert
-#define assert(_cond, args...) do {							\
-	if ((_cond) == false) {									\
-		log(__FILE__, ":", __LINE__, " ",					\
-			"Assertion failed: ", #_cond, ", ", ## args);	\
-		setverdict(fail);									\
-		stop;												\
-	}														\
-} while (false)
-
 /**
  * This a fork of the retransmission test for an experimentation
  * with what is the best approach here.
@@ -1356,16 +1323,6 @@ testcase test_tcp_retransmit2() runs on tcp_ct
 	//tp_send(TP_COMMAND, "CLOSE");
 }
 
-#define setverdict(args...) do { } while (false)
-
-#define execute(args...) do {								\
-	if (execute(args) != pass) {							\
-		pre_inc(tests_failed);								\
-	}														\
-	assert(tests_failed < max_tests_failed,					\
-		   "Maximum number of failed tests reached");		\
-} while (false)
-
 control {
 
 	var integer i := number_of_runs, tests_failed := 0;
@@ -1392,9 +1349,6 @@ control {
 		execute(test_tcp_data_options());
 		execute(test_tcp_data_incorrect_options());
 		execute(test_tcp_data_incorrect_offset());
-		/* execute(test_tcp_window());	TODO: Fix the issue with the test
-										global teardown timer and include */
-		//execute(test_tcp_debug());
 	}
 
 } /* end of control */
