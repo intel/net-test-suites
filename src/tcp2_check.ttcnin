@@ -1,0 +1,13 @@
+/* -*- c-basic-offset: 4; tab-width: 4; -*- */
+/*
+ * Copyright © 2018-2019, Intel Corporation.
+ *
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
+#ifndef TCP2_CHECK_H
+#define TCP2_CHECK_H
+
+#define TO_MSEC(_sec) float2int((_sec) * 1000.0)
+
+#endif /* TCP2_CHECK_H */

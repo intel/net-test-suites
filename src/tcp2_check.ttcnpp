@@ -10,6 +10,8 @@
  * https://github.com/ozhuraki/zephyr/blob/tcp2-dev/README.md
  */
 
+#include "tcp2_check.ttcnin"
+
 module tcp2_check {
 
 import from libtypes all;
@@ -18,7 +20,6 @@ import from libtest all;
 import from libutils all;
 import from port_data_types all;
 
-#define TO_MSEC(_sec) float2int((_sec) * 1000.0)
 
 modulepar {
 	float T_default := 0.1; /* default TCP message timeout, sec */
