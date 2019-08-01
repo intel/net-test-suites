@@ -8,6 +8,7 @@ tcp2_check:
 - Add support for IPv6 (<C1, medium)
 - Merge tcp_connect() and tcp_listen()? (<C1, medium)
 - Implement RTT discovery (C1, low)
+- Move test teardown timer TT into libtest (<C1, low)
 - Add support for N simultaneous connections (C1, low)
 - Include and document user scripts (<C1, low)
 - Add debug levels (<C1, low)
