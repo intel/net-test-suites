@@ -33,7 +33,13 @@ type component fuzzer_ct {
 	port port_cf P_CF;			/* configuration port */
 }
 
-function fuzzer() runs on fuzzer_ct
+function conn_state(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
+{
+	s := new;
+	fail_on_events(fail_on);
+}
+
+ function fuzzer() runs on fuzzer_ct
 {
 	var charstring cmd;
 	var tcp_t tcp;
@@ -378,7 +384,7 @@ testcase test_tcp_retransmit2() runs on tcp_ct
 	});
 
 	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
-	st(TCP_SYN_SENT);
+	conn_state(TCP_SYN_SENT);
 	T.start;
 
 	tcp_retries := tcp_retries + 1; /* account non retransmit */
