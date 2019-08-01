@@ -17,6 +17,12 @@ import from libtest all;
 import from tcp2_types all;
 import from tcp2_check all;
 
+modulepar {
+	boolean peer_assert_enabled := true; /* TODO: rename to tp_enabled */
+	float T_peer_default := -1.0; /* default peer's retransmission timeout,
+									 sec (optional, negative value: unused) */
+}
+
 /* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */
 /* Can also be used for transparent trace */
 type component fuzzer_ct {
@@ -26,7 +32,6 @@ type component fuzzer_ct {
 	port port_udp P_UDP_OUT;	/* from/to system under test */
 	port port_cf P_CF;			/* configuration port */
 }
-
 
 function fuzzer() runs on fuzzer_ct
 {

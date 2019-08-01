@@ -21,12 +21,6 @@ import from libutils all;
 
 import from tcp2_utils all;
 
-modulepar {
-	boolean peer_assert_enabled := true; /* TODO rename to tp_enabled */
-	float T_peer_default := -1.0; /* default peer's retransmission timeout,
-									 sec (optional, negative value: unused) */
-}
-
 type component tcp_ct extends test_ct {
 	var tcp_state_t s := TCP_LISTEN;
 	var u32 seq := 0;
