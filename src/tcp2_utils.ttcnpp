@@ -17,63 +17,6 @@ import from libtest all;
 import from tcp2_types all;
 import from tcp2_check all;
 
-type bitstring event_t length(3);
-
-const event_t EV_NONE			:='000'B;
-const event_t EV_KEEP			:='111'B;
-const event_t EV_TIMEOUT		:='001'B;
-const event_t EV_UNEXPECTED_MSG :='010'B;
-
-function tcp_dump() runs on tcp_ct
-{
-	log("state=", tcp_state_to_string(s), " seq=", seq, " ack=", ack);
-}
-
-altstep as_timeout() runs on tcp_ct
-{
-	[] T.timeout { log("as_timeout()"); setverdict(fail); stop; }
-}
-
-altstep as_unexpected_msg() runs on tcp_ct
-{
-	[] P_TCP.receive(?) {
-		log("as_unexpected_msg()");
-		tcp_dump();
-		setverdict(fail);
-		stop;
-	}
-}
-
-function fail_on_events(event_t event) runs on tcp_ct
-{
-	if (event == EV_KEEP) {
-		return;
-	}
-
-	if (EVENT_IS(event, EV_TIMEOUT) and not EVENT_IS_SET(events, EV_TIMEOUT)) {
-		d_as_timeout := activate(as_timeout());
-		EVENT_SET(events, EV_TIMEOUT);
-	}
-
-	if (not EVENT_IS_SET(event, EV_TIMEOUT) and
-			EVENT_IS_SET(events, EV_TIMEOUT)) {
-		deactivate(d_as_timeout);
-		EVENT_CLEAR(events, EV_TIMEOUT);
-	}
-
-	if (EVENT_IS(event, EV_UNEXPECTED_MSG) and not
-			EVENT_IS_SET(events, EV_UNEXPECTED_MSG)) {
-		d_as_unexpected_msg := activate(as_unexpected_msg());
-		EVENT_SET(events, EV_UNEXPECTED_MSG);
-	}
-
-	if (not EVENT_IS_SET(event, EV_UNEXPECTED_MSG) and
-			EVENT_IS_SET(events, EV_UNEXPECTED_MSG)) {
-		deactivate(d_as_unexpected_msg);
-		EVENT_CLEAR(events, EV_UNEXPECTED_MSG);
-	}
-}
-
 /* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */
 /* Can also be used for transparent trace */
 type component fuzzer_ct {

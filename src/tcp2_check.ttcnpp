@@ -36,9 +36,6 @@ type component tcp_ct extends test_CT {
 	var uint32_t ack := 0;
 	var octetstring data_unack := ''O; /* TODO: split into rcv/snd data */
 	var integer data_step := 1;
-	var event_t events := EV_NONE;
-	var default d_as_timeout;
-	var default d_as_unexpected_msg;
 	var fuzzer_ct ct_fuzzer;
 	port port_cf P_FZ;
 }

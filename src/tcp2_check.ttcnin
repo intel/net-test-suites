@@ -10,11 +10,6 @@
 
 #define TO_MSEC(_sec) float2int((_sec) * 1000.0)
 
-#define EVENT_IS(_event, _kind) mask_is_present(_event, _kind)
-#define EVENT_IS_SET(_event, _kind) mask_is_present(_event, _kind)
-#define EVENT_SET(_event, _kind) mask_set(_event, _kind)
-#define EVENT_CLEAR(_event, _kind) mask_clear(_event, _kind)
-
 #define tcp_assert(_cond, args...) do {							\
 	if ((_cond) == false) {										\
 		log("Assertion failed: ", #_cond, " ", ## args);		\

@@ -5,6 +5,8 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
+#include "libtest.ttcnin"
+
 module libtest {
 
 import from libtypes all;
@@ -49,6 +51,9 @@ type component test_CT extends eth_CT {
 	var eth_CT eth_ct;
 	timer T := T_default;
 	timer TT := TT_default;
+	var event_t events := EV_NONE; /* TODO: Move to libtest */
+	var default d_as_timeout; /* TODO: Move to libtest */
+	var default d_as_unexpected_msg; /* TODO: Move to libtest */
 }
 
 function test_ct_init() runs on test_CT {
@@ -68,6 +73,57 @@ function test_ct_init() runs on test_CT {
 
 	if (ping_enabled) {
 		do_ping();
+	}
+}
+
+type bitstring event_t length(3);
+
+const event_t EV_NONE			:='000'B;
+const event_t EV_KEEP			:='111'B;
+const event_t EV_TIMEOUT		:='001'B;
+const event_t EV_UNEXPECTED_MSG :='010'B;
+
+altstep as_timeout() runs on test_CT
+{
+	[] T.timeout { log("as_timeout()"); setverdict(fail); stop; }
+}
+
+altstep as_unexpected_msg() runs on test_CT
+{
+	[] P_TCP.receive(?) {
+		log("as_unexpected_msg()");
+		setverdict(fail);
+		stop;
+	}
+}
+
+function fail_on_events(event_t event) runs on test_CT
+{
+	if (event == EV_KEEP) {
+		return;
+	}
+
+	if (EVENT_IS(event, EV_TIMEOUT) and not EVENT_IS_SET(events, EV_TIMEOUT)) {
+		d_as_timeout := activate(as_timeout());
+		EVENT_SET(events, EV_TIMEOUT);
+	}
+
+	if (not EVENT_IS_SET(event, EV_TIMEOUT) and
+			EVENT_IS_SET(events, EV_TIMEOUT)) {
+		deactivate(d_as_timeout);
+		EVENT_CLEAR(events, EV_TIMEOUT);
+	}
+
+	if (EVENT_IS(event, EV_UNEXPECTED_MSG) and not
+			EVENT_IS_SET(events, EV_UNEXPECTED_MSG)) {
+		d_as_unexpected_msg := activate(as_unexpected_msg());
+		EVENT_SET(events, EV_UNEXPECTED_MSG);
+	}
+
+	if (not EVENT_IS_SET(event, EV_UNEXPECTED_MSG) and
+			EVENT_IS_SET(events, EV_UNEXPECTED_MSG)) {
+		deactivate(d_as_unexpected_msg);
+		EVENT_CLEAR(events, EV_UNEXPECTED_MSG);
 	}
 }
 
