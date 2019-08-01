@@ -39,7 +39,7 @@ function conn_state(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 	fail_on_events(fail_on);
 }
 
- function fuzzer() runs on fuzzer_ct
+function fuzzer() runs on fuzzer_ct
 {
 	var charstring cmd;
 	var tcp_t tcp;
@@ -69,7 +69,6 @@ function conn_state(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 		} /* end of alt */
 	}
 }
-
 
 type enumerated tp_msg_t {
 	TP_COMMAND,
@@ -268,9 +267,9 @@ testcase test_tcp_window() runs on tcp_ct
 
 		data := win_pop(to_send, step[i]);
 
-		P_TCP.send(ts_TCP(f := PSH,
-						  th_seq := (seq + unack.len),
-						  d := data));
+		P_TCP.send(ts_TCP(fl := PSH,
+						  seq := (seq + unack.len),
+						  data := data));
 
 		win_push(unack, data);
 
@@ -288,11 +287,11 @@ label resend;
 	while (unack.len > 0) {
 		data := win_peek(unack, 1);
 
-		P_TCP.send(ts_TCP(f := PSH,
-						  th_seq := seq + lengthof(data),
-						  d := data));
+		P_TCP.send(ts_TCP(fl := PSH,
+						  seq := seq + lengthof(data),
+						  data := data));
 		alt {
-		[] P_TCP.receive(tr_TCP(f := ACK, th_seq := ack)) -> value tcp {
+		[] P_TCP.receive(tr_TCP(fl := ACK, seq := ack)) -> value tcp {
 
 			var integer acked := tcp.th_ack - seq;
 
@@ -385,15 +384,15 @@ testcase test_tcp_retransmit2() runs on tcp_ct
 			{ "tp_trace", int2str(1) }
 	});
 
-	P_TCP.send(ts_TCP(f := SYN, th_seq := post_inc(seq)));
+	P_TCP.send(ts_TCP(fl := SYN, seq := post_inc(seq)));
 	conn_state(TCP_SYN_SENT);
 	T.start;
 
 	tcp_retries := tcp_retries + 1; /* account non retransmit */
 
 	alt {
-	[tcp_retries > 0] P_TCP.receive(tr_TCP(f := SYN or4b ACK,
-							th_ack := seq)) -> value tcp {
+	[tcp_retries > 0] P_TCP.receive(tr_TCP(fl := SYN or4b ACK,
+							ack := seq)) -> value tcp {
 		log("tcp_rto=", tcp_rto, " sec, actual=", T.read, " sec");
 		T.stop;
 
@@ -439,7 +438,7 @@ testcase test_tcp_debug() runs on tcp_ct
 
 	tp_send(TP_DEBUG_STOP);
 
-	P_TCP.send(ts_TCP(f := SYN, th_seq := post_inc(seq)));
+	P_TCP.send(ts_TCP(fl := SYN, seq := post_inc(seq)));
 	T.start;
 
 	alt {
@@ -548,12 +547,12 @@ function tcp_send(octetstring data := ''O) runs on tcp_ct
 	/* This check might be too restrictive for out of sync tests */
 	peer_assert_new(exp_seq := ack, exp_ack := seq);
 
-	P_TCP.send(ts_TCP(f := PSH, th_seq := post_inc(seq, lengthof(data)),
-					  th_ack := ack, d := data));
+	P_TCP.send(ts_TCP(fl := PSH, seq := post_inc(seq, lengthof(data)),
+					  ack := ack, data := data));
 	T.start;
 
 	alt {
-		[] P_TCP.receive(tr_TCP(f := ACK, th_seq := ack, th_ack := seq)) {
+		[] P_TCP.receive(tr_TCP(fl := ACK, seq := ack, ack := seq)) {
 			T.stop;
 		}
 		[] P_TCP.receive(?) { T.stop; setverdict(fail); }

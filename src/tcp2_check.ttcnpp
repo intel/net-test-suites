@@ -51,18 +51,18 @@ function tcp_connect(octetstring data_to_send := ''O,
 
 	TT.start;
 
-	P_TCP.send(ts_TCP(f := SYN, th_seq := u32_post_inc(seq)));
+	P_TCP.send(ts_TCP(fl := SYN, seq := u32_post_inc(seq)));
 	conn_state(TCP_SYN_SENT, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
 
 	alt {
-	[TCP_SYN_SENT == state] P_TCP.receive(tr_TCP(f := SYN or4b ACK,
-											 th_ack := seq)) -> value tcp {
+	[TCP_SYN_SENT == state] P_TCP.receive(tr_TCP(fl := SYN or4b ACK,
+											 ack := seq)) -> value tcp {
 		T.stop;
 		peer_assert(TCP_SYN_SENT);
 		conn_state(TCP_SYN_RECEIVED);
 		ack := tcp.th_seq;
-		P_TCP.send(ts_TCP(f := ACK, th_seq := seq, th_ack := u32_pre_inc(ack)));
+		P_TCP.send(ts_TCP(fl := ACK, seq := seq, ack := u32_pre_inc(ack)));
 		conn_state(TCP_ESTABLISHED, fail_on := EV_NONE);
 		if (close == false) {
 			goto end;
@@ -97,9 +97,9 @@ function tcp_connect(octetstring data_to_send := ''O,
 		if (lengthof(snd) > 0) { goto wait_for_data; }
 		if (lengthof(data_to_send) > 0) {
 			snd := data_pop(data_to_send);
-			P_TCP.send(ts_TCP(f := PSH,
-							  th_seq := u32_post_inc(seq, lengthof(snd)),
-							  d := snd));
+			P_TCP.send(ts_TCP(fl := PSH,
+							  seq := u32_post_inc(seq, lengthof(snd)),
+							  data := snd));
 			goto wait_for_data;
 		}
 
@@ -108,8 +108,8 @@ function tcp_connect(octetstring data_to_send := ''O,
 		}
 
 		/* Everything is sent and aknowledged, do active close */
-		P_TCP.send(ts_TCP(f := FIN or4b ACK, th_seq := u32_post_inc(seq),
-						  th_ack := ack));
+		P_TCP.send(ts_TCP(fl := FIN or4b ACK, seq := u32_post_inc(seq),
+						  ack := ack));
 		conn_state(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 
 		/* TODO: peer_assert() here is tricky, since peer in active close
@@ -117,19 +117,19 @@ function tcp_connect(octetstring data_to_send := ''O,
 label wait_for_data;
 		T.start; repeat;
 	}
-	[TCP_FIN_WAIT1 == state] P_TCP.receive(tr_TCP(f := ACK,
-											  th_seq := ack, th_ack := seq)) {
+	[TCP_FIN_WAIT1 == state] P_TCP.receive(tr_TCP(fl := ACK,
+											  seq := ack, ack := seq)) {
 		T.stop;
 		/* TODO: peer_assert() here is tricky, since peer in active close
 		   sends ack and fin+ack immedeately */
 		conn_state(TCP_FIN_WAIT2);
 		T.start; repeat;
 	}
-	[TCP_FIN_WAIT2 == state] P_TCP.receive(tr_TCP(f := FIN or4b ACK,
-											  th_seq := ack, th_ack := seq)) {
+	[TCP_FIN_WAIT2 == state] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
+											  seq := ack, ack := seq)) {
 		T.stop;
 		peer_assert(TCP_LAST_ACK);
-		P_TCP.send(ts_TCP(f := ACK, th_seq := seq, th_ack := u32_pre_inc(ack)));
+		P_TCP.send(ts_TCP(fl := ACK, seq := seq, ack := u32_pre_inc(ack)));
 		conn_state(TCP_TIME_WAIT, fail_on := EV_NONE);
 		T.start; repeat; /* T * 2 */
 	}
@@ -174,18 +174,18 @@ function tcp_listen(octetstring data_to_receive := ''O,
 	T.start;
 
 	alt {
-	[TCP_LISTEN == state] P_TCP.receive(tr_TCP(f := SYN)) -> value tcp {
+	[TCP_LISTEN == state] P_TCP.receive(tr_TCP(fl := SYN)) -> value tcp {
 		T.stop;
 		peer_assert(TCP_SYN_SENT);
 		conn_state(TCP_SYN_RECEIVED);
 		ack := tcp.th_seq;
-		P_TCP.send(ts_TCP(f := SYN or4b ACK, th_seq := u32_post_inc(seq),
-						  th_ack := u32_pre_inc(ack)));
+		P_TCP.send(ts_TCP(fl := SYN or4b ACK, seq := u32_post_inc(seq),
+						  ack := u32_pre_inc(ack)));
 		conn_state(TCP_SYN_SENT);
 		T.start; repeat;
 	}
-	[TCP_SYN_SENT == state] P_TCP.receive(tr_TCP(f := ACK,
-											 th_ack := seq)) -> value tcp {
+	[TCP_SYN_SENT == state] P_TCP.receive(tr_TCP(fl := ACK,
+											 ack := seq)) -> value tcp {
 		T.stop;
 		conn_state(TCP_SYN_RECEIVED);
 		ack := tcp.th_seq;
@@ -195,12 +195,12 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		}
 		T.start; repeat;
 	}
-	[TCP_ESTABLISHED == state] P_TCP.receive(tr_TCP(f := PSH, th_seq := ack,
-												d := ?)) -> value tcp {
+	[TCP_ESTABLISHED == state] P_TCP.receive(tr_TCP(fl := PSH, seq := ack,
+												data := ?)) -> value tcp {
 		T.stop;
 		peer_assert(TCP_ESTABLISHED);
-		P_TCP.send(ts_TCP(f := ACK, th_seq := seq,
-						  th_ack := u32_pre_inc(ack, lengthof(tcp.data))));
+		P_TCP.send(ts_TCP(fl := ACK, seq := seq,
+						  ack := u32_pre_inc(ack, lengthof(tcp.data))));
 		data_push(data, tcp.data);
 		T.start; repeat;
 	}
@@ -208,23 +208,23 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		peer_assert(TCP_ESTABLISHED);
 		if (data == data_to_receive) {
 			/* Everything is received, do active close */
-			P_TCP.send(ts_TCP(f := FIN or4b ACK, th_seq := u32_post_inc(seq),
-							  th_ack := ack));
+			P_TCP.send(ts_TCP(fl := FIN or4b ACK, seq := u32_post_inc(seq),
+							  ack := ack));
 			conn_state(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 		}
 		T.start; repeat;
 	}
-	[TCP_FIN_WAIT1 == state] P_TCP.receive(tr_TCP(f := ACK,
-											  th_seq := ack, th_ack := seq)) {
+	[TCP_FIN_WAIT1 == state] P_TCP.receive(tr_TCP(fl := ACK,
+											  seq := ack, ack := seq)) {
 		T.stop;
 		conn_state(TCP_FIN_WAIT2);
 		T.start; repeat;
 	}
-	[TCP_FIN_WAIT2 == state] P_TCP.receive(tr_TCP(f := FIN or4b ACK,
-											  th_seq := ack, th_ack := seq)) {
+	[TCP_FIN_WAIT2 == state] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
+											  seq := ack, ack := seq)) {
 		T.stop;
 		peer_assert(TCP_LAST_ACK);
-		P_TCP.send(ts_TCP(f := ACK, th_seq := seq, th_ack := u32_pre_inc(ack)));
+		P_TCP.send(ts_TCP(fl := ACK, seq := seq, ack := u32_pre_inc(ack)));
 		conn_state(TCP_TIME_WAIT, fail_on := EV_NONE);
 		T.start; repeat; /* TODO: T * 2 */
 	}
@@ -269,7 +269,7 @@ testcase test_tcp_incorrect_offset() runs on tcp_ct
 
 	T.start;
 	alt {
-	[] P_TCP.receive(tr_TCP(f := RST)) {
+	[] P_TCP.receive(tr_TCP(fl := RST)) {
 		T.stop;
 		setverdict(pass);
 	}
@@ -285,7 +285,7 @@ testcase test_tcp_no_flags() runs on tcp_ct
 {
 	tcp_init();
 
-	P_TCP.send(ts_TCP(f := TH_NONE));
+	P_TCP.send(ts_TCP(fl := TH_NONE));
 
 	setverdict(pass); /* TODO: check peer's state */
 }
@@ -310,7 +310,7 @@ testcase test_tcp_connect_no_data_reset() runs on tcp_ct
 
 	tcp_config({{ "tp_trace", "1" }});
 
-	P_TCP.send(ts_TCP(f := RST, th_seq := seq));
+	P_TCP.send(ts_TCP(fl := RST, seq := seq));
 	T.start;
 
 	alt {
@@ -358,11 +358,11 @@ testcase test_tcp_connect_data_gap() runs on tcp_ct
 
 	tcp_config({{ "tp_trace", "1" }});
 
-	P_TCP.send(ts_TCP(f := PSH, th_seq := seq + 42, d := '01'O));
+	P_TCP.send(ts_TCP(fl := PSH, seq := seq + 42, data := '01'O));
 	T.start;
 
 	alt {
-	[] P_TCP.receive(tr_TCP(f := RST)) {
+	[] P_TCP.receive(tr_TCP(fl := RST)) {
 		T.stop;
 		reset_received := true;
 		T.start; repeat;
@@ -400,7 +400,7 @@ testcase test_tcp_listen_no_data_reset() runs on tcp_ct
 
 	tcp_config({{ "tp_trace", "1" }});
 
-	P_TCP.send(ts_TCP(f := RST, th_seq := seq));
+	P_TCP.send(ts_TCP(fl := RST, seq := seq));
 	T.start;
 
 	alt {
@@ -458,7 +458,7 @@ testcase test_tcp_retransmit() runs on tcp_ct
 
 	P_FZ.send("incoming_drop");
 
-	P_TCP.send(ts_TCP(f := SYN, th_seq := post_inc(seq)));
+	P_TCP.send(ts_TCP(fl := SYN, seq := post_inc(seq)));
 	conn_state(TCP_SYN_SENT);
 	T.start(T_default * 3.0);
 	T.timeout;
@@ -468,11 +468,11 @@ testcase test_tcp_retransmit() runs on tcp_ct
 	T.start(T_default * 3.0);
 
 	alt {
-	[] P_TCP.receive(tr_TCP(f := SYN or4b ACK,
-							th_ack := seq)) -> value tcp {
+	[] P_TCP.receive(tr_TCP(fl := SYN or4b ACK,
+							ack := seq)) -> value tcp {
 		T.stop;
 		ack := tcp.th_seq;
-		P_TCP.send(ts_TCP(f := ACK, th_seq := seq, th_ack := pre_inc(ack)));
+		P_TCP.send(ts_TCP(fl := ACK, seq := seq, ack := pre_inc(ack)));
 		setverdict(pass);
 	}
 	[] T.timeout {
@@ -525,12 +525,12 @@ testcase test_tcp_data_undersized() runs on tcp_ct
 {
 	tcp_connect(close := false);
 
-	P_TCP.send(ts_TCP(f := PSH, th_seq := seq, d := ''O));
+	P_TCP.send(ts_TCP(fl := PSH, seq := seq, data := ''O));
 
 	T.start;
 
 	alt {
-	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := RST)) {
+	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(fl := RST)) {
 		T.stop;
 		peer_assert(TCP_CLOSED);
 		setverdict(pass);
@@ -552,9 +552,9 @@ testcase test_tcp_data_options() runs on tcp_ct
 
 	var octetstring data_to_send := '010203'O;
 
-	tcp := valueof(ts_TCP(f := PSH,
-						  th_seq := u32_post_inc(seq, lengthof(data_to_send)),
-						  d := data_to_send));
+	tcp := valueof(ts_TCP(fl := PSH,
+						  seq := u32_post_inc(seq, lengthof(data_to_send)),
+						  data := data_to_send));
 	tcp.opt := {
 		{ TO_MSS, 4, '0000'O }
 	}
@@ -563,7 +563,7 @@ testcase test_tcp_data_options() runs on tcp_ct
 	T.start;
 
 	alt {
-	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := ACK, th_ack := seq)) {
+	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(fl := ACK, ack := seq)) {
 		T.stop;
 		T.start; repeat;
 	}
@@ -595,9 +595,9 @@ testcase test_tcp_data_incorrect_options() runs on tcp_ct
 
 	var octetstring data_to_send := '010203'O;
 
-	tcp := valueof(ts_TCP(f := PSH,
-						  th_seq := u32_post_inc(seq, lengthof(data_to_send)),
-						  d := data_to_send));
+	tcp := valueof(ts_TCP(fl := PSH,
+						  seq := u32_post_inc(seq, lengthof(data_to_send)),
+						  data := data_to_send));
 	tcp.opt := {
 		{ TO_MSS, 3, '00'O } /* Incorrect option length */
 	}
@@ -606,7 +606,7 @@ testcase test_tcp_data_incorrect_options() runs on tcp_ct
 	T.start;
 
 	alt {
-	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := RST)) {
+	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(fl := RST)) {
 		T.stop;
 		setverdict(pass);
 	}
@@ -640,7 +640,7 @@ testcase test_tcp_data_incorrect_offset() runs on tcp_ct
 	T.start;
 
 	alt {
-	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := RST)) {
+	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(fl := RST)) {
 		T.stop;
 		peer_assert(TCP_CLOSED);
 		setverdict(pass);

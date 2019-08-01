@@ -141,46 +141,44 @@ type record tcp_t {
 }
 
 /* TCP send template */
-template tcp_t ts_TCP(th_flags_t f := TH_NONE,
-					  integer sp := 4242,
-					  u32 th_seq := 0,
-					  u32 th_ack := 0,
-					  integer sum := 0,
-					  template octetstring d := omit) := {
-	 th_sport := sp,
+template tcp_t ts_TCP(th_flags_t fl := TH_NONE,
+					  u32 seq := 0,
+					  u32 ack := 0,
+					  u32 sum := 0,
+					  template octetstring data := omit) := {
+	 th_sport := 4242,
 	 th_dport := 4242,
-	 th_seq := th_seq,
-	 th_ack := th_ack,
+	 th_seq := seq,
+	 th_ack := ack,
 	 th_off := 5,
 	 th_res := '000'B,
 	 th_ecn := '000'B,
-	 th_flags := f,
+	 th_flags := fl,
 	 th_win := 1280,
 	 th_sum := sum,
 	 th_urp := 0,
 	 opt := omit,
-	 data := d
+	 data := data
 }
 
 /* TCP receive template */
-template tcp_t tr_TCP(template th_flags_t f := TH_ANY,
-					  integer sp := 4242,
-					  template u32 th_seq := ?,
-					  template u32 th_ack := ?,
-					  template octetstring d := *) := {
-	 th_sport := sp,
+template tcp_t tr_TCP(template th_flags_t fl := TH_ANY,
+					  template u32 seq := ?,
+					  template u32 ack := ?,
+					  template octetstring data := *) := {
+	 th_sport := ?,
 	 th_dport := ?,
-	 th_seq := th_seq,
-	 th_ack := th_ack,
+	 th_seq := seq,
+	 th_ack := ack,
 	 th_off := ?,
 	 th_res := '000'B,
 	 th_ecn := '000'B,
-	 th_flags := f,
+	 th_flags := fl,
 	 th_win := ?,
 	 th_sum := ?,
 	 th_urp := ?,
 	 opt := *,
-	 data := d
+	 data := data
 }
 
 type enumerated tcp_state_t {
@@ -424,7 +422,7 @@ testcase test_tcp_codecs() runs on dummy_ct
 
 	/* Data, no options */
 
-	tcp := valueof(ts_TCP(d := '1111'O));
+	tcp := valueof(ts_TCP(data := '1111'O));
 
 	tcp_enc_dec(tcp, tcp2);
 
@@ -434,7 +432,7 @@ testcase test_tcp_codecs() runs on dummy_ct
 
 	/* Data, options */
 
-	tcp := valueof(ts_TCP(d := '1111'O));
+	tcp := valueof(ts_TCP(data := '1111'O));
 
 	tcp.opt := {
 		{ TO_MSS, 4, '0000'O },
