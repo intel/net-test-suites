@@ -9,7 +9,11 @@
 
 module tcp2_utils {
 
+import from libtypes all;
+import from libnetinet all;
 import from libutils all;
+import from libtest all;
+
 import from tcp2_types all;
 import from tcp2_check all;
 
@@ -19,6 +23,11 @@ const event_t EV_NONE			:='000'B;
 const event_t EV_KEEP			:='111'B;
 const event_t EV_TIMEOUT		:='001'B;
 const event_t EV_UNEXPECTED_MSG :='010'B;
+
+function tcp_dump() runs on tcp_ct
+{
+	log("state=", tcp_state_to_string(s), " seq=", seq, " ack=", ack);
+}
 
 altstep as_timeout() runs on tcp_ct
 {
@@ -35,7 +44,7 @@ altstep as_unexpected_msg() runs on tcp_ct
 	}
 }
 
- function fail_on_events(event_t event) runs on tcp_ct
+function fail_on_events(event_t event) runs on tcp_ct
 {
 	if (event == EV_KEEP) {
 		return;
@@ -63,6 +72,177 @@ altstep as_unexpected_msg() runs on tcp_ct
 		deactivate(d_as_unexpected_msg);
 		EVENT_CLEAR(events, EV_UNEXPECTED_MSG);
 	}
+}
+
+/* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */
+/* Can also be used for transparent trace */
+type component fuzzer_ct {
+	port port_tcp P_TCP_IN;		/* from/to suite */
+	port port_tcp P_TCP_OUT;	/* from/to system under test */
+	port port_udp P_UDP_IN;		/* from/to suite */
+	port port_udp P_UDP_OUT;	/* from/to system under test */
+	port port_cf P_CF;			/* configuration port */
+}
+
+
+function fuzzer() runs on fuzzer_ct
+{
+	var charstring cmd;
+	var tcp_t tcp;
+	var udp_t udp;
+	var boolean recv := true;
+
+	while (true) {
+		alt {
+		[] P_CF.receive("incoming_pass") { recv := true; }
+		[] P_CF.receive("incoming_drop") { recv := false; }
+		[] P_TCP_IN.receive(?) -> value tcp { /* data from suite */
+			log("sut <- suite");
+			P_TCP_OUT.send(tcp);
+		}
+		[] P_TCP_OUT.receive(?) -> value tcp { /* data from peer */
+			if (recv) {
+				log("sut -> suite");
+				P_TCP_IN.send(tcp);
+			}
+		}
+		[] P_UDP_IN.receive(?) -> value udp { /* data from suite */
+			P_UDP_OUT.send(udp);
+		}
+		[] P_UDP_OUT.receive(?) -> value udp { /* data from peer */
+			P_UDP_IN.send(udp);
+		}
+		} /* end of alt */
+	}
+}
+
+
+type enumerated tp_msg_t {
+	TP_COMMAND,
+	TP_CONFIG_REQUEST,
+	TP_CONFIG_REPLY,
+	TP_INTROSPECT_REQUEST,
+	TP_INTROSPECT_REPLY,
+	TP_INTROSPECT_MEMORY_REQUEST,
+	TP_INTROSPECT_MEMORY_REPLY,
+	TP_INTROSPECT_PACKETS_REQUEST,
+	TP_INTROSPECT_PACKETS_RESPONSE,
+	TP_DEBUG_STOP,
+	TP_DEBUG_STEP,
+	TP_DEBUG_CONTINUE,
+	TP_DEBUG_RESPONSE,
+	TP_DEBUG_BREAKPOINT_ADD,
+	TP_DEBUG_BREAKPOINT_DELETE,
+	TP_TRACE_ADD,
+	TP_TRACE_DELETE
+} with {
+	encode "TEXT";
+}
+
+external function tp_msg_to_string(in tp_msg_t x) return charstring
+	with { extension "prototype(convert) encode(TEXT)"; }
+
+type record tp_t {
+	charstring msg,
+	charstring status optional,
+	charstring state optional,
+	integer seq optional,
+	integer ack optional,
+	charstring rcv optional,
+	charstring data optional,
+	charstring op optional
+} with {
+	encode "JSON";
+}
+
+template tp_t ts_TP(tp_msg_t t,
+					template charstring d := omit,
+					template charstring o := omit) := {
+	msg := tp_msg_to_string(t),
+	status := omit,
+	state := omit,
+	seq := omit,
+	ack := omit,
+	rcv := omit,
+	data := d,
+	op := o
+}
+
+external function f_tp_enc(in tp_t x) return octetstring
+	with { extension "prototype(convert) encode(JSON)"; }
+
+external function f_tp_dec(in octetstring x) return tp_t
+	with { extension "prototype(convert) decode(JSON)"; }
+
+function tp_send(tp_msg_t msg_type,
+				charstring o := "",
+				 charstring d := "",
+				integer isn := 0) runs on tcp_ct return tp_t
+{
+	var tp_t tp := valueof(ts_TP(msg_type, d, o));
+	var udp_t udp;
+
+	tp.seq := isn;
+
+	if (msg_type == TP_COMMAND and o == "CLOSE") {
+		tcp_config({{ "tp_trace", "0" }, { "tp_tcp_conn_delete", "1" }});
+	}
+
+	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
+
+	/* Currently only introspect and certain command messages expect response */
+	/* TODO: rework and get rid of the following if ()*/
+	if (not (msg_type == TP_INTROSPECT_REQUEST or
+			 (msg_type == TP_COMMAND and o == "RECV"))) {
+		tp := valueof(ts_TP(msg_type));
+		goto exit;
+	}
+
+	T.start;
+
+	alt {
+	[] P_UDP.receive(?) -> value udp {
+			T.stop;
+			tp := f_tp_dec(udp.data);
+	}
+	[] T.timeout {
+		log("tp_send() timeout");
+		setverdict(fail);
+	}
+	} /* end of alt */
+label exit;
+	return tp;
+}
+
+function peer_assert(tcp_state_t state) runs on tcp_ct
+{
+	if (not peer_assert_enabled) { return; }
+
+	var tp_t tp := tp_send(TP_INTROSPECT_REQUEST);
+
+	if (tp.state != tcp_state_to_string(state)) {
+		log("ASSERT: peer: ", tp.state, " != ", tcp_state_to_string(state));
+		setverdict(fail);
+	}
+}
+
+function fuzzer_on(octetstring data_to_send := ''O) runs on tcp_ct
+{
+	ct_fuzzer := fuzzer_ct.create;
+
+	disconnect(self:P_TCP, eth_ct:P_TCP);
+
+	connect(self:P_TCP, ct_fuzzer:P_TCP_IN);
+	connect(ct_fuzzer:P_TCP_OUT, eth_ct:P_TCP);
+
+	disconnect(self:P_UDP, eth_ct:P_UDP);
+
+	connect(self:P_UDP, ct_fuzzer:P_UDP_IN);
+	connect(ct_fuzzer:P_UDP_OUT, eth_ct:P_UDP);
+
+	connect(self:P_FZ, ct_fuzzer:P_CF);
+
+	ct_fuzzer.start(fuzzer());
 }
 
 } /* end of module */
