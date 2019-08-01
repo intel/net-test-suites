@@ -27,7 +27,7 @@ modulepar {
 									 sec (optional, negative value: unused) */
 }
 
-type component tcp_ct extends test_CT {
+type component tcp_ct extends test_ct {
 	var tcp_state_t s := TCP_LISTEN;
 	var u32 seq := 0;
 	var u32 ack := 0;

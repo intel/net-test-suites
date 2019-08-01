@@ -24,7 +24,7 @@ import from port_data_types all;
  * This test sends UDP packets with and without VLAN tags
  * and checks VLAN in echo replies.
  */
-testcase Test_VLAN_001() runs on test_CT {
+testcase Test_VLAN_001() runs on test_ct {
 
 	test_ct_init();
 

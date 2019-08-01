@@ -25,7 +25,7 @@ modulepar {
 	float T_default := 3.0;
 }
 
-type component tcp_ct extends test_CT {
+type component tcp_ct extends test_ct {
 	var tcp_t tcp;
 	var tcp_state_t s := TCP_LISTEN;
 	var u32 seq := 0;

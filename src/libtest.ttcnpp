@@ -47,7 +47,7 @@ type component eth_CT {
 	var boolean vlan_enabled := false;
 }
 
-type component test_CT extends eth_CT {
+type component test_ct extends eth_CT {
 	var eth_CT eth_ct;
 	timer T := T_default;
 	timer TT := TT_default;
@@ -56,7 +56,7 @@ type component test_CT extends eth_CT {
 	var default d_as_unexpected_msg; /* TODO: Move to libtest */
 }
 
-function test_ct_init() runs on test_CT {
+function test_ct_init() runs on test_ct {
 	eth_ct := eth_CT.create;
 
 	connect(self:P_IP, eth_ct:P_IP);
@@ -83,12 +83,12 @@ const event_t EV_KEEP			:='111'B;
 const event_t EV_TIMEOUT		:='001'B;
 const event_t EV_UNEXPECTED_MSG :='010'B;
 
-altstep as_timeout() runs on test_CT
+altstep as_timeout() runs on test_ct
 {
 	[] T.timeout { log("as_timeout()"); setverdict(fail); stop; }
 }
 
-altstep as_unexpected_msg() runs on test_CT
+altstep as_unexpected_msg() runs on test_ct
 {
 	[] P_TCP.receive(?) {
 		log("as_unexpected_msg()");
@@ -97,7 +97,7 @@ altstep as_unexpected_msg() runs on test_CT
 	}
 }
 
-function fail_on_events(event_t event) runs on test_CT
+function fail_on_events(event_t event) runs on test_ct
 {
 	if (event == EV_KEEP) {
 		return;
@@ -402,7 +402,7 @@ template icmp6_t ts_ICMP6_NBR_SOL := {
 	}
 }
 
-function do_nbr_sol() runs on test_CT {
+function do_nbr_sol() runs on test_ct {
 
 	var icmp6_t icmp6 := valueof(ts_ICMP6_NBR_SOL);
 
@@ -427,7 +427,7 @@ template icmp6_t ts_ICMP6_ECHO_REQUEST := {
 	}
 }
 
-function do_ping6() runs on test_CT {
+function do_ping6() runs on test_ct {
 
 	var icmp6_t icmp6 := valueof(ts_ICMP6_ECHO_REQUEST);
 
@@ -453,7 +453,7 @@ template icmp_t ts_ICMP := {
 	}
 }
 
-function do_ping() runs on test_CT
+function do_ping() runs on test_ct
 {
 
 label again;
@@ -475,7 +475,7 @@ label again;
 		}
 	}
 }
-testcase Test_UDP() runs on test_CT {
+testcase Test_UDP() runs on test_ct {
 
 	test_ct_init();
 
