@@ -9,7 +9,7 @@ module libtypes {
 type integer uint4_t with { variant "COMP(nosign),FIELDLENGTH(4)"; };
 type integer uint8_t with { variant "COMP(nosign),FIELDLENGTH(8)"; };
 type integer uint16_t with { variant "COMP(nosign),FIELDLENGTH(16)"; };
-type integer uint32_t with { variant "COMP(nosign),FIELDLENGTH(32)"; };
+type integer u32 with { variant "COMP(nosign),FIELDLENGTH(32)"; };
 
 type bitstring bit1_t length(1) with { variant "FIELDLENGTH(1)" };
 type bitstring bit3_t length(3) with { variant "FIELDLENGTH(3)" };

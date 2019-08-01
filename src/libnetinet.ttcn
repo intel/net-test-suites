@@ -63,7 +63,7 @@ type record ip_t {
 }
 
 type record ip6_t {
-	uint32_t	ip6_vfc,
+	u32	ip6_vfc,
 	uint16_t	ip6_plen,
 	ipproto_t	ip6_nxt,
 	uint8_t		ip6_hlim,
@@ -120,8 +120,8 @@ type record of tcp_opt_t tcp_options_t;
 type record tcp_t {
 	uint16_t	th_sport,
 	uint16_t	th_dport,
-	uint32_t	th_seq,
-	uint32_t	th_ack,
+	u32	th_seq,
+	u32	th_ack,
 	uint4_t		th_off,
 	bit3_t		th_res,
 	bit3_t		th_ecn,
@@ -142,8 +142,8 @@ type record tcp_t {
 /* TCP send template */
 template tcp_t ts_TCP(th_flags_t f := TH_NONE,
 					  integer sp := 4242,
-					  uint32_t th_seq := 0,
-					  uint32_t th_ack := 0,
+					  u32 th_seq := 0,
+					  u32 th_ack := 0,
 					  integer sum := 0,
 					  template octetstring d := omit) := {
 	 th_sport := sp,
@@ -164,8 +164,8 @@ template tcp_t ts_TCP(th_flags_t f := TH_NONE,
 /* TCP receive template */
 template tcp_t tr_TCP(template th_flags_t f := TH_ANY,
 					  integer sp := 4242,
-					  template uint32_t th_seq := ?,
-					  template uint32_t th_ack := ?,
+					  template u32 th_seq := ?,
+					  template u32 th_ack := ?,
 					  template octetstring d := *) := {
 	 th_sport := sp,
 	 th_dport := ?,
@@ -247,7 +247,7 @@ type record icmp6_nbr_sol_t {
 	bit1_t		ns_flag_router,
 	bit1_t		ns_flag_solicited,
 	bit1_t		ns_flag_override,
-	uint32_t	ns_reserved,
+	u32	ns_reserved,
 	in6_addr_t	ns_target,
 	octetstring	ns_options optional
 } with {
@@ -258,7 +258,7 @@ type record icmp6_nbr_adv_t {
 	bit1_t		na_flag_router,
 	bit1_t		na_flag_solicited,
 	bit1_t		na_flag_override,
-	uint32_t	na_reserved,
+	u32	na_reserved,
 	in6_addr_t	na_target,
 	octetstring na_options optional
 } with {
@@ -465,8 +465,8 @@ testcase test_tcp_codecs() runs on dummy_ct
 type record tcp2_t {
 	uint16_t	th_sport,
 	uint16_t	th_dport,
-	uint32_t	th_seq,
-	uint32_t	th_ack,
+	u32	th_seq,
+	u32	th_ack,
 	uint4_t		th_off,
 	bit3_t		th_res,
 	bit3_t		th_ecn,
@@ -480,8 +480,8 @@ type record tcp2_t {
 }
 
 template tcp2_t ts_TCP2(th_flags_t fl := '000000'B,
-						uint32_t seq := 0,
-						uint32_t ack := 0,
+						u32 seq := 0,
+						u32 ack := 0,
 						integer off := 5,
 						template octetstring data := ''O) := {
 	th_sport := 4242,
