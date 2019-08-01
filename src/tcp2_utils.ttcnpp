@@ -453,4 +453,142 @@ testcase test_tcp_debug() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+/**
+ * Test peer's tcp_send() functionality
+ */
+testcase test_tcp_send() runs on tcp_ct
+{
+	tcp_connect(close := false);
+
+	tcp_config({{ "tcp_echo", "0" }});
+
+	tp_send(TP_COMMAND, "SEND", "01");
+
+	T.start(T_default * 10.0);
+	T.timeout;
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
+
+type record map_entry_t {
+	charstring key,
+	charstring val /* "value" is a reserved word in TTCN-3 */
+} with {
+	encode "JSON";
+	variant(val) "JSON: name as value";
+}
+
+type record of map_entry_t map_t with {
+	encode "JSON";
+}
+
+type record tp_new_t {
+	charstring msg,
+	map_t data
+} with {
+	encode "JSON";
+}
+
+template tp_new_t ts_TP_new(tp_msg_t msg, map_t data) := {
+	msg := tp_msg_to_string(msg),
+	data := data
+}
+
+external function f_tp_new_enc(in tp_new_t x) return octetstring
+	with { extension "prototype(convert) encode(JSON) printing(pretty)"; }
+
+external function f_tp_new_dec(in octetstring x) return tp_new_t
+	with { extension "prototype(convert) decode(JSON)"; }
+
+function tp_send_new(tp_msg_t msg, map_t data) runs on tcp_ct
+{
+	var tp_new_t tp := valueof(ts_TP_new(msg, data));
+
+	P_UDP.send(ts_UDP(d := f_tp_new_enc(tp)));
+}
+
+external function f_enc_map(in map_t x) return octetstring
+	with { extension "prototype(convert) encode(JSON)" }
+
+function peer_assert_new(integer exp_seq := -1, integer exp_ack := -1)
+	runs on tcp_ct return tp_t
+{
+	var tp_t peer := tp_send(TP_INTROSPECT_REQUEST);
+
+	if (exp_seq >= 0) {
+		tcp_assert(peer.seq == exp_seq,
+			   "peer.seq=", peer.seq, ", exp_seq=", exp_seq);
+	}
+
+	if (exp_ack >= 0) {
+		tcp_assert(peer.ack == exp_ack,
+			   "peer.ack=", peer.ack, ", exp_ack=", exp_ack);
+	}
+
+	return peer;
+}
+
+
+function tcp_send(octetstring data := ''O) runs on tcp_ct
+{
+	/* This check might be too restrictive for out of sync tests */
+	peer_assert_new(exp_seq := ack, exp_ack := seq);
+
+	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := post_inc(seq, lengthof(data)),
+					  th_ack := ack, d := data));
+	T.start;
+
+	alt {
+		[] P_TCP.receive(tr_TCP(f := TH_ACK, th_seq := ack, th_ack := seq)) {
+			T.stop;
+		}
+		[] P_TCP.receive(?) { T.stop; setverdict(fail); }
+		[] T.timeout { setverdict(fail); }
+	} /* end of alt */
+
+	peer_assert_new(exp_seq := ack, exp_ack := seq);
+}
+
+function tcp_config(map_t cfg) runs on tcp_ct
+{
+	tp_send_new(TP_CONFIG_REQUEST, cfg);
+}
+
+function tcp_init() runs on tcp_ct
+{
+	var map_t cfg := {
+		{ "tcp_echo", "1" },
+		{ "tp_tcp_conn_delete", "0" }
+	};
+
+	if (T_peer_default > 0.0) {
+		cfg[lengthof(cfg)] := { "tcp_rto", int2str(TO_MSEC(T_peer_default)) };
+	}
+
+	test_ct_init();
+
+	tcp_config(cfg);
+}
+
+testcase test_tcp_listen_isn() runs on tcp_ct
+{
+	tcp_listen(isn := 333);
+}
+
+testcase test_tcp_connect_isn() runs on tcp_ct
+{
+	tcp_connect(isn := 333);
+}
+
+testcase test_tcp_listen_data_reset() runs on tcp_ct
+{
+	tcp_listen(data_to_receive := '01'O);
+}
+
+testcase test_tcp_connect_data_reset() runs on tcp_ct
+{
+	tcp_connect(data_to_send := '01'O);
+}
+
 } /* end of module */
