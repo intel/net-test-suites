@@ -26,6 +26,7 @@ type component tcp_ct extends test_ct {
 	var u32 seq := 0;
 	var u32 ack := 0;
 	var octetstring snd := ''O;
+	var octetstring rcv := ''O;
 	var fuzzer_ct ct_fuzzer;
 	port port_cf P_FZ;
 	var tcp_t tcp; /* TODO: Drop */
@@ -40,7 +41,6 @@ function tcp_connect(octetstring data_to_send := ''O,
 					 u32 isn := 0) runs on tcp_ct
 {
 	var octetstring data := ''O;
-	var octetstring data_received := ''O;
 
 	seq := isn;
 
@@ -74,7 +74,7 @@ function tcp_connect(octetstring data_to_send := ''O,
 		peer_assert(TCP_ESTABLISHED);
 		var tcp_t tcp2 := valueof(ts_TCP);
 		if (th_is_set(tcp, PSH)) {
-			byte_array_append(data_received, tcp.data);
+			byte_array_append(rcv, tcp.data);
 			th_set(tcp2, ACK);
 			u32_pre_inc(conn(ack), lengthof(tcp.data));
 		}
@@ -141,14 +141,11 @@ function tcp_connect(octetstring data_to_send := ''O,
 	[] TT.timeout { setverdict(fail); stop; }
 	}  /* end of alt */
 
-	if (TCP_CLOSED == state and
-		lengthof(data_to_send) == 0 and
-		lengthof(snd) == 0 and
-		data_received == data_to_receive) {
+	if (TCP_CLOSED == state and 0 == lengthof(data_to_send) and
+			0 == lengthof(snd) and rcv == data_to_receive) {
 		setverdict(pass);
 	} else {
-		log("Error: data_to_receive=", data_to_receive, " ",
-			"data_received=", data_received);
+		log("Error: data_to_receive: ", data_to_receive, " rcv: ", rcv);
 		setverdict(fail);
 	}
 
