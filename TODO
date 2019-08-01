@@ -1,0 +1,9 @@
+Priority: high/medium/low
+Complexity/effort: C1/C2/C4/C8 (weeks)
+
+tcp2_check:
+
+- Add support for IPv4 options (<C1, medium)
+- Document _listen and _connect (<C1, medium)
+- Implement RTT discovery (C1, low)
+- Include and document user scripts (<C1, low)
