@@ -11,6 +11,7 @@ tcp2_check:
 - Add support for N simultaneous connections (C1, low)
 - Include and document user scripts (<C1, low)
 - Add debug levels (<C1, low)
+- Add an error macro/function (<C1, low)
 - Split into rcv/snd data in tcp_ct (<C1, low)
 - Move fuzzer into libtest and implement a register-able callback (<C1, low)
 - Include and document docker support (<C2, low)
