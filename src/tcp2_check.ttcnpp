@@ -57,19 +57,19 @@ function tcp_connect(octetstring data_to_send := ''O,
 
 	alt {
 	[TCP_SYN_SENT == state] P_TCP.receive(tr_TCP(fl := SYN or4b ACK,
-											 ack := conn(seq))) -> value tcp {
+											ack := conn(seq))) -> value tcp {
 		T.stop;
 		peer_assert(TCP_SYN_SENT);
 		conn_state(TCP_SYN_RECEIVED);
 		ack := tcp.th_seq;
-		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq), ack := u32_pre_inc(conn(ack))));
+		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
+						  ack := u32_pre_inc(conn(ack))));
 		conn_state(TCP_ESTABLISHED, fail_on := EV_NONE);
 		if (close == false) {
 			goto end;
 		}
 		T.start; repeat;
 	}
-
 	[TCP_ESTABLISHED == state] P_TCP.receive(tr_TCP) -> value tcp {
 		T.stop;
 		peer_assert(TCP_ESTABLISHED);
@@ -114,11 +114,11 @@ function tcp_connect(octetstring data_to_send := ''O,
 
 		/* TODO: peer_assert() here is tricky, since peer in active close
 		   sends ack and fin+ack immedeately */
-label wait_for_data;
+		label wait_for_data;
 		T.start; repeat;
 	}
-	[TCP_FIN_WAIT1 == state] P_TCP.receive(tr_TCP(fl := ACK,
-											  seq := conn(ack), ack := conn(seq))) {
+	[TCP_FIN_WAIT1 == state] P_TCP.receive(tr_TCP(fl := ACK, seq := conn(ack),
+												  ack := conn(seq))) {
 		T.stop;
 		/* TODO: peer_assert() here is tricky, since peer in active close
 		   sends ack and fin+ack immedeately */
@@ -126,10 +126,12 @@ label wait_for_data;
 		T.start; repeat;
 	}
 	[TCP_FIN_WAIT2 == state] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
-											  seq := conn(ack), ack := conn(seq))) {
+												  seq := conn(ack),
+												  ack := conn(seq))) {
 		T.stop;
 		peer_assert(TCP_LAST_ACK);
-		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq), ack := u32_pre_inc(conn(ack))));
+		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
+						  ack := u32_pre_inc(conn(ack))));
 		conn_state(TCP_TIME_WAIT, fail_on := EV_NONE);
 		T.start; repeat; /* T * 2 */
 	}
@@ -141,9 +143,9 @@ label wait_for_data;
 	}  /* end of alt */
 
 	if (TCP_CLOSED == state and
-			lengthof(data_to_send) == 0 and
-			lengthof(snd) == 0 and
-			data_received == data_to_receive) {
+		lengthof(data_to_send) == 0 and
+		lengthof(snd) == 0 and
+		data_received == data_to_receive) {
 		setverdict(pass);
 	} else {
 		log("Error: data_to_receive=", data_to_receive, " ",
@@ -152,7 +154,7 @@ label wait_for_data;
 	}
 
 	tp_send(TP_COMMAND, "CLOSE");
-label end;
+	label end;
 }
 
 /**
