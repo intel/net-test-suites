@@ -18,9 +18,7 @@ import from libtypes all;
 import from libnetinet all;
 import from libtest all;
 import from libutils all;
-import from port_data_types all;
 
-import from tcp2_types all;
 import from tcp2_utils all;
 
 modulepar {
