@@ -10,3 +10,4 @@ tcp2_check:
 - Include and document user scripts (<C1, low)
 - Add debug levels (<C1, low)
 - Split into rcv/snd data in tcp_ct (<C1, low)
+- Move fuzzer into libtest and implement a register-able callback (<C1, low)
