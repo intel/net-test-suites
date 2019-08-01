@@ -438,7 +438,7 @@ testcase tc_tcp_conn(octetstring data := ''O) runs on tcp_ct
 		if (th_is_set(tcp, ACK)) {
 			if (tcp.th_ack > seq - lengthof(data_unack)) {
 				var integer diff := tcp.th_ack - (seq - lengthof(data_unack));
-				data_pop(data_unack, diff);
+				byte_array_remove_range(data_unack, index := 0, len := diff);
 			}
 		}
 		if (tcp2.th_flags != TH_NONE) {
@@ -451,7 +451,8 @@ testcase tc_tcp_conn(octetstring data := ''O) runs on tcp_ct
 	[s == TCP_ESTABLISHED] T.timeout {
 		if (lengthof(data_unack) > 0) { goto wait_for_data; }
 		if (lengthof(data_to_send) > 0) {
-			data_unack := data_pop(data_to_send, data_step);
+			data_unack := byte_array_remove_range(data_to_send, index := 0,
+												  len := data_step);
 			P_TCP.send(ts_TCP(fl := PSH,
 							  seq := post_inc(seq, lengthof(data_unack)),
 							  ack := ack, data := data_unack));

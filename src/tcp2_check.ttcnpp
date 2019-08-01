@@ -46,7 +46,7 @@ function tcp_connect(octetstring data_to_send := ''O,
 
 	tcp_init();
 
-	data_push(data, data_to_send);
+	byte_array_append(data, data_to_send);
 
 	TT.start;
 
@@ -74,14 +74,14 @@ function tcp_connect(octetstring data_to_send := ''O,
 		peer_assert(TCP_ESTABLISHED);
 		var tcp_t tcp2 := valueof(ts_TCP);
 		if (th_is_set(tcp, PSH)) {
-			data_push(data_received, tcp.data);
+			byte_array_append(data_received, tcp.data);
 			th_set(tcp2, ACK);
 			u32_pre_inc(conn(ack), lengthof(tcp.data));
 		}
 		if (th_is_set(tcp, ACK)) {
 			if (tcp.th_ack > seq - lengthof(snd)) {
 				var integer diff := tcp.th_ack - (seq - lengthof(snd));
-				data_pop(snd, diff);
+				byte_array_remove_range(snd, index := 0, len := diff);
 			}
 		}
 		if (tcp2.th_flags != TH_NONE) {
@@ -95,7 +95,7 @@ function tcp_connect(octetstring data_to_send := ''O,
 		peer_assert(TCP_ESTABLISHED);
 		if (lengthof(snd) > 0) { goto wait_for_data; }
 		if (lengthof(data_to_send) > 0) {
-			snd := data_pop(data_to_send);
+			snd := byte_array_remove_range(data_to_send, index := 0, len := 1);
 			P_TCP.send(ts_TCP(fl := PSH,
 							  seq := u32_post_inc(conn(seq), lengthof(snd)),
 							  data := snd));
@@ -202,7 +202,7 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		peer_assert(TCP_ESTABLISHED);
 		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
 						  ack := u32_pre_inc(conn(ack), lengthof(tcp.data))));
-		data_push(data, tcp.data);
+		byte_array_append(data, tcp.data);
 		T.start; repeat;
 	}
 	[TCP_ESTABLISHED == state] T.timeout {

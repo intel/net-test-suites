@@ -61,18 +61,20 @@ function post_dec(inout integer i, integer step := 1) return integer
 	return r;
 }
 
-function data_pop(inout octetstring d_in, integer len := 1) return octetstring
+function byte_array_append(inout octetstring array, octetstring data)
 {
-	var octetstring d_out := substr(d_in, 0, len);
-
-	d_in := replace(d_in, 0, len, ''O);
-
-	return d_out;
+	array := array & data;
 }
 
-function data_push(inout octetstring data, octetstring data_new)
+function byte_array_remove_range(inout octetstring array,
+								 integer index := 0,
+								 integer len := 1) return octetstring
 {
-	data := data & data_new;
+	var octetstring data := substr(array, index, len);
+
+	array := replace(array, index, len, ''O);
+
+	return data;
 }
 
 } /* end of module */
