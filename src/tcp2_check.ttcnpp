@@ -32,8 +32,7 @@ type component tcp_ct extends test_ct {
 }
 
 /**
- * Peer's active connection establishment, data transfer
- * (data echoing expected) and suite's active close
+ * Suite's active connection establishment, optional data, and active close
  */
 function tcp_connect(octetstring data_to_send := ''O,
 						  octetstring data_to_receive := ''O,
