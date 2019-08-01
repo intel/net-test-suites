@@ -30,8 +30,6 @@ testcase Test_VLAN_001() runs on test_CT {
 
 	var udp_t udp;
 
-	timer T := 1.0;
-
 	P_UDP.send(ts_UDP(d := '01'O));
 
 	T.start;

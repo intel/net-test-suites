@@ -24,6 +24,8 @@ modulepar {
 	float T_ping := 2.0; /* default ping timeout, sec */
 	boolean pass_arp := false;
 	ethertype_t m_ethertype := ETHERTYPE_IP;
+	float T_default := 0.1; /* default message timeout, sec */
+	float TT_default := 2.0; /* default test teardown timeout, sec */
 }
 
 type component eth_CT {
@@ -43,6 +45,8 @@ type component eth_CT {
 
 type component test_CT extends eth_CT {
 	var eth_CT eth_ct;
+	timer T := T_default;
+	timer TT := TT_default;
 }
 
 function test_ct_init() runs on test_CT {
@@ -391,9 +395,8 @@ template icmp_t ts_ICMP := {
 	}
 }
 
-function do_ping() runs on test_CT {
-
-	timer T := T_ping;
+function do_ping() runs on test_CT
+{
 
 label again;
 	P_ICMP.send(valueof(ts_ICMP));
@@ -428,8 +431,6 @@ testcase Test_UDP() runs on test_CT {
 	//P_CF.send("vlan_enable");
 
 	var udp_t udp := valueof(ts_UDP('01'O));
-
-	timer T := 3.0;
 
 	P_UDP.send(udp);
 

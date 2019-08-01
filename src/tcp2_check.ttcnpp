@@ -24,14 +24,12 @@ import from tcp2_types all;
 import from tcp2_utils all;
 
 modulepar {
-	float T_default := 0.1; /* default TCP message timeout, sec */
-	float TT_default := 2.0; /* default test teardown timeout, sec */
-	float T_peer_default := -1.0; /* default peer's retransmission timeout,
-									 sec (optional, negative value: unused) */
 	boolean fuzzer_enabled := false;
 	boolean peer_assert_enabled := true;
 	integer number_of_runs := 1;
 	integer max_tests_failed := 1;
+	float T_peer_default := -1.0; /* default peer's retransmission timeout,
+									 sec (optional, negative value: unused) */
 }
 
 type component tcp_ct extends test_CT {
@@ -41,8 +39,6 @@ type component tcp_ct extends test_CT {
 	var uint32_t ack := 0;
 	var octetstring data_unack := ''O; /* TODO: split into rcv/snd data */
 	var integer data_step := 1;
-	timer T := T_default;
-	timer TT := TT_default; /* TODO: move into libtest */
 	var event_t events := EV_NONE;
 	var default d_as_timeout;
 	var default d_as_unexpected_msg;

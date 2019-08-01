@@ -30,7 +30,6 @@ type component tcp_ct extends test_CT {
 	var tcp_state_t s := TCP_LISTEN;
 	var uint32_t seq := 0;
 	var uint32_t ack := 0;
-	timer T := T_default;
 }
 
 /**
