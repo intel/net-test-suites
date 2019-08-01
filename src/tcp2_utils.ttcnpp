@@ -35,7 +35,7 @@ type component fuzzer_ct {
 
 function conn_state(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 {
-	s := new;
+	state := new;
 	fail_on_events(fail_on);
 }
 
@@ -168,15 +168,17 @@ label exit;
 	return tp;
 }
 
-function peer_assert(tcp_state_t state) runs on tcp_ct
+function peer_assert(tcp_state_t expected_state) runs on tcp_ct
 {
 	if (not peer_assert_enabled) { return; }
 
 	var tp_t tp := tp_send(TP_INTROSPECT_REQUEST);
 
-	if (tp.state != tcp_state_to_string(state)) {
-		log("ASSERT: peer: ", tp.state, " != ", tcp_state_to_string(state));
+	if (tp.state != tcp_state_to_string(expected_state)) {
+		log("ASSERT: peer: ", tp.state, " != ",
+			tcp_state_to_string(expected_state));
 		setverdict(fail);
+		stop;
 	}
 }
 
