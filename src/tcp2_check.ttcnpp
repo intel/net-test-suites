@@ -262,94 +262,55 @@ function tcp_listen(octetstring data_to_receive := ''O,
 label end;
 }
 
+testcase test_tcp_undersized() runs on tcp_ct
+{
+	tcp_init();
+
+	var ip_t ip := valueof(ts_IP(IPPROTO_TCP, ''O));
+
+	P_IP.send(ip);
+
+	setverdict(pass); /* TODO: check peer's state */
+}
+
+/**
+ * Test a reaction on SYN with incorrect th_off
+ */
+testcase test_tcp_incorrect_offset() runs on tcp_ct
+{
+	tcp_init();
+
+	P_TCP2.send(ts_TCP2(fl := TH_SYN, seq := u32_post_inc(seq), off := 3));
+
+	T.start;
+	alt {
+	[] P_TCP.receive(tr_TCP(f := TH_RST)) {
+		T.stop;
+		setverdict(pass);
+	}
+	[] T.timeout {
+		setverdict(fail);
+	}
+	} /* end of alt */
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
+testcase test_tcp_no_flags() runs on tcp_ct
+{
+	tcp_init();
+
+	P_TCP.send(ts_TCP(f := TH_NONE));
+
+	setverdict(pass); /* TODO: check peer's state */
+}
+
 /**
  * Test active TCP connection establishment and active close
  */
 testcase test_tcp_connect_no_data_close() runs on tcp_ct
 {
 	tcp_connect(data_to_send := ''O);
-}
-
-/**
- * Test peer's active TCP connection establishment,
- * data transfer (data echoing expected) and suite's active close
- */
-testcase test_tcp_connect_data_close() runs on tcp_ct
-{
-	tcp_connect(data_to_send := '01'O, data_to_receive := '01'O);
-}
-
-/**
- * Test active TCP connection establishment,
- * "more data" data transfer (data echoing expected) and active close
- */
-testcase test_tcp_connect_more_data_close() runs on tcp_ct
-{
-	tcp_connect(data_to_send := '010203'O, data_to_receive := '010203'O);
-}
-
-/**
- * Test passive TCP connection establishment and active close
- */
-testcase test_tcp_listen_no_data_close() runs on tcp_ct
-{
-	tcp_listen(data_to_receive := ''O);
-}
-
-/**
- * Test passive TCP connection establishment, data and active close
- */
-testcase test_tcp_listen_data_close() runs on tcp_ct
-{
-	tcp_listen(data_to_receive := '01'O);
-}
-
-/**
- * Test passive TCP connection establishment, data and active close
- */
-testcase test_tcp_listen_more_data_close() runs on tcp_ct
-{
-	tcp_listen(data_to_receive := '010203'O);
-}
-
-testcase test_tcp_listen_isn() runs on tcp_ct
-{
-	tcp_listen(isn := 333);
-}
-
-testcase test_tcp_connect_isn() runs on tcp_ct
-{
-	tcp_connect(isn := 333);
-}
-
-/**
- * Test that RST works in ESTABLISHED
- * TODO: Generalize to other states
- */
-testcase test_tcp_listen_no_data_reset() runs on tcp_ct
-{
-	var udp_t udp;
-	var tp_new_t tp;
-
-	tcp_listen(close := false);
-
-	tcp_config({{ "tp_trace", "1" }});
-
-	P_TCP.send(ts_TCP(f := TH_RST, th_seq := seq));
-	T.start;
-
-	alt {
-	[] P_UDP.receive(?) -> value udp {
-		T.stop;
-		tp := f_tp_new_dec(udp.data);
-		if (tp.data[0].val == "CONN_DELETE") {
-			setverdict(pass);
-		}
-	}
-	[] T.timeout { setverdict(fail); }
-	} /* end of alt */
-
-	tp_send(TP_COMMAND, "CLOSE");
 }
 
 /**
@@ -380,6 +341,24 @@ testcase test_tcp_connect_no_data_reset() runs on tcp_ct
 	} /* end of alt */
 
 	tp_send(TP_COMMAND, "CLOSE");
+}
+
+/**
+ * Test peer's active TCP connection establishment,
+ * data transfer (data echoing expected) and suite's active close
+ */
+testcase test_tcp_connect_data_close() runs on tcp_ct
+{
+	tcp_connect(data_to_send := '01'O, data_to_receive := '01'O);
+}
+
+/**
+ * Test active TCP connection establishment,
+ * "more data" data transfer (data echoing expected) and active close
+ */
+testcase test_tcp_connect_more_data_close() runs on tcp_ct
+{
+	tcp_connect(data_to_send := '010203'O, data_to_receive := '010203'O);
 }
 
 /**
@@ -417,14 +396,72 @@ testcase test_tcp_connect_data_gap() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
-testcase test_tcp_listen_data_reset() runs on tcp_ct
+/**
+ * Test passive TCP connection establishment and active close
+ */
+testcase test_tcp_listen_no_data_close() runs on tcp_ct
+{
+	tcp_listen(data_to_receive := ''O);
+}
+
+/**
+ * Test that RST works in ESTABLISHED
+ * TODO: Generalize to other states
+ */
+testcase test_tcp_listen_no_data_reset() runs on tcp_ct
+{
+	var udp_t udp;
+	var tp_new_t tp;
+
+	tcp_listen(close := false);
+
+	tcp_config({{ "tp_trace", "1" }});
+
+	P_TCP.send(ts_TCP(f := TH_RST, th_seq := seq));
+	T.start;
+
+	alt {
+	[] P_UDP.receive(?) -> value udp {
+		T.stop;
+		tp := f_tp_new_dec(udp.data);
+		if (tp.data[0].val == "CONN_DELETE") {
+			setverdict(pass);
+		}
+	}
+	[] T.timeout { setverdict(fail); }
+	} /* end of alt */
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
+/**
+ * Test passive TCP connection establishment, data and active close
+ */
+testcase test_tcp_listen_data_close() runs on tcp_ct
 {
 	tcp_listen(data_to_receive := '01'O);
 }
 
-testcase test_tcp_connect_data_reset() runs on tcp_ct
+/**
+ * Test passive TCP connection establishment, data and active close
+ */
+testcase test_tcp_listen_more_data_close() runs on tcp_ct
 {
-	tcp_connect(data_to_send := '01'O);
+	tcp_listen(data_to_receive := '010203'O);
+}
+
+/**
+ * Test sequence wraps/overflows
+ */
+testcase test_tcp_connect_seq_wrap() runs on tcp_ct
+{
+	tcp_connect(data_to_send := '01'O, data_to_receive := '01'O,
+					 isn := hex2int('FFFFFFFE'H));
+}
+
+testcase test_tcp_listen_seq_wrap() runs on tcp_ct
+{
+	tcp_listen(data_to_receive := '01'O, isn := hex2int('FFFFFFFE'H));
 }
 
 /**
@@ -464,6 +501,61 @@ testcase test_tcp_retransmit() runs on tcp_ct
 	T.timeout;
 
 	st(TCP_ESTABLISHED, fail_on := EV_NONE);
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
+type record of octetstring tcp_test_data_t;
+
+/**
+ * Test the reception of data with variable chunks, verify peer's seq and ack,
+ * and check what the peer has received with the TP_COMMAND/RECV
+ */
+/* TODO: Enhance this one with out of order data */
+testcase test_tcp_recv() runs on tcp_ct
+{
+	var tcp_test_data_t data := { '01'O, '0203'O, '040506'O };
+	var octetstring data_total := ''O;
+
+	tcp_connect(close := false);
+
+	tcp_config({{ "tcp_echo", "0" }});
+
+	for (var integer i := 0; i < sizeof(data); i := i + 1) {
+		data_total := data_total & data[i];
+		tcp_send(data[i]);
+	}
+
+	var tp_t peer := tp_send(TP_COMMAND, "RECV");
+
+	if (str2oct(peer.data) == data_total) {
+		setverdict(pass);
+	}
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
+/**
+ * Send an undersized data in ESTABLISHED
+ */
+testcase test_tcp_data_undersized() runs on tcp_ct
+{
+	tcp_connect(close := false);
+
+	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := seq, d := ''O));
+
+	T.start;
+
+	alt {
+	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := TH_RST)) {
+		T.stop;
+		peer_assert(TCP_CLOSED);
+		setverdict(pass);
+	}
+	[s == TCP_ESTABLISHED] T.timeout {
+		setverdict(fail);
+	}
+	} /* end of alt */
 
 	tp_send(TP_COMMAND, "CLOSE");
 }
@@ -578,27 +670,24 @@ testcase test_tcp_data_incorrect_offset() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
-/**
- * Test a reaction on SYN with incorrect th_off
- */
-testcase test_tcp_incorrect_offset() runs on tcp_ct
+testcase test_tcp_listen_isn() runs on tcp_ct
 {
-	tcp_init();
+	tcp_listen(isn := 333);
+}
 
-	P_TCP2.send(ts_TCP2(fl := TH_SYN, seq := u32_post_inc(seq), off := 3));
+testcase test_tcp_connect_isn() runs on tcp_ct
+{
+	tcp_connect(isn := 333);
+}
 
-	T.start;
-	alt {
-	[] P_TCP.receive(tr_TCP(f := TH_RST)) {
-		T.stop;
-		setverdict(pass);
-	}
-	[] T.timeout {
-		setverdict(fail);
-	}
-	} /* end of alt */
+testcase test_tcp_listen_data_reset() runs on tcp_ct
+{
+	tcp_listen(data_to_receive := '01'O);
+}
 
-	tp_send(TP_COMMAND, "CLOSE");
+testcase test_tcp_connect_data_reset() runs on tcp_ct
+{
+	tcp_connect(data_to_send := '01'O);
 }
 
 function tcp_send(octetstring data := ''O) runs on tcp_ct
@@ -639,36 +728,6 @@ function peer_assert_new(integer exp_seq := -1, integer exp_ack := -1)
 	return peer;
 }
 
-type record of octetstring tcp_test_data_t;
-
-/**
- * Test the reception of data with variable chunks, verify peer's seq and ack,
- * and check what the peer has received with the TP_COMMAND/RECV
- */
-/* TODO: Enhance this one with out of order data */
-testcase test_tcp_recv() runs on tcp_ct
-{
-	var tcp_test_data_t data := { '01'O, '0203'O, '040506'O };
-	var octetstring data_total := ''O;
-
-	tcp_connect(close := false);
-
-	tcp_config({{ "tcp_echo", "0" }});
-
-	for (var integer i := 0; i < sizeof(data); i := i + 1) {
-		data_total := data_total & data[i];
-		tcp_send(data[i]);
-	}
-
-	var tp_t peer := tp_send(TP_COMMAND, "RECV");
-
-	if (str2oct(peer.data) == data_total) {
-		setverdict(pass);
-	}
-
-	tp_send(TP_COMMAND, "CLOSE");
-}
-
 /**
  * Test peer's tcp_send() functionality
  */
@@ -682,51 +741,6 @@ testcase test_tcp_send() runs on tcp_ct
 
 	T.start(T_default * 10.0);
 	T.timeout;
-
-	tp_send(TP_COMMAND, "CLOSE");
-}
-
-testcase test_tcp_undersized() runs on tcp_ct
-{
-	tcp_init();
-
-	var ip_t ip := valueof(ts_IP(IPPROTO_TCP, ''O));
-
-	P_IP.send(ip);
-
-	setverdict(pass); /* TODO: check peer's state */
-}
-
-testcase test_tcp_no_flags() runs on tcp_ct
-{
-	tcp_init();
-
-	P_TCP.send(ts_TCP(f := TH_NONE));
-
-	setverdict(pass); /* TODO: check peer's state */
-}
-
-/**
- * Send an undersized data in ESTABLISHED
- */
-testcase test_tcp_data_undersized() runs on tcp_ct
-{
-	tcp_connect(close := false);
-
-	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := seq, d := ''O));
-
-	T.start;
-
-	alt {
-	[s == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := TH_RST)) {
-		T.stop;
-		peer_assert(TCP_CLOSED);
-		setverdict(pass);
-	}
-	[s == TCP_ESTABLISHED] T.timeout {
-		setverdict(fail);
-	}
-	} /* end of alt */
 
 	tp_send(TP_COMMAND, "CLOSE");
 }
@@ -791,19 +805,6 @@ function tcp_init() runs on tcp_ct
 	test_ct_init();
 
 	tcp_config(cfg);
-}
-/**
- * Test sequence wraps/overflows
- */
-testcase test_tcp_connect_seq_wrap() runs on tcp_ct
-{
-	tcp_connect(data_to_send := '01'O, data_to_receive := '01'O,
-					 isn := hex2int('FFFFFFFE'H));
-}
-
-testcase test_tcp_listen_seq_wrap() runs on tcp_ct
-{
-	tcp_listen(data_to_receive := '01'O, isn := hex2int('FFFFFFFE'H));
 }
 
 control {
