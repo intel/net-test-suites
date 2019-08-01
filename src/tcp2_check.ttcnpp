@@ -24,7 +24,6 @@ import from tcp2_types all;
 import from tcp2_utils all;
 
 modulepar {
-	boolean fuzzer_enabled := false;
 	boolean peer_assert_enabled := true;
 	float T_peer_default := -1.0; /* default peer's retransmission timeout,
 									 sec (optional, negative value: unused) */
@@ -67,8 +66,6 @@ function test_tcp_connect(octetstring data_to_send := ''O,
 	seq := isn;
 
 	tcp_init();
-
-	if (fuzzer_enabled) { fuzzer_on(); }
 
 	data_push(data, data_to_send);
 
