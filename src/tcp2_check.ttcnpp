@@ -35,7 +35,6 @@ type component tcp_ct extends test_CT {
 	var uint32_t seq := 0;
 	var uint32_t ack := 0;
 	var octetstring data_unack := ''O; /* TODO: split into rcv/snd data */
-	var integer data_step := 1;
 	var fuzzer_ct ct_fuzzer;
 	port port_cf P_FZ;
 }
@@ -112,7 +111,7 @@ function tcp_connect(octetstring data_to_send := ''O,
 		peer_assert(TCP_ESTABLISHED);
 		if (lengthof(data_unack) > 0) { goto wait_for_data; }
 		if (lengthof(data_to_send) > 0) {
-			data_unack := data_pop(data_to_send, data_step);
+			data_unack := data_pop(data_to_send);
 			P_TCP.send(ts_TCP(f := TH_PSH,
 							  th_seq := u32_post_inc(seq, lengthof(data_unack)),
 							  d := data_unack));
