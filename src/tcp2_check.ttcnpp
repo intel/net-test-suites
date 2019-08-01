@@ -177,7 +177,7 @@ label end;
 /**
  * Test peer's passive connection establishment, data transfer and close
  */
-function test_tcp_listen(octetstring data_to_receive := ''O,
+function tcp_listen(octetstring data_to_receive := ''O,
 								boolean close := true,
 								integer isn := 0) runs on tcp_ct
 {
@@ -297,7 +297,7 @@ testcase test_tcp_connect_more_data_close() runs on tcp_ct
  */
 testcase test_tcp_listen_no_data_close() runs on tcp_ct
 {
-	test_tcp_listen(data_to_receive := ''O);
+	tcp_listen(data_to_receive := ''O);
 }
 
 /**
@@ -305,7 +305,7 @@ testcase test_tcp_listen_no_data_close() runs on tcp_ct
  */
 testcase test_tcp_listen_data_close() runs on tcp_ct
 {
-	test_tcp_listen(data_to_receive := '01'O);
+	tcp_listen(data_to_receive := '01'O);
 }
 
 /**
@@ -313,12 +313,12 @@ testcase test_tcp_listen_data_close() runs on tcp_ct
  */
 testcase test_tcp_listen_more_data_close() runs on tcp_ct
 {
-	test_tcp_listen(data_to_receive := '010203'O);
+	tcp_listen(data_to_receive := '010203'O);
 }
 
 testcase test_tcp_listen_isn() runs on tcp_ct
 {
-	test_tcp_listen(isn := 333);
+	tcp_listen(isn := 333);
 }
 
 testcase test_tcp_connect_isn() runs on tcp_ct
@@ -335,7 +335,7 @@ testcase test_tcp_listen_no_data_reset() runs on tcp_ct
 	var udp_t udp;
 	var tp_new_t tp;
 
-	test_tcp_listen(close := false);
+	tcp_listen(close := false);
 
 	tcp_config({{ "tp_trace", "1" }});
 
@@ -423,7 +423,7 @@ testcase test_tcp_connect_data_gap() runs on tcp_ct
 
 testcase test_tcp_listen_data_reset() runs on tcp_ct
 {
-	test_tcp_listen(data_to_receive := '01'O);
+	tcp_listen(data_to_receive := '01'O);
 }
 
 testcase test_tcp_connect_data_reset() runs on tcp_ct
@@ -984,7 +984,7 @@ testcase test_tcp_connect_seq_wrap() runs on tcp_ct
 
 testcase test_tcp_listen_seq_wrap() runs on tcp_ct
 {
-	test_tcp_listen(data_to_receive := '01'O, isn := hex2int('FFFFFFFE'H));
+	tcp_listen(data_to_receive := '01'O, isn := hex2int('FFFFFFFE'H));
 }
 
 testcase test_u32_wrap() runs on tcp_ct
