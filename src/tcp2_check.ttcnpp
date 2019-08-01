@@ -24,19 +24,19 @@ import from tcp2_types all;
 import from tcp2_utils all;
 
 modulepar {
-	boolean peer_assert_enabled := true;
+	boolean peer_assert_enabled := true; /* TODO rename to tp_enabled */
 	float T_peer_default := -1.0; /* default peer's retransmission timeout,
 									 sec (optional, negative value: unused) */
 }
 
 type component tcp_ct extends test_CT {
-	var tcp_t tcp;
 	var tcp_state_t s := TCP_LISTEN;
 	var uint32_t seq := 0;
 	var uint32_t ack := 0;
 	var octetstring data_unack := ''O; /* TODO: split into rcv/snd data */
 	var fuzzer_ct ct_fuzzer;
 	port port_cf P_FZ;
+	var tcp_t tcp; /* TODO: Drop */
 }
 
 function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
