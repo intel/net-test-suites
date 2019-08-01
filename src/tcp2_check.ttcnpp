@@ -428,44 +428,6 @@ testcase test_tcp_connect_data_reset() runs on tcp_ct
 }
 
 /**
- * Test TCP debug
- */
-testcase test_tcp_debug() runs on tcp_ct
-{
-	tcp_init();
-
-	TT.start;
-
-	tp_send(TP_DEBUG_STOP);
-
-	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
-	T.start;
-
-	alt {
-	[] P_TCP.receive(tr_TCP(?)) {
-		T.stop;
-		setverdict(fail);
-	}
-	[] T.timeout {
-		tp_send(TP_DEBUG_STEP);
-	}
-	} /* end of alt */
-
-	T.start;
-	alt {
-	[] P_TCP.receive(tr_TCP(?)) {
-		T.stop;
-		setverdict(pass);
-	}
-	[] T.timeout {
-		setverdict(fail);
-	}
-	} /* end of alt */
-
-	tp_send(TP_COMMAND, "CLOSE");
-}
-
-/**
  * Test peer's retransmission
  */
 testcase test_tcp_retransmit() runs on tcp_ct
@@ -639,9 +601,6 @@ testcase test_tcp_incorrect_offset() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
-template th_flags_t tr_TH_ACK	:='????1?'B;
-template th_flags_t tr_TH_PSH	:='???1??'B;
-
 function tcp_send(octetstring data := ''O) runs on tcp_ct
 {
 	/* This check might be too restrictive for out of sync tests */
@@ -725,11 +684,6 @@ testcase test_tcp_send() runs on tcp_ct
 	T.timeout;
 
 	tp_send(TP_COMMAND, "CLOSE");
-}
-
-testcase test_eth() runs on tcp_ct
-{
-	tcp_init();
 }
 
 testcase test_tcp_undersized() runs on tcp_ct
@@ -823,15 +777,6 @@ function tcp_config(map_t cfg) runs on tcp_ct
 	tp_send_new(TP_CONFIG_REQUEST, cfg);
 }
 
-testcase test_config() runs on tcp_ct
-{
-	var map_t cfg := { { "tcp_echo", "1" } };
-
-	test_ct_init();
-
-	tcp_config(cfg);
-}
-
 function tcp_init() runs on tcp_ct
 {
 	var map_t cfg := {
@@ -847,128 +792,6 @@ function tcp_init() runs on tcp_ct
 
 	tcp_config(cfg);
 }
-
-type record win_t {
-	integer len,
-	octetstring data
-}
-
-function win_init(inout win_t w)
-{
-	w.len := 0;
-	w.data := ''O;
-}
-
-function win_push(inout win_t w, octetstring data)
-{
-	assert(lengthof(data) > 0, "data=", data);
-
-	w.len := w.len + lengthof(data);
-	w.data := w.data & data;
-}
-
-function win_pop(inout win_t w, integer len) return octetstring
-{
-	var octetstring data;
-
-	assert(len <= w.len, "len=", len, ", w.len=", w.len);
-
-	w.len := w.len - len;
-	data := substr(w.data, 0, len);
-	w.data := replace(w.data, 0, len, ''O);
-
-	return data;
-}
-
-function win_peek(inout win_t w, integer len) return octetstring
-{
-	assert(len <= w.len, "len=", len, ", w.len=", w.len);
-
-	return substr(w.data, 0, len);
-}
-
-type record of integer vec_t;
-
-/**
- * Experimental test with the send window and data resend
- */
-testcase test_tcp_window() runs on tcp_ct
-{
-	var win_t to_send, unack;
-	var vec_t step := { 1, 2, 3, 4, 1, 2, 3, 4 };
-	var integer i := 0;
-	var octetstring data;
-
-	win_init(to_send);
-	win_init(unack);
-
-	tcp_connect(close := false);
-
-	tcp_config({{ "tcp_echo", "0" }});
-
-	win_push(to_send, '0102030405060708081011121314151617181920'O);
-
-	P_FZ.send("incoming_drop");
-
-	while (to_send.len > 0) {
-
-		data := win_pop(to_send, step[i]);
-
-		P_TCP.send(ts_TCP(f := TH_PSH,
-						  th_seq := (seq + unack.len),
-						  d := data));
-
-		win_push(unack, data);
-
-		pre_inc(i);
-	}
-
-	/* TODO: Timing shouldn't be hardcoded, find a method for adaptive timing */
-	T.start(T_default * 3.0); T.timeout;
-
-	P_FZ.send("incoming_pass");
-
-	i := 0;
-
-label resend;
-	while (unack.len > 0) {
-		data := win_peek(unack, 1);
-
-		P_TCP.send(ts_TCP(f := TH_PSH,
-						  th_seq := seq + lengthof(data),
-						  d := data));
-		alt {
-		[] P_TCP.receive(tr_TCP(f := TH_ACK, th_seq := ack)) -> value tcp {
-
-			var integer acked := tcp.th_ack - seq;
-
-			assert(acked > 0);
-			assert(acked <= unack.len);
-
-			log("acked=", acked);
-
-			seq := seq + acked;
-			win_pop(unack, acked);
-
-			goto resend;
-		}
-		[] P_TCP.receive(?) -> value tcp {
-			assert(false, "tcp=", tcp);
-		}
-		} /* end of alt */
-	}
-
-	var tp_t peer := peer_assert_new(); /* get peer's received data */
-
-	log(peer.data);
-
-	/* TODO: Implement a check here */
-
-	setverdict(pass);
-
-	tp_send(TP_COMMAND, "CLOSE");
-}
-
 /**
  * Test sequence wraps/overflows
  */
@@ -981,108 +804,6 @@ testcase test_tcp_connect_seq_wrap() runs on tcp_ct
 testcase test_tcp_listen_seq_wrap() runs on tcp_ct
 {
 	tcp_listen(data_to_receive := '01'O, isn := hex2int('FFFFFFFE'H));
-}
-
-testcase test_u32_wrap() runs on tcp_ct
-{
-	var integer x := 4294967295;
-
-	log(x);
-
-	u32_pre_inc(x);
-
-	log(x);
-
-	if (x != 0) {
-		setverdict(fail);
-	}
-
-	x := 4294967295;
-
-	log(x);
-
-	u32_pre_inc(x, 2);
-
-	log(x);
-
-	if (x != 1) {
-		setverdict(fail);
-	}
-
-	setverdict(pass);
-}
-
-/**
- * This a fork of the retransmission test for an experimentation
- * with what is the best approach here.
- * Currently it checks peer's retransmission in TCP_SYN_RECEIVED
- * TODO:
- *  - Check the retransmission in peer's TCP_SYN_SENT, TCP_ESTABLISHED,
- *    TCP_LAST_ACK
- *  - During peer's retransmission, input messages from the previous
- *    and next state
- *  - Reply before the peer's retransmission count is reached and
- *    verify that peer can recover
- */
-testcase test_tcp_retransmit2() runs on tcp_ct
-{
-	tcp_init();
-
-	var udp_t udp;
-	var tp_t tp;
-
-	var integer tcp_retries := 10;
-	var float tcp_rto := T_default/4.0;
-	var boolean peer_deleted := false;
-
-	ack := -1;
-
-	tcp_config({
-			{ "tcp_rto", int2str(TO_MSEC(tcp_rto)) },
-			{ "tcp_retries", int2str(tcp_retries) },
-			{ "tp_trace", int2str(1) }
-	});
-
-	P_TCP.send(ts_TCP(f := TH_SYN, th_seq := post_inc(seq)));
-	st(TCP_SYN_SENT);
-	T.start;
-
-	tcp_retries := tcp_retries + 1; /* account non retransmit */
-
-	alt {
-	[tcp_retries > 0] P_TCP.receive(tr_TCP(f := TH_SYN or4b TH_ACK,
-							th_ack := seq)) -> value tcp {
-		log("tcp_rto=", tcp_rto, " sec, actual=", T.read, " sec");
-		T.stop;
-
-		if (ack < 0) {
-			ack := tcp.th_seq;
-		}
-
-		assert(tcp.th_seq == ack);
-
-		if (tcp_retries == 0) {
-			peer_assert(TCP_SYN_SENT);
-		}
-
-		tcp_retries := tcp_retries - 1;
-		T.start;
-		repeat;
-	}
-	[tcp_retries <= 0] P_TCP.receive(?) -> value tcp {
-		log("Extra retransmit");
-		setverdict(fail);
-	}
-	[tcp_retries == 0] P_UDP.receive(?) -> value udp {
-		T.stop;
-		tp := f_tp_dec(udp.data);
-		peer_deleted := true;
-		setverdict(pass);
-	}
-	[] T.timeout { setverdict(fail); }
-	} /* end of alt */
-	//label end;
-	//tp_send(TP_COMMAND, "CLOSE");
 }
 
 control {
