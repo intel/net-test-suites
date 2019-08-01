@@ -10,6 +10,8 @@
 
 #define TO_MSEC(_sec) float2int((_sec) * 1000.0)
 
+#define conn(_x) _x
+
 #define tcp_assert(_cond, args...) do {							\
 	if ((_cond) == false) {										\
 		log("Assertion failed: ", #_cond, " ", ## args);		\
