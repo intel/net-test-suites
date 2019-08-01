@@ -26,8 +26,6 @@ import from tcp2_utils all;
 modulepar {
 	boolean fuzzer_enabled := false;
 	boolean peer_assert_enabled := true;
-	integer number_of_runs := 1;
-	integer max_tests_failed := 1;
 	float T_peer_default := -1.0; /* default peer's retransmission timeout,
 									 sec (optional, negative value: unused) */
 }

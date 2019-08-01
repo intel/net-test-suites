@@ -26,6 +26,8 @@ modulepar {
 	ethertype_t m_ethertype := ETHERTYPE_IP;
 	float T_default := 0.1; /* default message timeout, sec */
 	float TT_default := 2.0; /* default test teardown timeout, sec */
+	integer number_of_runs := 1;
+	integer max_tests_failed := 1;
 }
 
 type component eth_CT {
