@@ -9,3 +9,4 @@ tcp2_check:
 - Implement RTT discovery (C1, low)
 - Include and document user scripts (<C1, low)
 - Add debug levels (<C1, low)
+- Split into rcv/snd data in tcp_ct (<C1, low)

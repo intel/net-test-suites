@@ -33,7 +33,7 @@ type component tcp_ct extends test_CT {
 	var tcp_state_t s := TCP_LISTEN;
 	var uint32_t seq := 0;
 	var uint32_t ack := 0;
-	var octetstring data_unack := ''O; /* TODO: split into rcv/snd data */
+	var octetstring snd := ''O;
 	var fuzzer_ct ct_fuzzer;
 	port port_cf P_FZ;
 	var tcp_t tcp; /* TODO: Drop */
@@ -95,9 +95,9 @@ function tcp_connect(octetstring data_to_send := ''O,
 			u32_pre_inc(ack, lengthof(tcp.data));
 		}
 		if (th_is_set(tcp, TH_ACK)) {
-			if (tcp.th_ack > seq - lengthof(data_unack)) {
-				var integer diff := tcp.th_ack - (seq - lengthof(data_unack));
-				data_pop(data_unack, diff);
+			if (tcp.th_ack > seq - lengthof(snd)) {
+				var integer diff := tcp.th_ack - (seq - lengthof(snd));
+				data_pop(snd, diff);
 			}
 		}
 		if (tcp2.th_flags != TH_NONE) {
@@ -109,12 +109,12 @@ function tcp_connect(octetstring data_to_send := ''O,
 	}
 	[s == TCP_ESTABLISHED] T.timeout {
 		peer_assert(TCP_ESTABLISHED);
-		if (lengthof(data_unack) > 0) { goto wait_for_data; }
+		if (lengthof(snd) > 0) { goto wait_for_data; }
 		if (lengthof(data_to_send) > 0) {
-			data_unack := data_pop(data_to_send);
+			snd := data_pop(data_to_send);
 			P_TCP.send(ts_TCP(f := TH_PSH,
-							  th_seq := u32_post_inc(seq, lengthof(data_unack)),
-							  d := data_unack));
+							  th_seq := u32_post_inc(seq, lengthof(snd)),
+							  d := snd));
 			goto wait_for_data;
 		}
 
@@ -157,7 +157,7 @@ label wait_for_data;
 
 	if (s == TCP_CLOSED and
 			lengthof(data_to_send) == 0 and
-			lengthof(data_unack) == 0 and
+			lengthof(snd) == 0 and
 			data_received == data_to_receive) {
 		setverdict(pass);
 	} else {
