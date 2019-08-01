@@ -90,12 +90,13 @@ type record udp_t {
 type bitstring th_flags_t length(6) with {
 	variant "FIELDLENGTH(6),BITORDER(msb)"; };
 
-const th_flags_t TH_URG	:='000001'B;
-const th_flags_t TH_ACK	:='000010'B;
-const th_flags_t TH_PSH	:='000100'B;
-const th_flags_t TH_RST	:='001000'B;
-const th_flags_t TH_SYN :='010000'B;
-const th_flags_t TH_FIN :='100000'B;
+const th_flags_t URG :='000001'B;
+const th_flags_t ACK :='000010'B;
+const th_flags_t PSH :='000100'B;
+const th_flags_t RST :='001000'B;
+const th_flags_t SYN :='010000'B;
+const th_flags_t FIN :='100000'B;
+
 const th_flags_t TH_NONE :='000000'B;
 template th_flags_t TH_ANY := '??????'B;
 
