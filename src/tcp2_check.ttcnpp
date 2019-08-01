@@ -34,8 +34,6 @@ modulepar {
 	integer max_tests_failed := 1;
 }
 
-type record of octetstring tcp_test_data_t;
-
 type component tcp_ct extends test_CT {
 	var tcp_t tcp;
 	var tcp_state_t s := TCP_LISTEN;
@@ -54,7 +52,6 @@ type component tcp_ct extends test_CT {
 
 function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
 {
-	/* TODO: Add debug levels */
 	//log(tcp_state_to_string(s), " -> ", tcp_state_to_string(new));
 	s := new;
 	fail_on_events(fail_on);
@@ -696,6 +693,8 @@ function peer_assert_new(integer exp_seq := -1, integer exp_ack := -1)
 
 	return peer;
 }
+
+type record of octetstring tcp_test_data_t;
 
 /**
  * Test the reception of data with variable chunks, verify peer's seq and ack,
