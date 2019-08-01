@@ -35,9 +35,9 @@ type component tcp_ct extends test_ct {
  * Suite's active connection establishment, optional data, and active close
  */
 function tcp_connect(octetstring data_to_send := ''O,
-						  octetstring data_to_receive := ''O,
-								boolean close := true,
-								integer isn := 0) runs on tcp_ct
+					 octetstring data_to_receive := ''O,
+					 boolean close := true,
+					 u32 isn := 0) runs on tcp_ct
 {
 	var octetstring data := ''O;
 	var octetstring data_received := ''O;
