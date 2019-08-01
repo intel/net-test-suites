@@ -56,7 +56,7 @@ function tcp_connect(octetstring data_to_send := ''O,
 	T.start;
 
 	alt {
-	[state == TCP_SYN_SENT] P_TCP.receive(tr_TCP(f := SYN or4b ACK,
+	[TCP_SYN_SENT == state] P_TCP.receive(tr_TCP(f := SYN or4b ACK,
 											 th_ack := seq)) -> value tcp {
 		T.stop;
 		peer_assert(TCP_SYN_SENT);
@@ -70,7 +70,7 @@ function tcp_connect(octetstring data_to_send := ''O,
 		T.start; repeat;
 	}
 
-	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP) -> value tcp {
+	[TCP_ESTABLISHED == state] P_TCP.receive(tr_TCP) -> value tcp {
 		T.stop;
 		peer_assert(TCP_ESTABLISHED);
 		var tcp_t tcp2 := valueof(ts_TCP);
@@ -92,7 +92,7 @@ function tcp_connect(octetstring data_to_send := ''O,
 		}
 		T.start; repeat;
 	}
-	[state == TCP_ESTABLISHED] T.timeout {
+	[TCP_ESTABLISHED == state] T.timeout {
 		peer_assert(TCP_ESTABLISHED);
 		if (lengthof(snd) > 0) { goto wait_for_data; }
 		if (lengthof(data_to_send) > 0) {
@@ -117,7 +117,7 @@ function tcp_connect(octetstring data_to_send := ''O,
 label wait_for_data;
 		T.start; repeat;
 	}
-	[state == TCP_FIN_WAIT1] P_TCP.receive(tr_TCP(f := ACK,
+	[TCP_FIN_WAIT1 == state] P_TCP.receive(tr_TCP(f := ACK,
 											  th_seq := ack, th_ack := seq)) {
 		T.stop;
 		/* TODO: peer_assert() here is tricky, since peer in active close
@@ -125,7 +125,7 @@ label wait_for_data;
 		conn_state(TCP_FIN_WAIT2);
 		T.start; repeat;
 	}
-	[state == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := FIN or4b ACK,
+	[TCP_FIN_WAIT2 == state] P_TCP.receive(tr_TCP(f := FIN or4b ACK,
 											  th_seq := ack, th_ack := seq)) {
 		T.stop;
 		peer_assert(TCP_LAST_ACK);
@@ -133,14 +133,14 @@ label wait_for_data;
 		conn_state(TCP_TIME_WAIT, fail_on := EV_NONE);
 		T.start; repeat; /* T * 2 */
 	}
-	[state == TCP_TIME_WAIT] T.timeout {
+	[TCP_TIME_WAIT == state] T.timeout {
 		conn_state(TCP_CLOSED);
 		peer_assert(TCP_CLOSED);
 	}
 	[] TT.timeout { setverdict(fail); stop; }
 	}  /* end of alt */
 
-	if (state == TCP_CLOSED and
+	if (TCP_CLOSED == state and
 			lengthof(data_to_send) == 0 and
 			lengthof(snd) == 0 and
 			data_received == data_to_receive) {
@@ -174,7 +174,7 @@ function tcp_listen(octetstring data_to_receive := ''O,
 	T.start;
 
 	alt {
-	[state == TCP_LISTEN] P_TCP.receive(tr_TCP(f := SYN)) -> value tcp {
+	[TCP_LISTEN == state] P_TCP.receive(tr_TCP(f := SYN)) -> value tcp {
 		T.stop;
 		peer_assert(TCP_SYN_SENT);
 		conn_state(TCP_SYN_RECEIVED);
@@ -184,7 +184,7 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		conn_state(TCP_SYN_SENT);
 		T.start; repeat;
 	}
-	[state == TCP_SYN_SENT] P_TCP.receive(tr_TCP(f := ACK,
+	[TCP_SYN_SENT == state] P_TCP.receive(tr_TCP(f := ACK,
 											 th_ack := seq)) -> value tcp {
 		T.stop;
 		conn_state(TCP_SYN_RECEIVED);
@@ -195,7 +195,7 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		}
 		T.start; repeat;
 	}
-	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(f := PSH, th_seq := ack,
+	[TCP_ESTABLISHED == state] P_TCP.receive(tr_TCP(f := PSH, th_seq := ack,
 												d := ?)) -> value tcp {
 		T.stop;
 		peer_assert(TCP_ESTABLISHED);
@@ -204,7 +204,7 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		data_push(data, tcp.data);
 		T.start; repeat;
 	}
-	[state == TCP_ESTABLISHED] T.timeout {
+	[TCP_ESTABLISHED == state] T.timeout {
 		peer_assert(TCP_ESTABLISHED);
 		if (data == data_to_receive) {
 			/* Everything is received, do active close */
@@ -214,13 +214,13 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		}
 		T.start; repeat;
 	}
-	[state == TCP_FIN_WAIT1] P_TCP.receive(tr_TCP(f := ACK,
+	[TCP_FIN_WAIT1 == state] P_TCP.receive(tr_TCP(f := ACK,
 											  th_seq := ack, th_ack := seq)) {
 		T.stop;
 		conn_state(TCP_FIN_WAIT2);
 		T.start; repeat;
 	}
-	[state == TCP_FIN_WAIT2] P_TCP.receive(tr_TCP(f := FIN or4b ACK,
+	[TCP_FIN_WAIT2 == state] P_TCP.receive(tr_TCP(f := FIN or4b ACK,
 											  th_seq := ack, th_ack := seq)) {
 		T.stop;
 		peer_assert(TCP_LAST_ACK);
@@ -228,7 +228,7 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		conn_state(TCP_TIME_WAIT, fail_on := EV_NONE);
 		T.start; repeat; /* TODO: T * 2 */
 	}
-	[state == TCP_TIME_WAIT] T.timeout {
+	[TCP_TIME_WAIT == state] T.timeout {
 		conn_state(TCP_CLOSED);
 		peer_assert(TCP_CLOSED);
 	}
