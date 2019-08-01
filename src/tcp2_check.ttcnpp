@@ -313,7 +313,6 @@ testcase test_tcp_connect_no_data_close() runs on tcp_ct
 
 /**
  * Test that RST works in ESTABLISHED
- * TODO: Generalize to other states
  */
 testcase test_tcp_connect_no_data_reset() runs on tcp_ct
 {
@@ -404,7 +403,6 @@ testcase test_tcp_listen_no_data_close() runs on tcp_ct
 
 /**
  * Test that RST works in ESTABLISHED
- * TODO: Generalize to other states
  */
 testcase test_tcp_listen_no_data_reset() runs on tcp_ct
 {
