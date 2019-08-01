@@ -54,8 +54,7 @@ function st(tcp_state_t new, event_t fail_on := EV_KEEP) runs on tcp_ct
  * Peer's active connection establishment, data transfer
  * (data echoing expected) and suite's active close
  */
-/* TODO: merge test_tcp_connect() and test_tcp_listen()? */
-function test_tcp_connect(octetstring data_to_send := ''O,
+function tcp_connect(octetstring data_to_send := ''O,
 						  octetstring data_to_receive := ''O,
 								boolean close := true,
 								integer isn := 0) runs on tcp_ct
@@ -272,7 +271,7 @@ label end;
  */
 testcase test_tcp_connect_no_data_close() runs on tcp_ct
 {
-	test_tcp_connect(data_to_send := ''O);
+	tcp_connect(data_to_send := ''O);
 }
 
 /**
@@ -281,7 +280,7 @@ testcase test_tcp_connect_no_data_close() runs on tcp_ct
  */
 testcase test_tcp_connect_data_close() runs on tcp_ct
 {
-	test_tcp_connect(data_to_send := '01'O, data_to_receive := '01'O);
+	tcp_connect(data_to_send := '01'O, data_to_receive := '01'O);
 }
 
 /**
@@ -290,7 +289,7 @@ testcase test_tcp_connect_data_close() runs on tcp_ct
  */
 testcase test_tcp_connect_more_data_close() runs on tcp_ct
 {
-	test_tcp_connect(data_to_send := '010203'O, data_to_receive := '010203'O);
+	tcp_connect(data_to_send := '010203'O, data_to_receive := '010203'O);
 }
 
 /**
@@ -324,7 +323,7 @@ testcase test_tcp_listen_isn() runs on tcp_ct
 
 testcase test_tcp_connect_isn() runs on tcp_ct
 {
-	test_tcp_connect(isn := 333);
+	tcp_connect(isn := 333);
 }
 
 /**
@@ -366,7 +365,7 @@ testcase test_tcp_connect_no_data_reset() runs on tcp_ct
 	var udp_t udp;
 	var tp_new_t tp;
 
-	test_tcp_connect(close := false);
+	tcp_connect(close := false);
 
 	tcp_config({{ "tp_trace", "1" }});
 
@@ -396,7 +395,7 @@ testcase test_tcp_connect_data_gap() runs on tcp_ct
 	var tp_new_t tp;
 	var boolean reset_received := false;
 
-	test_tcp_connect(close := false);
+	tcp_connect(close := false);
 
 	tcp_config({{ "tp_trace", "1" }});
 
@@ -429,7 +428,7 @@ testcase test_tcp_listen_data_reset() runs on tcp_ct
 
 testcase test_tcp_connect_data_reset() runs on tcp_ct
 {
-	test_tcp_connect(data_to_send := '01'O);
+	tcp_connect(data_to_send := '01'O);
 }
 
 /**
@@ -516,7 +515,7 @@ testcase test_tcp_retransmit() runs on tcp_ct
  */
 testcase test_tcp_data_options() runs on tcp_ct
 {
-	test_tcp_connect(close := false);
+	tcp_connect(close := false);
 
 	var octetstring data_to_send := '010203'O;
 
@@ -559,7 +558,7 @@ label end;
  */
 testcase test_tcp_data_incorrect_options() runs on tcp_ct
 {
-	test_tcp_connect(close := false);
+	tcp_connect(close := false);
 
 	var octetstring data_to_send := '010203'O;
 
@@ -597,7 +596,7 @@ testcase test_tcp_data_incorrect_offset() runs on tcp_ct
 {
 	var octetstring data_to_send := '010203'O;
 
-	test_tcp_connect(close := false);
+	tcp_connect(close := false);
 
 	var tcp2_t tcp2 := valueof(ts_TCP2(fl := TH_PSH,
 							seq := u32_post_inc(seq, lengthof(data_to_send)),
@@ -697,7 +696,7 @@ testcase test_tcp_recv() runs on tcp_ct
 	var tcp_test_data_t data := { '01'O, '0203'O, '040506'O };
 	var octetstring data_total := ''O;
 
-	test_tcp_connect(close := false);
+	tcp_connect(close := false);
 
 	tcp_config({{ "tcp_echo", "0" }});
 
@@ -720,7 +719,7 @@ testcase test_tcp_recv() runs on tcp_ct
  */
 testcase test_tcp_send() runs on tcp_ct
 {
-	test_tcp_connect(close := false);
+	tcp_connect(close := false);
 
 	tcp_config({{ "tcp_echo", "0" }});
 
@@ -762,7 +761,7 @@ testcase test_tcp_no_flags() runs on tcp_ct
  */
 testcase test_tcp_data_undersized() runs on tcp_ct
 {
-	test_tcp_connect(close := false);
+	tcp_connect(close := false);
 
 	P_TCP.send(ts_TCP(f := TH_PSH, th_seq := seq, d := ''O));
 
@@ -907,7 +906,7 @@ testcase test_tcp_window() runs on tcp_ct
 	win_init(to_send);
 	win_init(unack);
 
-	test_tcp_connect(close := false);
+	tcp_connect(close := false);
 
 	tcp_config({{ "tcp_echo", "0" }});
 
@@ -979,7 +978,7 @@ label resend;
  */
 testcase test_tcp_connect_seq_wrap() runs on tcp_ct
 {
-	test_tcp_connect(data_to_send := '01'O, data_to_receive := '01'O,
+	tcp_connect(data_to_send := '01'O, data_to_receive := '01'O,
 					 isn := hex2int('FFFFFFFE'H));
 }
 
