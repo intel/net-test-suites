@@ -39,7 +39,6 @@ function tcp_connect(octetstring data_to_send := ''O,
 					 boolean close := true,
 					 u32 isn := 0) runs on tcp_ct
 {
-
 	seq := isn;
 
 	tcp_init();
