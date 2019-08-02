@@ -18,7 +18,6 @@ import from libtypes all;
 import from libnetinet all;
 import from libtest all;
 import from libutils all;
-
 import from tcp2_utils all;
 
 type component tcp_ct extends test_ct {
@@ -150,7 +149,7 @@ function tcp_connect(octetstring data_to_send := ''O,
 	}
 
 	tp_send(TP_COMMAND, "CLOSE");
-	label end;
+label end;
 }
 
 /**
