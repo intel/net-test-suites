@@ -155,8 +155,6 @@ function tcp_listen(octetstring data_to_receive := ''O,
 					boolean close := true,
 					u32 isn := 0) runs on tcp_ct
 {
-	var octetstring data := ''O; /* data received from the peer */
-
 	tcp_init();
 
 	TT.start;
@@ -194,12 +192,12 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		peer_assert(TCP_ESTABLISHED);
 		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
 						  ack := u32_pre_inc(conn(ack), lengthof(tcp.data))));
-		byte_array_append(data, tcp.data);
+		byte_array_append(rcv, tcp.data);
 		T.start; repeat;
 	}
 	[TCP_ESTABLISHED == state] T.timeout {
 		peer_assert(TCP_ESTABLISHED);
-		if (data == data_to_receive) {
+		if (rcv == data_to_receive) {
 			/* Everything is received, do active close */
 			P_TCP.send(ts_TCP(fl := FIN or4b ACK, seq := u32_post_inc(conn(seq)),
 							  ack := conn(ack)));
@@ -228,11 +226,10 @@ function tcp_listen(octetstring data_to_receive := ''O,
 	[] TT.timeout { setverdict(fail); stop; }
 	} /* end of alt */
 
-	if (state == TCP_CLOSED and data_to_receive == data) {
+	if (state == TCP_CLOSED and rcv == data_to_receive) {
 		setverdict(pass);
 	} else {
-		log("Error: data_to_receive=", data_to_receive, " ",
-			"data=", data);
+		log("Error: data_to_receive: ", data_to_receive, " rcv: ", rcv);
 		setverdict(fail);
 	}
 
