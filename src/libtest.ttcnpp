@@ -32,7 +32,14 @@ modulepar {
 	integer max_tests_failed := 1;
 }
 
-type component eth_CT {
+type record port_stat {
+	u64 rx_packets,
+	u64 rx_bytes,
+	u64 tx_packets,
+	u64 tx_bytes
+}
+
+ type component eth_CT {
 	port port_data		P_ETH;
 	port port_ip		P_IP;
 	port port_arp		P_ARP;
@@ -45,6 +52,8 @@ type component eth_CT {
 	port port_cf		P_CF;
 	var ethertype_t ethertype := m_ethertype;
 	var boolean vlan_enabled := false;
+	var port_stat tcp_stat := { 0, 0, 0, 0 };
+	var port_stat udp_stat := { 0, 0, 0, 0 };
 }
 
 type component test_ct extends eth_CT {
@@ -214,10 +223,15 @@ function eth_ct_ip_input(eth_t eth) runs on eth_CT {
 				stop;
 		}
 		P_TCP.send(tcp);
+		tcp_stat.rx_packets := tcp_stat.rx_packets + 1;
+		tcp_stat.rx_bytes := tcp_stat.rx_bytes + lengthof(ip.data);
 	}
 	case(IPPROTO_UDP) {
 		var udp_t udp := udp_dec(ip.data);
 		P_UDP.send(udp);
+		udp_stat.rx_packets := udp_stat.rx_packets + 1;
+		udp_stat.rx_bytes := udp_stat.rx_bytes + lengthof(ip.data);
+
 	}
 	}
 }
@@ -274,6 +288,11 @@ function eth_ct_start() runs on eth_CT {
 		alt {
 		[] P_CF.receive("ipv4_enable") { ethertype := ETHERTYPE_IP; }
 		[] P_CF.receive("vlan_enable") { vlan_enabled := true; }
+		[] P_CF.receive("stat") {
+			log("STAT");
+			log("TCP: ", tcp_stat);
+			log("UDP: ", udp_stat);
+		}
 		[] P_ETH.receive(?) -> value d {
 
 			eth := eth_dec(d);
@@ -312,26 +331,36 @@ function eth_ct_start() runs on eth_CT {
 			eth_ct_eth_send(eth);
 		}
 		[] P_UDP.receive(?) -> value udp {
+			d := udp_enc(udp);
+
 			select(ethertype) {
 			case(ETHERTYPE_IPV6) {
-				eth := eth_ip6_new(IPPROTO_UDP, udp_enc(udp));
+				eth := eth_ip6_new(IPPROTO_UDP, d);
 			}
 			case(ETHERTYPE_IP) {
-				eth := eth_ip_new(IPPROTO_UDP, udp_enc(udp));
+				eth := eth_ip_new(IPPROTO_UDP, d);
 			}
 			}
 			eth_ct_eth_send(eth);
+
+			udp_stat.tx_packets := udp_stat.tx_packets + 1;
+			udp_stat.tx_bytes := udp_stat.tx_bytes + lengthof(d);
 		}
 		[] P_TCP.receive(?) -> value tcp {
+			d := tcp_enc(tcp);
+
 			select(ethertype) {
 			case(ETHERTYPE_IPV6) {
-				eth := eth_ip6_new(IPPROTO_TCP, tcp_enc(tcp));
+				eth := eth_ip6_new(IPPROTO_TCP, d);
 			}
 			case(ETHERTYPE_IP) {
-				eth := eth_ip_new(IPPROTO_TCP, tcp_enc(tcp));
+				eth := eth_ip_new(IPPROTO_TCP, d);
 			}
 			}
 			eth_ct_eth_send(eth);
+
+			tcp_stat.tx_packets := tcp_stat.tx_packets + 1;
+			tcp_stat.tx_bytes := tcp_stat.tx_bytes + lengthof(d);
 		}
 		[] P_TCP2.receive(?) -> value tcp2 {
 			select(ethertype) {
