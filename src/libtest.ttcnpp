@@ -213,7 +213,6 @@ function eth_ct_ip_input(eth_t eth) runs on eth_CT {
 						", expected: ", csum);
 				stop;
 		}
-
 		P_TCP.send(tcp);
 	}
 	case(IPPROTO_UDP) {
