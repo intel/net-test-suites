@@ -185,7 +185,9 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		if (close == false) {
 			goto end;
 		}
-		T.start; repeat;
+		if (lengthof(data_to_receive) > 0) {
+			T.start; repeat;
+		}
 	}
 	[TCP_ESTABLISHED == state] P_TCP.receive(tr_TCP(fl := PSH, seq := conn(ack),
 												data := ?)) -> value tcp {
@@ -194,18 +196,20 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
 						  ack := u32_pre_inc(conn(ack), lengthof(tcp.data))));
 		byte_array_append(rcv, tcp.data);
-		T.start; repeat;
-	}
-	[TCP_ESTABLISHED == state] T.timeout {
-		peer_assert(TCP_ESTABLISHED);
-		if (rcv == data_to_receive) {
-			/* Everything is received, do active close */
-			P_TCP.send(ts_TCP(fl := FIN or4b ACK, seq := u32_post_inc(conn(seq)),
-							  ack := conn(ack)));
-			conn_state(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
+		if (rcv != data_to_receive) {
+			T.start; repeat;
 		}
-		T.start; repeat;
 	}
+	} /* end of alt */
+
+	peer_assert(TCP_ESTABLISHED);
+
+	P_TCP.send(ts_TCP(fl := FIN or4b ACK, seq := u32_post_inc(conn(seq)),
+					  ack := conn(ack)));
+	conn_state(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
+	T.start;
+
+	alt {
 	[TCP_FIN_WAIT1 == state] P_TCP.receive(tr_TCP(fl := ACK,
 											  seq := conn(ack), ack := conn(seq))) {
 		T.stop;
