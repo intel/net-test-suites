@@ -152,8 +152,8 @@ label end;
  * Suite's passive connection establishment, optional data and close
  */
 function tcp_listen(octetstring data_to_receive := ''O,
-								boolean close := true,
-								integer isn := 0) runs on tcp_ct
+					boolean close := true,
+					integer isn := 0) runs on tcp_ct
 {
 	var octetstring data := ''O; /* data received from the peer */
 
