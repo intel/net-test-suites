@@ -149,7 +149,7 @@ label end;
 }
 
 /**
- * Test peer's passive connection establishment, data transfer and close
+ * Suite's passive connection establishment, optional data and close
  */
 function tcp_listen(octetstring data_to_receive := ''O,
 								boolean close := true,
