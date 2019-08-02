@@ -70,10 +70,6 @@ label est;
 		goto wait_for_data;
 	}
 
-	if (close == false) {
-		goto end;
-	}
-
 	/* Everything is sent and aknowledged, do active close */
 	P_TCP.send(ts_TCP(fl := FIN or4b ACK, seq := u32_post_inc(conn(seq)),
 					  ack := conn(ack)));
