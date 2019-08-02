@@ -60,29 +60,29 @@ function tcp_connect(octetstring data_to_send := ''O,
 		}
 	}
 label est;
-		peer_assert(TCP_ESTABLISHED);
-		if (lengthof(snd) > 0) { goto wait_for_data; }
-		if (lengthof(data_to_send) > 0) {
-			snd := byte_array_remove_range(data_to_send, index := 0, len := 1);
-			P_TCP.send(ts_TCP(fl := PSH,
-							  seq := u32_post_inc(conn(seq), lengthof(snd)),
-							  data := snd));
-			goto wait_for_data;
-		}
+	peer_assert(TCP_ESTABLISHED);
+	if (lengthof(snd) > 0) { goto wait_for_data; }
+	if (lengthof(data_to_send) > 0) {
+		snd := byte_array_remove_range(data_to_send, index := 0, len := 1);
+		P_TCP.send(ts_TCP(fl := PSH,
+						  seq := u32_post_inc(conn(seq), lengthof(snd)),
+						  data := snd));
+		goto wait_for_data;
+	}
 
-		if (close == false) {
-			goto end;
-		}
+	if (close == false) {
+		goto end;
+	}
 
-		/* Everything is sent and aknowledged, do active close */
-		P_TCP.send(ts_TCP(fl := FIN or4b ACK, seq := u32_post_inc(conn(seq)),
-						  ack := conn(ack)));
-		conn_state(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
+	/* Everything is sent and aknowledged, do active close */
+	P_TCP.send(ts_TCP(fl := FIN or4b ACK, seq := u32_post_inc(conn(seq)),
+					  ack := conn(ack)));
+	conn_state(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 
-		/* TODO: peer_assert() here is tricky, since peer in active close
-		   sends ack and fin+ack immedeately */
-		label wait_for_data;
-		T.start;
+	/* TODO: peer_assert() here is tricky, since peer in active close
+	   sends ack and fin+ack immedeately */
+	label wait_for_data;
+	T.start;
 
 	alt {
 	[TCP_ESTABLISHED == state] P_TCP.receive(tr_TCP) -> value tcp {
