@@ -35,7 +35,7 @@ do {														\
 	if (pass != execute(args) and							\
 			pre_inc(tests_failed) >= max_tests_failed) {	\
 		log("Maximum number of failed tests reached");		\
-		stop;												\
+		goto end;											\
 	}														\
 } while (false)
 

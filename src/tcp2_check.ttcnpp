@@ -652,6 +652,10 @@ testcase test_tcp_data_incorrect_offset() runs on tcp_ct
 
 control {
 
+	timer TTT;
+
+	TTT.start(120.0);
+
 	var integer i := number_of_runs, tests_failed := 0;
 
 	while (post_dec(i) > 0) {
@@ -677,6 +681,9 @@ control {
 		execute(test_tcp_data_incorrect_options());
 		execute(test_tcp_data_incorrect_offset());
 	}
+label end;
+
+	log("TTT: ", TTT.read);
 
 } /* end of control */
 
