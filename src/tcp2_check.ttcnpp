@@ -43,8 +43,6 @@ function tcp_connect(octetstring data_to_send := ''O,
 
 	tcp_init();
 
-	TT.start;
-
 	P_TCP.send(ts_TCP(fl := SYN, seq := u32_post_inc(conn(seq))));
 	conn_state(TCP_SYN_SENT, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
@@ -134,7 +132,6 @@ label est;
 		conn_state(TCP_CLOSED);
 		peer_assert(TCP_CLOSED);
 	}
-	[] TT.timeout { setverdict(fail); stop; }
 	}  /* end of alt */
 
 	if (TCP_CLOSED == state and 0 == lengthof(data_to_send) and
@@ -157,8 +154,6 @@ function tcp_listen(octetstring data_to_receive := ''O,
 					u32 isn := 0) runs on tcp_ct
 {
 	tcp_init();
-
-	TT.start;
 
 	tp_send(TP_COMMAND, "CONNECT", d := oct2str(data_to_receive), isn := isn);
 
@@ -228,7 +223,6 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		conn_state(TCP_CLOSED);
 		peer_assert(TCP_CLOSED);
 	}
-	[] TT.timeout { setverdict(fail); stop; }
 	} /* end of alt */
 
 	if (state == TCP_CLOSED and rcv == data_to_receive) {
@@ -459,7 +453,6 @@ testcase test_tcp_retransmit() runs on tcp_ct
 	T.timeout;
 	P_FZ.send("incoming_pass");
 
-	TT.start;
 	T.start(T_default * 3.0);
 
 	alt {

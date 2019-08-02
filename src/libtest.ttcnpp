@@ -59,8 +59,9 @@ type record port_stat {
 type component test_ct extends eth_CT {
 	var eth_CT eth_ct;
 	timer T := T_default;
-	timer TT := TT_default;
+	timer TT;
 	var event_t events := EV_NONE; /* TODO: Move to libtest */
+	var default d_as_TT_timeout;
 	var default d_as_timeout; /* TODO: Move to libtest */
 	var default d_as_unexpected_msg; /* TODO: Move to libtest */
 }
@@ -83,6 +84,11 @@ function test_ct_init() runs on test_ct {
 	if (ping_enabled) {
 		do_ping();
 	}
+
+	if (TT_default > 0.0) {
+		d_as_TT_timeout := activate(as_TT_timeout());
+		TT.start(TT_default);
+	}
 }
 
 type bitstring event_t length(3);
@@ -92,7 +98,16 @@ const event_t EV_KEEP			:='111'B;
 const event_t EV_TIMEOUT		:='001'B;
 const event_t EV_UNEXPECTED_MSG :='010'B;
 
-altstep as_timeout() runs on test_ct
+altstep as_TT_timeout() runs on test_ct
+{
+	[] TT.timeout {
+		log("Error: as_TT_timeout()");
+		setverdict(fail);
+		all component.stop;
+	}
+}
+
+ altstep as_timeout() runs on test_ct
 {
 	[] T.timeout { log("as_timeout()"); setverdict(fail); stop; }
 }

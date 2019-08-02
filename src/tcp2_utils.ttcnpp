@@ -434,8 +434,6 @@ testcase test_tcp_debug() runs on tcp_ct
 {
 	tcp_init();
 
-	TT.start;
-
 	tp_send(TP_DEBUG_STOP);
 
 	P_TCP.send(ts_TCP(fl := SYN, seq := post_inc(seq)));
