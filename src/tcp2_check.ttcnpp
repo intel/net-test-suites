@@ -84,7 +84,7 @@ label est;
 		/* TODO: peer_assert() here is tricky, since peer in active close
 		   sends ack and fin+ack immedeately */
 		label wait_for_data;
-		T.start; //repeat;
+		T.start;
 
 	alt {
 	[TCP_ESTABLISHED == state] P_TCP.receive(tr_TCP) -> value tcp {
