@@ -51,12 +51,10 @@ function fuzzer() runs on fuzzer_ct
 		[] P_CF.receive("incoming_pass") { recv := true; }
 		[] P_CF.receive("incoming_drop") { recv := false; }
 		[] P_TCP_IN.receive(?) -> value tcp { /* data from suite */
-			log("sut <- suite");
 			P_TCP_OUT.send(tcp);
 		}
 		[] P_TCP_OUT.receive(?) -> value tcp { /* data from peer */
 			if (recv) {
-				log("sut -> suite");
 				P_TCP_IN.send(tcp);
 			}
 		}
