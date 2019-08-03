@@ -739,6 +739,31 @@ testcase test_tcp_listen_isn_more_data() runs on tcp_ct
 	tcp_listen(data_to_receive := '010203'O, isn := 333);
 }
 
+/**
+ * This sketch is used to complete egress TCP data path at the peer.
+ */
+testcase test_tcp_send2() runs on tcp_ct
+{
+	tcp_connect(close := false);
+
+	fuzzer_on();
+
+	P_FZ.send("incoming_drop");
+
+	var octetstring data := '010203'O;
+
+	while (lengthof(data) > 0) {
+		tp_send(TP_COMMAND, "SEND",
+				oct2str(byte_array_remove_range(data, 0, 1)));
+	}
+
+	peer_assert(TCP_ESTABLISHED);
+
+	setverdict(pass);
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 control {
 
 	timer TTT;
@@ -778,6 +803,7 @@ control {
 		execute(test_tcp_listen_isn_no_data());
 		execute(test_tcp_listen_isn_data());
 		execute(test_tcp_listen_isn_more_data());
+		execute(test_tcp_send2());
 	}
 label end;
 
