@@ -518,41 +518,5 @@ label again;
 		}
 	}
 }
-testcase Test_UDP() runs on test_ct {
 
-	test_ct_init();
-
-	//do_nbr_sol();
-	//do_ping6();
-
-	P_CF.send("ipv4_enable");
-
-	do_ping();
-
-	//P_CF.send("vlan_enable");
-
-	var udp_t udp := valueof(ts_UDP('01'O));
-
-	P_UDP.send(udp);
-
-	T.start;
-
-	alt {
-		[] P_UDP.receive(tr_UDP('01'O)) -> value udp {
-			setverdict(pass);
-		}
-		[] P_ICMP6.receive(?) {
-			setverdict(fail);
-		}
-		[] T.timeout {
-			setverdict(fail);
-		}
-	}
-}
-
-control {
-
-	execute(Test_UDP());
-}
-
-}
+} /* end of module */
