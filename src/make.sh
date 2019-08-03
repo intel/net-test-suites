@@ -17,7 +17,7 @@ sed -i 's/^CXXFLAGS =.*/CXXFLAGS += -O3 -Wno-misleading-indentation -Wno-pointer
 
 sed -i 's#^LDFLAGS =.*#LDFLAGS += -L$(TTCN3_DIR)/lib/titan#' Makefile
 
-sed -i 's/^COMPILER_FLAGS =/COMPILER_FLAGS += -D -d -g/' Makefile
+sed -i 's/^COMPILER_FLAGS =/COMPILER_FLAGS += -D -g/' Makefile
 
 sed -i 's/\($(CXX) -c\)/\t@echo \"   CXX\t\" $<\n\t@\1/' Makefile
 
