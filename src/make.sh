@@ -13,7 +13,7 @@ ttcn3_makefilegen -e test_suite \
 
 sed -i 's#^CPPFLAGS =.*#CPPFLAGS += -D$(PLATFORM) -I. -I$(TTCN3_DIR)/include -I$(TTCN3_DIR)/include/titan#' Makefile
 
-sed -i 's/^CXXFLAGS =.*/CXXFLAGS += -Og -gdwarf-4 -g3 -Wno-misleading-indentation -Wno-pointer-arith/' Makefile
+sed -i 's/^CXXFLAGS =.*/CXXFLAGS += -O3 -Wno-misleading-indentation -Wno-pointer-arith/' Makefile
 
 sed -i 's#^LDFLAGS =.*#LDFLAGS += -L$(TTCN3_DIR)/lib/titan#' Makefile
 
