@@ -232,15 +232,20 @@ function tcp_listen(octetstring data_to_receive := ''O,
 label end;
 }
 
+/**
+ * Send an IPv4 with IPPROTO_TCP but empty IP payload
+ */
 testcase test_tcp_undersized() runs on tcp_ct
 {
 	tcp_init();
 
-	var ip_t ip := valueof(ts_IP(IPPROTO_TCP, ''O));
+	P_IP.send(valueof(ts_IP(IPPROTO_TCP, ''O)));
 
-	P_IP.send(ip);
-
-	setverdict(pass); /* TODO: check peer's state */
+	if (do_ping() == true) { /* Ternary operator isn't supported */
+		setverdict(pass);
+	} else {
+		setverdict(fail);
+	}
 }
 
 /**
