@@ -81,8 +81,9 @@ function test_ct_init() runs on test_ct {
 
 	eth_ct.start(eth_ct_start());
 
-	if (ping_enabled) {
-		do_ping();
+	if (ping_enabled and do_ping() == false) {
+		setverdict(fail);
+		stop;
 	}
 
 	if (TT_default > 0.0) {
@@ -496,27 +497,28 @@ template icmp_t ts_ICMP := {
 	}
 }
 
-function do_ping() runs on test_ct
+function do_ping() runs on test_ct return boolean
 {
+	var boolean responded := false;
 
 label again;
 	P_ICMP.send(valueof(ts_ICMP));
-
 	T.start;
 
 	alt {
 		[] P_ICMP.receive(?) {
 			T.stop;
+			responded := true;
 		}
 		[] T.timeout {
-			log("ping timeout");
+			log("Error: ping timeout");
 			if (ping_repeat) {
 				goto again;
 			}
-			setverdict(fail);
-			stop;
 		}
 	}
+
+	return responded;
 }
 
 } /* end of module */
