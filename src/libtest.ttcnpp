@@ -334,6 +334,9 @@ function eth_ct_start() runs on eth_CT {
 			}
 			}
 		}
+		[] P_IP.receive(?) -> value ip {
+				eth_ct_eth_send(eth_new(ETHERTYPE_IP, ip_enc(ip)));
+		}
 		[] P_ARP.receive(?) -> value arp {
 			eth := valueof(ts_ETH(ETHERTYPE_ARP, arp_enc(arp)));
 			eth_ct_eth_send(eth);
@@ -388,10 +391,6 @@ function eth_ct_start() runs on eth_CT {
 			}
 			}
 			eth_ct_eth_send(eth);
-		}
-		[] P_IP.receive(?) -> value ip {
-				eth := eth_new(ETHERTYPE_IP, ip_enc(ip));
-				eth_ct_eth_send(eth);
 		}
 		}
 	}
