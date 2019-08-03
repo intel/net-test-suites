@@ -577,16 +577,6 @@ function tcp_init() runs on tcp_ct
 	tcp_config(cfg);
 }
 
-testcase test_tcp_listen_isn() runs on tcp_ct
-{
-	tcp_listen(isn := 333);
-}
-
-testcase test_tcp_connect_isn() runs on tcp_ct
-{
-	tcp_connect(isn := 333);
-}
-
 testcase test_tcp_listen_data_reset() runs on tcp_ct
 {
 	tcp_listen(data_to_receive := '01'O);

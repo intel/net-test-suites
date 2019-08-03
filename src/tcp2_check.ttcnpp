@@ -642,6 +642,40 @@ testcase test_tcp_data_incorrect_offset() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+testcase test_tcp_connect_isn_no_data() runs on tcp_ct
+{
+	tcp_connect(isn := 333);
+}
+
+testcase test_tcp_connect_isn_data() runs on tcp_ct
+{
+	var octetstring data := '01'O;
+
+	tcp_connect(data_to_send := data, data_to_receive := data, isn := 333);
+}
+
+testcase test_tcp_connect_isn_more_data() runs on tcp_ct
+{
+	var octetstring data := '010203'O;
+
+	tcp_connect(data_to_send := data, data_to_receive := data, isn := 333);
+}
+
+testcase test_tcp_listen_isn_no_data() runs on tcp_ct
+{
+	tcp_listen(isn := 333);
+}
+
+testcase test_tcp_listen_isn_data() runs on tcp_ct
+{
+	tcp_listen(data_to_receive := '01'O, isn := 333);
+}
+
+testcase test_tcp_listen_isn_more_data() runs on tcp_ct
+{
+	tcp_listen(data_to_receive := '010203'O, isn := 333);
+}
+
 control {
 
 	timer TTT;
@@ -672,6 +706,12 @@ control {
 		execute(test_tcp_data_options());
 		execute(test_tcp_data_incorrect_options());
 		execute(test_tcp_data_incorrect_offset());
+		execute(test_tcp_connect_isn_no_data());
+		execute(test_tcp_connect_isn_data());
+		execute(test_tcp_connect_isn_more_data());
+		execute(test_tcp_listen_isn_no_data());
+		execute(test_tcp_listen_isn_data());
+		execute(test_tcp_listen_isn_more_data());
 	}
 label end;
 
