@@ -17,3 +17,4 @@ tcp2_check:
 - Move fuzzer into libtest and implement a register-able callback (<C1, low)
 - Include and document docker support (<C2, low)
 - Add support for variable argument native functions (C2, low)
+- Abstract do_ping() (<C1, low)
