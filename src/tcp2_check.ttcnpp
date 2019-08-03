@@ -508,6 +508,35 @@ testcase test_tcp_recv() runs on tcp_ct
 }
 
 /**
+ * Test peer's tcp_send() functionality
+ */
+testcase test_tcp_send() runs on tcp_ct
+{
+	tcp_connect(close := false);
+
+	var octetstring data := '01'O;
+
+	tp_send(TP_COMMAND, "SEND", oct2str(data));
+
+	T.start;
+
+	alt {
+	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(fl := PSH, seq := conn(seq),
+													data := data)) {
+		T.stop;
+		setverdict(pass);
+	}
+	[state == TCP_ESTABLISHED] T.timeout {
+		setverdict(fail);
+	}
+	} /* end of alt */
+
+	peer_assert(TCP_ESTABLISHED);
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
+/**
  * Send an undersized data in ESTABLISHED
  */
 testcase test_tcp_data_undersized() runs on tcp_ct
@@ -702,6 +731,7 @@ control {
 		execute(test_tcp_listen_seq_wrap());
 		execute(test_tcp_retransmit());
 		execute(test_tcp_recv());
+		execute(test_tcp_send());
 		execute(test_tcp_data_undersized());
 		execute(test_tcp_data_options());
 		execute(test_tcp_data_incorrect_options());

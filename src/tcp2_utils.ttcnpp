@@ -459,24 +459,6 @@ testcase test_tcp_debug() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
-/**
- * Test peer's tcp_send() functionality
- */
-testcase test_tcp_send() runs on tcp_ct
-{
-	tcp_connect(close := false);
-
-	tcp_config({{ "tcp_echo", "0" }});
-
-	tp_send(TP_COMMAND, "SEND", "01");
-
-	T.start(T_default * 10.0);
-	T.timeout;
-
-	tp_send(TP_COMMAND, "CLOSE");
-}
-
-
 type record map_entry_t {
 	charstring key,
 	charstring val /* "value" is a reserved word in TTCN-3 */
