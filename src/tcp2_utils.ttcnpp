@@ -559,14 +559,4 @@ function tcp_init() runs on tcp_ct
 	tcp_config(cfg);
 }
 
-testcase test_tcp_listen_data_reset() runs on tcp_ct
-{
-	tcp_listen(data_to_receive := '01'O);
-}
-
-testcase test_tcp_connect_data_reset() runs on tcp_ct
-{
-	tcp_connect(data_to_send := '01'O);
-}
-
 } /* end of module */

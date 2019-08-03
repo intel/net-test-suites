@@ -326,6 +326,24 @@ testcase test_tcp_connect_data_close() runs on tcp_ct
 	tcp_connect(data_to_send := '01'O, data_to_receive := '01'O);
 }
 
+testcase test_tcp_connect_data_reset() runs on tcp_ct
+{
+	var octetstring data := '01'O;
+
+	tcp_connect(data_to_send := data, data_to_receive := data, close := false);
+
+	P_TCP.send(ts_TCP(fl := RST));
+
+	T.start;
+	T.timeout;
+
+	peer_assert(TCP_CLOSED);
+
+	setverdict(pass); /* this won't override the failure of peer_assert() */
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 /**
  * Test active TCP connection establishment,
  * "more data" data transfer (data echoing expected) and active close
@@ -413,6 +431,22 @@ testcase test_tcp_listen_no_data_reset() runs on tcp_ct
 testcase test_tcp_listen_data_close() runs on tcp_ct
 {
 	tcp_listen(data_to_receive := '01'O);
+}
+
+testcase test_tcp_listen_data_reset() runs on tcp_ct
+{
+	tcp_listen(data_to_receive := '01'O, close := false);
+
+	P_TCP.send(ts_TCP(fl := RST));
+
+	T.start;
+	T.timeout;
+
+	peer_assert(TCP_CLOSED);
+
+	setverdict(pass); /* this won't override the failure of peer_assert() */
+
+	tp_send(TP_COMMAND, "CLOSE");
 }
 
 /**
@@ -721,11 +755,13 @@ control {
 		execute(test_tcp_connect_no_data_close());
 		execute(test_tcp_connect_no_data_reset());
 		execute(test_tcp_connect_data_close());
+		execute(test_tcp_connect_data_reset());
 		execute(test_tcp_connect_more_data_close());
 		execute(test_tcp_connect_data_gap());
 		execute(test_tcp_listen_no_data_close());
 		execute(test_tcp_listen_no_data_reset());
 		execute(test_tcp_listen_data_close());
+		execute(test_tcp_listen_data_reset());
 		execute(test_tcp_listen_more_data_close());
 		execute(test_tcp_connect_seq_wrap());
 		execute(test_tcp_listen_seq_wrap());
