@@ -322,8 +322,8 @@ testcase test_tcp_connect_no_data_reset() runs on tcp_ct
 }
 
 /**
- * Test peer's active TCP connection establishment,
- * data transfer (data echoing expected) and suite's active close
+ * Test suite's active TCP connection establishment,
+ * data transfer (echo expected) and suite's active close
  */
 testcase test_tcp_connect_data_close() runs on tcp_ct
 {
