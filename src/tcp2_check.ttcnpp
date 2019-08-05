@@ -277,7 +277,11 @@ testcase test_tcp_no_flags() runs on tcp_ct
 
 	P_TCP.send(ts_TCP(fl := TH_NONE));
 
-	setverdict(pass); /* TODO: check peer's state */
+	if (do_ping() == true) {
+		setverdict(pass);
+	} else {
+		setverdict(fail);
+	}
 }
 
 /**
