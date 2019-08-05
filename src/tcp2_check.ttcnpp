@@ -349,8 +349,7 @@ testcase test_tcp_connect_data_reset() runs on tcp_ct
 }
 
 /**
- * Test active TCP connection establishment,
- * "more data" data transfer (data echoing expected) and active close
+ * Test active TCP connection establishment, "more data" and active close
  */
 testcase test_tcp_connect_more_data_close() runs on tcp_ct
 {
