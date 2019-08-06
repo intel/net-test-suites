@@ -29,4 +29,4 @@ echo >> Makefile
 
 echo "port_cons.cc port_cons.hh: port_cons_types.hh" >> Makefile
 
-make -j $(( $(nproc) - 2 ))
+make -j $(nproc)
