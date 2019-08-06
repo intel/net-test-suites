@@ -241,7 +241,7 @@ type record of integer vec_t;
 /**
  * Experimental test with the send window and data resend
  */
-testcase test_tcp_window() runs on tcp_ct
+testcase tcp_window() runs on tcp_ct
 {
 	var win_t to_send, unack;
 	var vec_t step := { 1, 2, 3, 4, 1, 2, 3, 4 };
@@ -361,7 +361,7 @@ testcase test_u32_wrap() runs on tcp_ct
  *  - Reply before the peer's retransmission count is reached and
  *    verify that peer can recover
  */
-testcase test_tcp_retransmit2() runs on tcp_ct
+testcase tcp_retransmit2() runs on tcp_ct
 {
 	tcp_init();
 
@@ -426,7 +426,7 @@ testcase test_tcp_retransmit2() runs on tcp_ct
 /**
  * Test TCP debug
  */
-testcase test_tcp_debug() runs on tcp_ct
+testcase tcp_debug() runs on tcp_ct
 {
 	tcp_init();
 

@@ -235,7 +235,7 @@ label end;
 /**
  * Send an IPv4 with IPPROTO_TCP but empty IP payload
  */
-testcase test_tcp_undersized() runs on tcp_ct
+testcase tcp_undersized() runs on tcp_ct
 {
 	tcp_init();
 
@@ -251,7 +251,7 @@ testcase test_tcp_undersized() runs on tcp_ct
 /**
  * Test a reaction on SYN with incorrect th_off
  */
-testcase test_tcp_incorrect_offset() runs on tcp_ct
+testcase tcp_incorrect_offset() runs on tcp_ct
 {
 	tcp_init();
 
@@ -271,7 +271,7 @@ testcase test_tcp_incorrect_offset() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
-testcase test_tcp_no_flags() runs on tcp_ct
+testcase tcp_no_flags() runs on tcp_ct
 {
 	tcp_init();
 
@@ -287,7 +287,7 @@ testcase test_tcp_no_flags() runs on tcp_ct
 /**
  * Test active TCP connection establishment and active close
  */
-testcase test_tcp_connect_no_data_close() runs on tcp_ct
+testcase tcp_connect_no_data_close() runs on tcp_ct
 {
 	tcp_connect(data_to_send := ''O);
 }
@@ -295,7 +295,7 @@ testcase test_tcp_connect_no_data_close() runs on tcp_ct
 /**
  * Test that RST works in ESTABLISHED
  */
-testcase test_tcp_connect_no_data_reset() runs on tcp_ct
+testcase tcp_connect_no_data_reset() runs on tcp_ct
 {
 	var udp_t udp;
 	var tp_new_t tp;
@@ -325,12 +325,12 @@ testcase test_tcp_connect_no_data_reset() runs on tcp_ct
  * Test suite's active TCP connection establishment,
  * data transfer (echo expected) and suite's active close
  */
-testcase test_tcp_connect_data_close() runs on tcp_ct
+testcase tcp_connect_data_close() runs on tcp_ct
 {
 	tcp_connect(data_to_send := '01'O, data_to_receive := '01'O);
 }
 
-testcase test_tcp_connect_data_reset() runs on tcp_ct
+testcase tcp_connect_data_reset() runs on tcp_ct
 {
 	var octetstring data := '01'O;
 
@@ -351,7 +351,7 @@ testcase test_tcp_connect_data_reset() runs on tcp_ct
 /**
  * Test active TCP connection establishment, "more data" and active close
  */
-testcase test_tcp_connect_more_data_close() runs on tcp_ct
+testcase tcp_connect_more_data_close() runs on tcp_ct
 {
 	tcp_connect(data_to_send := '010203'O, data_to_receive := '010203'O);
 }
@@ -359,7 +359,7 @@ testcase test_tcp_connect_more_data_close() runs on tcp_ct
 /**
  * Test that peer sends RST on missing data in ESTABLISHED
  */
-testcase test_tcp_connect_data_gap() runs on tcp_ct
+testcase tcp_connect_data_gap() runs on tcp_ct
 {
 	var udp_t udp;
 	var tp_new_t tp;
@@ -394,7 +394,7 @@ testcase test_tcp_connect_data_gap() runs on tcp_ct
 /**
  * Test passive TCP connection establishment and active close
  */
-testcase test_tcp_listen_no_data_close() runs on tcp_ct
+testcase tcp_listen_no_data_close() runs on tcp_ct
 {
 	tcp_listen(data_to_receive := ''O);
 }
@@ -402,7 +402,7 @@ testcase test_tcp_listen_no_data_close() runs on tcp_ct
 /**
  * Test that RST works in ESTABLISHED
  */
-testcase test_tcp_listen_no_data_reset() runs on tcp_ct
+testcase tcp_listen_no_data_reset() runs on tcp_ct
 {
 	var udp_t udp;
 	var tp_new_t tp;
@@ -431,12 +431,12 @@ testcase test_tcp_listen_no_data_reset() runs on tcp_ct
 /**
  * Test passive TCP connection establishment, data and active close
  */
-testcase test_tcp_listen_data_close() runs on tcp_ct
+testcase tcp_listen_data_close() runs on tcp_ct
 {
 	tcp_listen(data_to_receive := '01'O);
 }
 
-testcase test_tcp_listen_data_reset() runs on tcp_ct
+testcase tcp_listen_data_reset() runs on tcp_ct
 {
 	tcp_listen(data_to_receive := '01'O, close := false);
 
@@ -455,7 +455,7 @@ testcase test_tcp_listen_data_reset() runs on tcp_ct
 /**
  * Test passive TCP connection establishment, data and active close
  */
-testcase test_tcp_listen_more_data_close() runs on tcp_ct
+testcase tcp_listen_more_data_close() runs on tcp_ct
 {
 	tcp_listen(data_to_receive := '010203'O);
 }
@@ -463,13 +463,13 @@ testcase test_tcp_listen_more_data_close() runs on tcp_ct
 /**
  * Test sequence wraps/overflows
  */
-testcase test_tcp_connect_seq_wrap() runs on tcp_ct
+testcase tcp_connect_seq_wrap() runs on tcp_ct
 {
 	tcp_connect(data_to_send := '01'O, data_to_receive := '01'O,
 					 isn := hex2int('FFFFFFFE'H));
 }
 
-testcase test_tcp_listen_seq_wrap() runs on tcp_ct
+testcase tcp_listen_seq_wrap() runs on tcp_ct
 {
 	tcp_listen(data_to_receive := '01'O, isn := hex2int('FFFFFFFE'H));
 }
@@ -477,7 +477,7 @@ testcase test_tcp_listen_seq_wrap() runs on tcp_ct
 /**
  * Test peer's retransmission
  */
-testcase test_tcp_retransmit() runs on tcp_ct
+testcase tcp_retransmit() runs on tcp_ct
 {
 	tcp_init();
 
@@ -521,7 +521,7 @@ type record of octetstring tcp_test_data_t;
  * and check what the peer has received with the TP_COMMAND/RECV
  */
 /* TODO: Enhance this one with out of order data */
-testcase test_tcp_recv() runs on tcp_ct
+testcase tcp_peer_recv() runs on tcp_ct
 {
 	var tcp_test_data_t data := { '01'O, '0203'O, '040506'O };
 	var octetstring data_total := ''O;
@@ -547,7 +547,7 @@ testcase test_tcp_recv() runs on tcp_ct
 /**
  * Test peer's tcp_send() functionality
  */
-testcase test_tcp_send() runs on tcp_ct
+testcase tcp_peer_send() runs on tcp_ct
 {
 	tcp_connect(close := false);
 
@@ -576,7 +576,7 @@ testcase test_tcp_send() runs on tcp_ct
 /**
  * Send an undersized data in ESTABLISHED
  */
-testcase test_tcp_data_undersized() runs on tcp_ct
+testcase tcp_data_undersized() runs on tcp_ct
 {
 	tcp_connect(close := false);
 
@@ -601,7 +601,7 @@ testcase test_tcp_data_undersized() runs on tcp_ct
 /**
  * Test a reaction on TCP data packets with options
  */
-testcase test_tcp_data_options() runs on tcp_ct
+testcase tcp_data_options() runs on tcp_ct
 {
 	tcp_connect(close := false);
 
@@ -644,7 +644,7 @@ label end;
 /**
  * Test a reaction on TCP data packets with incorrect options
  */
-testcase test_tcp_data_incorrect_options() runs on tcp_ct
+testcase tcp_data_incorrect_options() runs on tcp_ct
 {
 	tcp_connect(close := false);
 
@@ -680,7 +680,7 @@ label end;
 /**
  * Test a reaction on TCP data with incorrect offset
  */
-testcase test_tcp_data_incorrect_offset() runs on tcp_ct
+testcase tcp_data_incorrect_offset() runs on tcp_ct
 {
 	var octetstring data_to_send := '010203'O;
 
@@ -708,36 +708,36 @@ testcase test_tcp_data_incorrect_offset() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
-testcase test_tcp_connect_isn_no_data() runs on tcp_ct
+testcase tcp_connect_isn_no_data() runs on tcp_ct
 {
 	tcp_connect(isn := 333);
 }
 
-testcase test_tcp_connect_isn_data() runs on tcp_ct
+testcase tcp_connect_isn_data() runs on tcp_ct
 {
 	var octetstring data := '01'O;
 
 	tcp_connect(data_to_send := data, data_to_receive := data, isn := 333);
 }
 
-testcase test_tcp_connect_isn_more_data() runs on tcp_ct
+testcase tcp_connect_isn_more_data() runs on tcp_ct
 {
 	var octetstring data := '010203'O;
 
 	tcp_connect(data_to_send := data, data_to_receive := data, isn := 333);
 }
 
-testcase test_tcp_listen_isn_no_data() runs on tcp_ct
+testcase tcp_listen_isn_no_data() runs on tcp_ct
 {
 	tcp_listen(isn := 333);
 }
 
-testcase test_tcp_listen_isn_data() runs on tcp_ct
+testcase tcp_listen_isn_data() runs on tcp_ct
 {
 	tcp_listen(data_to_receive := '01'O, isn := 333);
 }
 
-testcase test_tcp_listen_isn_more_data() runs on tcp_ct
+testcase tcp_listen_isn_more_data() runs on tcp_ct
 {
 	tcp_listen(data_to_receive := '010203'O, isn := 333);
 }
@@ -745,7 +745,7 @@ testcase test_tcp_listen_isn_more_data() runs on tcp_ct
 /**
  * This sketch is used to complete egress TCP data path at the peer.
  */
-testcase test_tcp_send2() runs on tcp_ct
+testcase tcp_send2() runs on tcp_ct
 {
 	tcp_connect(close := false);
 
@@ -776,37 +776,37 @@ control {
 	var integer i := number_of_runs, tests_failed := 0;
 
 	while (post_dec(i) > 0) {
-		execute(test_tcp_codecs());
-		execute(test_tcp_undersized());
-		execute(test_tcp_incorrect_offset());
-		execute(test_tcp_no_flags());
-		execute(test_tcp_connect_no_data_close());
-		execute(test_tcp_connect_no_data_reset());
-		execute(test_tcp_connect_data_close());
-		execute(test_tcp_connect_data_reset());
-		execute(test_tcp_connect_more_data_close());
-		execute(test_tcp_connect_data_gap());
-		execute(test_tcp_listen_no_data_close());
-		execute(test_tcp_listen_no_data_reset());
-		execute(test_tcp_listen_data_close());
-		execute(test_tcp_listen_data_reset());
-		execute(test_tcp_listen_more_data_close());
-		execute(test_tcp_connect_seq_wrap());
-		execute(test_tcp_listen_seq_wrap());
-		execute(test_tcp_retransmit());
-		execute(test_tcp_recv());
-		execute(test_tcp_send());
-		execute(test_tcp_data_undersized());
-		execute(test_tcp_data_options());
-		execute(test_tcp_data_incorrect_options());
-		execute(test_tcp_data_incorrect_offset());
-		execute(test_tcp_connect_isn_no_data());
-		execute(test_tcp_connect_isn_data());
-		execute(test_tcp_connect_isn_more_data());
-		execute(test_tcp_listen_isn_no_data());
-		execute(test_tcp_listen_isn_data());
-		execute(test_tcp_listen_isn_more_data());
-		execute(test_tcp_send2());
+		execute(tcp_codecs());
+		execute(tcp_undersized());
+		execute(tcp_incorrect_offset());
+		execute(tcp_no_flags());
+		execute(tcp_connect_no_data_close());
+		execute(tcp_connect_no_data_reset());
+		execute(tcp_connect_data_close());
+		execute(tcp_connect_data_reset());
+		execute(tcp_connect_more_data_close());
+		execute(tcp_connect_data_gap());
+		execute(tcp_listen_no_data_close());
+		execute(tcp_listen_no_data_reset());
+		execute(tcp_listen_data_close());
+		execute(tcp_listen_data_reset());
+		execute(tcp_listen_more_data_close());
+		execute(tcp_connect_seq_wrap());
+		execute(tcp_listen_seq_wrap());
+		execute(tcp_retransmit());
+		execute(tcp_peer_recv());
+		execute(tcp_peer_send());
+		execute(tcp_data_undersized());
+		execute(tcp_data_options());
+		execute(tcp_data_incorrect_options());
+		execute(tcp_data_incorrect_offset());
+		execute(tcp_connect_isn_no_data());
+		execute(tcp_connect_isn_data());
+		execute(tcp_connect_isn_more_data());
+		execute(tcp_listen_isn_no_data());
+		execute(tcp_listen_isn_data());
+		execute(tcp_listen_isn_more_data());
+		execute(tcp_send2());
 	}
 label end;
 
