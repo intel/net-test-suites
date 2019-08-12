@@ -3,6 +3,7 @@ Complexity/effort: C1/C2/C4/C8 (weeks)
 
 tcp2_check:
 
+- Make it work reliably if everything is in a very slow VMs (<C1, high)
 - Add support for IPv4 options (<C1, medium)
 - Document _listen and _connect (<C1, medium)
 - Add support for IPv6 (<C1, medium)
