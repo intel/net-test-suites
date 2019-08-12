@@ -767,6 +767,73 @@ testcase tcp_send2() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+testcase tcp_rtt() runs on tcp_ct
+{
+	tcp_init();
+
+	const integer N := 20;
+
+	var integer i := N;
+	var float total := 0.0, min := 1000.0, max := 0.0, rtt;
+
+	while (post_dec(i) > 0) {
+
+		T.start;
+
+		if (do_ping(t:= 1000.0) == false) {
+			setverdict(fail);
+		}
+		rtt := T.read;
+		T.stop;
+		//log("rtt: ", rtt);
+		total := total + rtt;
+		if (rtt > max) {
+			max := rtt;
+		}
+		if (rtt < min) {
+			min := rtt;
+		}
+	}
+
+	log("avg: ", total / int2float(N));
+	log("min: ", min);
+	log("max: ", max);
+
+	i := N;
+	total := 0.0;
+	min := 1000.0;
+	max := 0.0;
+
+	while (post_dec(i) > 0) {
+
+		T.start;
+
+		tcp_config({{ "tcp_echo", "0" }});
+
+		alt {
+		[] P_UDP.receive(?) {
+			rtt := T.read;
+			T.stop;
+			//log("rtt: ", rtt);
+			total := total + rtt;
+			if (rtt > max) {
+				max := rtt;
+			}
+			if (rtt < min) {
+				min := rtt;
+			}
+		}
+		[] T.timeout {
+			setverdict(fail);
+		}
+		} /* end of alt */
+	}
+
+	log("avg: ", total / int2float(N));
+	log("min: ", min);
+	log("max: ", max);
+}
+
 control {
 
 	timer TTT;
