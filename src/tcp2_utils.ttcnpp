@@ -17,8 +17,6 @@ import from tcp2_check all;
 
 modulepar {
 	boolean peer_assert_enabled := true; /* TODO: rename to tp_enabled */
-	float T_peer_default := -1.0; /* default peer's retransmission timeout,
-									 sec (optional, negative value: unused) */
 }
 
 /* Fuzzer component for incoming/outgoing drop, delay, reorder, corrupt */

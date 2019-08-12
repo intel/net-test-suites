@@ -27,6 +27,8 @@ modulepar {
 	ethertype_t m_ethertype := ETHERTYPE_IP;
 	float T_default := 0.1; /* default message timeout, sec */
 	float TT_default := 2.0; /* default test teardown timeout, sec */
+	float T_peer_default := -1.0; /* peer's retransmission timeout, sec
+									 (negative value: unused) */
 	integer number_of_runs := 1;
 	integer max_tests_failed := 1;
 }
