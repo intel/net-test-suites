@@ -350,22 +350,6 @@ function eth_ct_start() runs on eth_CT {
 			eth := eth_ip6_new(IPPROTO_ICMPV6, icmp6_enc(icmp6));
 			eth_ct_eth_send(eth);
 		}
-		[] P_UDP.receive(?) -> value udp {
-			d := udp_enc(udp);
-
-			select(ethertype) {
-			case(ETHERTYPE_IPV6) {
-				eth := eth_ip6_new(IPPROTO_UDP, d);
-			}
-			case(ETHERTYPE_IP) {
-				eth := eth_ip_new(IPPROTO_UDP, d);
-			}
-			}
-			eth_ct_eth_send(eth);
-
-			udp_stat.tx_packets := udp_stat.tx_packets + 1;
-			udp_stat.tx_bytes := udp_stat.tx_bytes + lengthof(d);
-		}
 		[] P_TCP.receive(?) -> value tcp {
 			d := tcp_enc(tcp);
 
@@ -393,8 +377,24 @@ function eth_ct_start() runs on eth_CT {
 			}
 			eth_ct_eth_send(eth);
 		}
+		[] P_UDP.receive(?) -> value udp {
+			d := udp_enc(udp);
+
+			select(ethertype) {
+			case(ETHERTYPE_IPV6) {
+				eth := eth_ip6_new(IPPROTO_UDP, d);
+			}
+			case(ETHERTYPE_IP) {
+				eth := eth_ip_new(IPPROTO_UDP, d);
+			}
+			}
+			eth_ct_eth_send(eth);
+
+			udp_stat.tx_packets := udp_stat.tx_packets + 1;
+			udp_stat.tx_bytes := udp_stat.tx_bytes + lengthof(d);
 		}
-	}
+		} /* end of alt */
+	} /* end of while */
 }
 
 template udp_t ts_UDP (template octetstring d := omit) := {
