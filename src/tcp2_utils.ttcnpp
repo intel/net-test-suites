@@ -491,9 +491,21 @@ external function f_tp_new_dec(in octetstring x) return tp_new_t
 
 function tp_send_new(tp_msg_t msg, map_t data) runs on tcp_ct
 {
+	timer T_tp := T_default;
 	var tp_new_t tp := valueof(ts_TP_new(msg, data));
 
 	P_UDP.send(ts_UDP(d := f_tp_new_enc(tp)));
+
+	T_tp.start;
+	alt {
+	[] P_UDP.receive(?) {
+		T_tp.stop;
+	}
+	[] T_tp.timeout {
+		log("Error: T_tp timeout");
+		setverdict(fail);
+	}
+	} /* end of alt */
 }
 
 external function f_enc_map(in map_t x) return octetstring
