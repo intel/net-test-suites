@@ -497,10 +497,10 @@ template icmp_t ts_ICMP := {
 	}
 }
 
-function do_ping() runs on test_ct return boolean
+	function do_ping(float t := T_default) runs on test_ct return boolean
 {
 	var boolean responded := false;
-	timer T_ping := T_default;
+	timer T_ping := t;
 
 label again;
 	P_ICMP.send(valueof(ts_ICMP));
