@@ -771,7 +771,7 @@ control {
 
 	timer TTT;
 
-	TTT.start(120.0);
+	TTT.start(3600.0);
 
 	var integer i := number_of_runs, tests_failed := 0;
 
