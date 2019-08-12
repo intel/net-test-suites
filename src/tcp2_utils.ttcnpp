@@ -123,43 +123,33 @@ external function f_tp_enc(in tp_t x) return octetstring
 external function f_tp_dec(in octetstring x) return tp_t
 	with { extension "prototype(convert) decode(JSON)"; }
 
-function tp_send(tp_msg_t msg_type,
-				charstring o := "",
-				 charstring d := "",
-				integer isn := 0) runs on tcp_ct return tp_t
+function tp_send(tp_msg_t msg_type, charstring o := "", charstring d := "",
+				 integer isn := 0) runs on tcp_ct return tp_t
 {
 	var tp_t tp := valueof(ts_TP(msg_type, d, o));
+	timer T_tp := T_default;
 	var udp_t udp;
 
 	tp.seq := isn;
 
-	if (msg_type == TP_COMMAND and o == "CLOSE") {
-		tcp_config({{ "tp_trace", "0" }, { "tp_tcp_conn_delete", "1" }});
-	}
-
 	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
 
-	/* Currently only introspect and certain command messages expect response */
-	/* TODO: rework and get rid of the following if ()*/
-	if (not (msg_type == TP_INTROSPECT_REQUEST or
-			 (msg_type == TP_COMMAND and o == "RECV"))) {
-		tp := valueof(ts_TP(msg_type));
-		goto exit;
-	}
-
-	T.start;
+	T_tp.start;
 
 	alt {
 	[] P_UDP.receive(?) -> value udp {
-			T.stop;
+		T_tp.stop;
+		if (msg_type == TP_INTROSPECT_REQUEST or
+				(msg_type == TP_COMMAND and o == "RECV")) {
 			tp := f_tp_dec(udp.data);
+		}
 	}
-	[] T.timeout {
-		log("tp_send() timeout");
+	[] T_tp.timeout {
+		log("Error: tp_send() timeout");
 		setverdict(fail);
 	}
 	} /* end of alt */
-label exit;
+
 	return tp;
 }
 
