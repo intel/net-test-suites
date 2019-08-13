@@ -148,6 +148,10 @@ function tp_send(tp_msg_t msg_type, charstring o := "", charstring d := "",
 	}
 	} /* end of alt */
 
+	if (msg_type == TP_COMMAND and o == "CLOSE") {
+		test_ct_close();
+	}
+
 	return tp;
 }
 

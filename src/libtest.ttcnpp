@@ -24,6 +24,7 @@ modulepar {
 	boolean ping_enabled := true;
 	boolean ping_repeat := false;
 	boolean pass_arp := false;
+	boolean stat_enabled := false;
 	ethertype_t m_ethertype := ETHERTYPE_IP;
 	float T_default := 0.1; /* default message timeout, sec */
 	float TT_default := 2.0; /* default test teardown timeout, sec */
@@ -91,7 +92,17 @@ function test_ct_init() runs on test_ct
 	if (TT_default > 0.0) {
 		d_as_TT_timeout := activate(as_TT_timeout());
 		TT.start(TT_default);
+	} else {
+		TT.start(3600.0);
 	}
+}
+
+function test_ct_close() runs on test_ct
+{
+	if (stat_enabled) {
+		log("TT: ", TT.read);
+	}
+	TT.stop;
 }
 
 type bitstring event_t length(3);
