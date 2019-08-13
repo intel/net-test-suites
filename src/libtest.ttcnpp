@@ -40,7 +40,7 @@ type record port_stat {
 	u64 tx_bytes
 }
 
- type component eth_CT {
+type component eth_CT {
 	port port_data		P_ETH;
 	port port_ip		P_IP;
 	port port_arp		P_ARP;
@@ -51,23 +51,24 @@ type record port_stat {
 	port port_tcp2		P_TCP2;
 	port port_udp		P_UDP;
 	port port_cf		P_CF;
-	var ethertype_t ethertype := m_ethertype;
-	var boolean vlan_enabled := false;
-	var port_stat tcp_stat := { 0, 0, 0, 0 };
-	var port_stat udp_stat := { 0, 0, 0, 0 };
+	var ethertype_t		ethertype := m_ethertype;
+	var boolean			vlan_enabled := false;
+	var port_stat		tcp_stat := { 0, 0, 0, 0 };
+	var port_stat		udp_stat := { 0, 0, 0, 0 };
 }
 
 type component test_ct extends eth_CT {
 	var eth_CT eth_ct;
 	timer T := T_default;
 	timer TT;
-	var event_t events := EV_NONE; /* TODO: Move to libtest */
+	var event_t events := EV_NONE;
 	var default d_as_TT_timeout;
-	var default d_as_timeout; /* TODO: Move to libtest */
-	var default d_as_unexpected_msg; /* TODO: Move to libtest */
+	var default d_as_timeout;
+	var default d_as_unexpected_msg;
 }
 
-function test_ct_init() runs on test_ct {
+function test_ct_init() runs on test_ct
+{
 	eth_ct := eth_CT.create;
 
 	connect(self:P_IP, eth_ct:P_IP);
@@ -109,15 +110,15 @@ altstep as_TT_timeout() runs on test_ct
 	}
 }
 
- altstep as_timeout() runs on test_ct
+altstep as_timeout() runs on test_ct
 {
-	[] T.timeout { log("as_timeout()"); setverdict(fail); stop; }
+	[] T.timeout { log("Error: as_timeout()"); setverdict(fail); stop; }
 }
 
 altstep as_unexpected_msg() runs on test_ct
 {
 	[] P_TCP.receive(?) {
-		log("as_unexpected_msg()");
+		log("Error: as_unexpected_msg()");
 		setverdict(fail);
 		stop;
 	}
@@ -186,24 +187,28 @@ template ip_t ts_IP (ipproto_t proto, template octetstring d := omit) := {
 	data := d
 }
 
-function eth_ip6_new(ipproto_t proto, octetstring d) return eth_t {
+function eth_ip6_new(ipproto_t proto, octetstring d) return eth_t
+{
 	var ip6_t ip6 := valueof(ts_IP6(proto, d));
 	var eth_t e := valueof(ts_ETH(ETHERTYPE_IPV6, ip6_enc(ip6)));
 	return e;
 }
 
-function eth_ip_new(ipproto_t proto, octetstring d) return eth_t {
+function eth_ip_new(ipproto_t proto, octetstring d) return eth_t
+{
 	var ip_t ip := valueof(ts_IP(proto, d));
 	var eth_t e := valueof(ts_ETH(ETHERTYPE_IP, ip_enc(ip)));
 	return e;
 }
 
-function eth_new(ethertype_t ethertype, octetstring d) return eth_t {
+function eth_new(ethertype_t ethertype, octetstring d) return eth_t
+{
 	var eth_t e := valueof(ts_ETH(ethertype, d));
 	return e;
 }
 
-function eth_ct_ip6_input(eth_t eth) runs on eth_CT {
+function eth_ct_ip6_input(eth_t eth) runs on eth_CT
+{
 	var ip6_t ip6 := ip6_dec(eth.data);
 
 	select(ip6.ip6_nxt) {
@@ -219,10 +224,11 @@ function eth_ct_ip6_input(eth_t eth) runs on eth_CT {
 		var udp_t udp := udp_dec(ip6.data);
 		P_UDP.send(udp);
 	}
-	}
+	} /* end of case */
 }
 
-function eth_ct_ip_input(eth_t eth) runs on eth_CT {
+function eth_ct_ip_input(eth_t eth) runs on eth_CT
+{
 	var ip_t ip := ip_dec(eth.data);
 
 	select(ip.ip_p) {
@@ -248,9 +254,8 @@ function eth_ct_ip_input(eth_t eth) runs on eth_CT {
 		P_UDP.send(udp);
 		udp_stat.rx_packets := udp_stat.rx_packets + 1;
 		udp_stat.rx_bytes := udp_stat.rx_bytes + lengthof(ip.data);
-
 	}
-	}
+	} /* end of case */
 }
 
 template arp_t ts_ARP := {
@@ -265,7 +270,8 @@ template arp_t ts_ARP := {
 	arp_tpa := fx_inet_aton(m_ip_dst)
 }
 
-function eth_ct_arp_input(eth_t eth) runs on eth_CT {
+function eth_ct_arp_input(eth_t eth) runs on eth_CT
+{
 	var arp_t arp := valueof(ts_ARP);
 	eth := valueof(ts_ETH(ETHERTYPE_ARP, arp_enc(arp)));
 	eth_ct_eth_send(eth);
@@ -278,8 +284,8 @@ template vlan_tag_t ts_VLAN (ethertype_t t, bit3_t pri := '000'B) := {
 	vlan_type := t
 }
 
-function eth_ct_eth_send(eth_t eth) runs on eth_CT {
-
+function eth_ct_eth_send(eth_t eth) runs on eth_CT
+{
 	if (vlan_enabled == true) {
 		eth.vlan := valueof(ts_VLAN(t := eth.h_proto));
 		eth.h_proto := ETHERTYPE_VLAN;
@@ -287,8 +293,8 @@ function eth_ct_eth_send(eth_t eth) runs on eth_CT {
 	P_ETH.send(eth_enc(eth));
 }
 
-function eth_ct_start() runs on eth_CT {
-
+function eth_ct_start() runs on eth_CT
+{
 	map(self:P_ETH, system:P_ETH);
 
 	var octetstring d;
@@ -446,8 +452,8 @@ template icmp6_t ts_ICMP6_NBR_SOL := {
 	}
 }
 
-function do_nbr_sol() runs on test_ct {
-
+function do_nbr_sol() runs on test_ct
+{
 	var icmp6_t icmp6 := valueof(ts_ICMP6_NBR_SOL);
 
 	P_ICMP6.send(icmp6);
@@ -471,8 +477,8 @@ template icmp6_t ts_ICMP6_ECHO_REQUEST := {
 	}
 }
 
-function do_ping6() runs on test_ct {
-
+function do_ping6() runs on test_ct
+{
 	var icmp6_t icmp6 := valueof(ts_ICMP6_ECHO_REQUEST);
 
 	P_ICMP6.send(icmp6);
@@ -497,7 +503,7 @@ template icmp_t ts_ICMP := {
 	}
 }
 
-	function do_ping(float t := T_default) runs on test_ct return boolean
+function do_ping(float t := T_default) runs on test_ct return boolean
 {
 	var boolean responded := false;
 	timer T_ping := t;
@@ -507,17 +513,17 @@ label again;
 	T_ping.start;
 
 	alt {
-		[] P_ICMP.receive(?) {
-			T_ping.stop;
-			responded := true;
-		}
-		[] T_ping.timeout {
-			log("Error: ping timeout");
-			if (ping_repeat) {
-				goto again;
-			}
+	[] P_ICMP.receive(?) {
+		T_ping.stop;
+		responded := true;
+	}
+	[] T_ping.timeout {
+		log("Error: ping timeout");
+		if (ping_repeat) {
+			goto again;
 		}
 	}
+	} /* end of alt */
 
 	return responded;
 }
