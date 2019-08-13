@@ -122,7 +122,7 @@ label est;
 		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
 						  ack := u32_pre_inc(conn(ack))));
 		conn_state(TCP_TIME_WAIT, fail_on := EV_NONE);
-		T.start; repeat; /* T * 2 */
+		T.start; repeat;
 	}
 	[TCP_TIME_WAIT == state] T.timeout {
 		conn_state(TCP_CLOSED);
