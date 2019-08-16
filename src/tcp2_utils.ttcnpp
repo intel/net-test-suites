@@ -547,7 +547,7 @@ function tcp_config(map_t cfg) runs on tcp_ct
 	tp_send_new(TP_CONFIG_REQUEST, cfg);
 }
 
-function tcp_init() runs on tcp_ct
+function tcp_init(boolean config := true) runs on tcp_ct
 {
 	var map_t cfg := {
 		{ "tcp_echo", "1" },
@@ -560,7 +560,9 @@ function tcp_init() runs on tcp_ct
 
 	test_ct_init();
 
-	tcp_config(cfg);
+	if (config) {
+		tcp_config(cfg);
+	}
 }
 
 } /* end of module */
