@@ -847,6 +847,16 @@ testcase tcp_rtt() runs on tcp_ct
 	log("max: ", max);
 }
 
+/**
+ * This is just a convenience for development/debug purposes
+ */
+testcase tp_close() runs on tcp_ct
+{
+	tcp_init(config := false);
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 control {
 
 	timer TTT;
