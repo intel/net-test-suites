@@ -847,6 +847,35 @@ testcase tcp_rtt() runs on tcp_ct
 	log("max: ", max);
 }
 
+testcase tcp_connect_early_data() runs on tcp_ct
+{
+	var octetstring data := '01'O;
+
+	tcp_init();
+
+	tcp_config({{ "tcp_echo", "0" }});
+
+	P_TCP.send(ts_TCP(fl := SYN, seq := u32_post_inc(conn(seq))));
+	conn_state(TCP_SYN_SENT, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
+	T.start;
+	P_TCP.receive(tr_TCP(fl := SYN or4b ACK, ack := conn(seq))) -> value tcp {
+		T.stop;
+		ack := tcp.th_seq;
+		P_TCP.send(ts_TCP(fl := ACK or4b PSH, seq := conn(seq),
+						  ack := u32_pre_inc(conn(ack)), data := data));
+	}
+	T.start;
+	T.timeout;
+
+	var tp_t peer := tp_send(TP_COMMAND, "RECV");
+
+	if (str2oct(peer.data) == data) {
+		setverdict(pass);
+	}
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 /**
  * This is just a convenience for development/debug purposes
  */
@@ -897,6 +926,7 @@ control {
 		execute(tcp_listen_isn_data());
 		execute(tcp_listen_isn_more_data());
 		execute(tcp_send2());
+		execute(tcp_connect_early_data());
 	}
 label end;
 
