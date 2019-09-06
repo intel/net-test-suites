@@ -49,7 +49,7 @@ function tcp_connect(octetstring data_to_send := ''O,
 
 	P_TCP.receive(tr_TCP(fl := SYN or4b ACK, ack := conn(seq))) -> value tcp {
 		T.stop;
-		peer_assert(TCP_SYN_SENT);
+		peer_assert(TCP_SYN_RECEIVED);
 		conn_state(TCP_SYN_RECEIVED);
 		ack := tcp.th_seq;
 		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
