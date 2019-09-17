@@ -548,6 +548,8 @@ function tcp_send(octetstring data := ''O) runs on tcp_ct
 
 function tcp_config(map_t cfg) runs on tcp_ct
 {
+	if (not peer_assert_enabled) { return; }
+
 	tp_send_new(TP_CONFIG_REQUEST, cfg);
 }
 
