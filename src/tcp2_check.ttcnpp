@@ -886,6 +886,16 @@ testcase tp_close() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+/**
+ * This sketch is used to complete ingress TCP data path at the peer.
+ */
+testcase tcp_connect2() runs on tcp_ct
+{
+	tcp_init(config := false);
+
+	tcp_connect(close := false);
+}
+
 control {
 
 	timer TTT;
