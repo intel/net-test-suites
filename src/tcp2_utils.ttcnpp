@@ -128,6 +128,10 @@ function tp_send(tp_msg_t msg_type, charstring o := "", charstring d := "",
 	timer T_tp := T_default;
 	var udp_t udp;
 
+	if (false == peer_assert_enabled) {
+		goto exit;
+	}
+
 	tp.seq := isn;
 
 	P_UDP.send(ts_UDP(d := f_tp_enc(tp)));
@@ -151,7 +155,7 @@ function tp_send(tp_msg_t msg_type, charstring o := "", charstring d := "",
 	if (msg_type == TP_COMMAND and o == "CLOSE") {
 		test_ct_close();
 	}
-
+label exit;
 	return tp;
 }
 
