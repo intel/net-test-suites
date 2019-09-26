@@ -891,9 +891,12 @@ testcase tp_close() runs on tcp_ct
  */
 testcase tcp_connect2() runs on tcp_ct
 {
-	tcp_init(config := false);
-
 	tcp_connect(close := false);
+
+	P_TCP.send(ts_TCP(fl := PSH, seq := conn(seq), data := '01'O));
+
+	T.start(1.0);
+	T.timeout;
 }
 
 control {
