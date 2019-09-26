@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, Intel Corporation.
+ * Copyright © 2018-2019, Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU Lesser General Public License,
@@ -32,6 +32,13 @@
 
 namespace port__data__types {
 
+#define D(fmt, args...) do {						\
+	if (debug) {							\
+		printf("%s:%s() " fmt "\n",				\
+			__FILE__, __func__, ## args);			\
+	}								\
+} while (0)
+
 #define E(fmt, args...)							\
 do {									\
 	TTCN_error("%s:%s() Error: " fmt "(): %s",			\
@@ -46,7 +53,11 @@ do {									\
 
 port__data_PROVIDER::port__data_PROVIDER(const char *name) : PORT(name)
 {
-	src_ip = dst_ip = inet_addr("127.0.0.1");
+	debug = 0;
+
+	src_ip = inet_addr("127.0.0.1");
+	dst_ip = inet_addr("127.0.0.1");
+
 	src_port = 7777;
 	dst_port = 7771;
 }
@@ -55,6 +66,13 @@ port__data_PROVIDER::port__data_PROVIDER(const char *name) : PORT(name)
 
 void port__data_PROVIDER::set_parameter(const char *name, const char *value)
 {
+	if (IS_PARAM("debug", name)) {
+		debug = atoi(value);
+		goto out;
+	}
+
+	D("%s=%s", name, value);
+
 	if (IS_PARAM("src_ip", name)) {
 		dst_port = inet_addr(value);
 		goto out;
@@ -114,9 +132,9 @@ const sockaddr *s_in(uint32_t ip, uint16_t port)
 	return (const sockaddr *) &sin;
 }
 
-void port__data_PROVIDER::user_map(const char * /*system_port*/)
+void port__data_PROVIDER::user_map(const char *system_port)
 {
-	fd_set fds_read;
+	D("system_port: %s", system_port);
 
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
 		E("socket");
@@ -127,10 +145,14 @@ void port__data_PROVIDER::user_map(const char * /*system_port*/)
 	if (connect(fd, s_in(dst_ip, dst_port), S_IN_SIZE) == -1)
 		E("connect");
 
-	FD_ZERO(&fds_read);
-	FD_SET(fd, &fds_read);
+	{
+		fd_set fds_read;
 
-	Install_Handler(&fds_read, NULL, NULL, 0);
+		FD_ZERO(&fds_read);
+		FD_SET(fd, &fds_read);
+
+		Install_Handler(&fds_read, NULL, NULL, 0);
+	}
 }
 
 void port__data_PROVIDER::user_unmap(const char * /*system_port*/)

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018, Intel Corporation.
+ * Copyright © 2018-2019, Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU Lesser General Public License,
@@ -40,6 +40,7 @@ protected:
 	virtual void incoming_message(const OCTETSTRING& incoming_par) = 0;
 private:
 	int fd;
+	int debug;
 	uint32_t src_ip;
 	uint16_t src_port;
 	uint32_t dst_ip;
