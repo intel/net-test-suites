@@ -742,7 +742,7 @@ testcase tcp_listen_isn_more_data() runs on tcp_ct
 	tcp_listen(data_to_receive := '010203'O, isn := 333);
 }
 
-testcase tcp_close() runs on tcp_ct
+testcase tcp_close2() runs on tcp_ct
 {
 	tcp_connect(close := false);
 
@@ -886,6 +886,11 @@ testcase tp_close() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+function tcp_close() runs on tcp_ct
+{
+	P_TCP.send(ts_TCP(fl := RST, seq := conn(seq)));
+}
+
 /**
  * This sketch is used to complete ingress TCP data path at the peer.
  */
@@ -893,7 +898,13 @@ testcase tcp_connect2() runs on tcp_ct
 {
 	tcp_connect(close := false);
 
-	P_TCP.send(ts_TCP(fl := PSH, seq := conn(seq), data := '01'O));
+	P_TCP.send(ts_TCP(fl := PSH, seq := u32_post_inc(conn(seq)),
+					  data := '01'O));
+
+	T.start(1.0);
+	T.timeout;
+
+	tcp_close();
 
 	T.start(1.0);
 	T.timeout;
@@ -942,7 +953,6 @@ control {
 		execute(tcp_connect_early_data());
 	}
 label end;
-
 	log("TTT: ", TTT.read);
 
 } /* end of control */
