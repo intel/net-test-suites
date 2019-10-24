@@ -910,6 +910,17 @@ testcase tcp_connect2() runs on tcp_ct
 	T.timeout;
 }
 
+/**
+ * This is just an example of how the receive window can be adjusted
+ * with the test protocol v1.
+ */
+testcase tcp_window() runs on tcp_ct
+{
+	test_ct_init();
+
+	tcp_config({{ "tcp_window", "64" }});
+}
+
 control {
 
 	timer TTT;
