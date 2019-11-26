@@ -15,6 +15,7 @@ kwinject.out
 /src/*_types.cc
 /src/*_types.hh
 /src/libtest.ttcn
+/src/libutils.ttcn
 /src/lib*.cc
 /src/lib*.hh
 /src/*_suite.cc
