@@ -921,6 +921,29 @@ testcase tcp_window() runs on tcp_ct
 	tcp_config({{ "tcp_window", "64" }});
 }
 
+/**
+ * Send a data without PSH, the data should be placed into the receive window.
+ */
+testcase tcp_connect_data_with_ack_close() runs on tcp_ct
+{
+	var octetstring data := byte_array_new(len := 512, c := '01'O);
+
+	tcp_connect(close := false);
+
+	P_TCP.send(ts_TCP(fl := ACK,
+					  seq := u32_post_inc(conn(seq)),
+					  ack := conn(ack),
+					  data := data));
+
+	var tp_t peer := tp_send(TP_COMMAND, "RECV");
+
+	if (str2oct(peer.data) == data) {
+		setverdict(pass);
+	}
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 control {
 
 	timer TTT;
