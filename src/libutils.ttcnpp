@@ -5,6 +5,8 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
+#include "libutils.ttcnin"
+
 module libutils {
 
 import from libnetinet all;
@@ -75,6 +77,21 @@ function byte_array_remove_range(inout octetstring array,
 	array := replace(array, index, len, ''O);
 
 	return data;
+}
+
+function byte_array_new(integer len := 0, octetstring c := '00'O)
+	return octetstring
+{
+	var octetstring array := ''O;
+
+	ASSERT(lengthof(c) == 1);
+
+	while (len > 0) {
+		array := array & c;
+		len := len - 1;
+	}
+
+	return array;
 }
 
 } /* end of module */
