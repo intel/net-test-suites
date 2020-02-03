@@ -180,15 +180,17 @@ function tcp_listen(octetstring data_to_receive := ''O,
 			T.start; repeat;
 		}
 	}
-	[TCP_ESTABLISHED == state] P_TCP.receive(tr_TCP(fl := PSH, seq := conn(ack),
-												data := ?)) -> value tcp {
-		T.stop;
-		peer_assert(TCP_ESTABLISHED);
-		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
-						  ack := u32_pre_inc(conn(ack), lengthof(tcp.data))));
-		byte_array_append(rcv, tcp.data);
-		if (rcv != data_to_receive) {
-			T.start; repeat;
+	[TCP_ESTABLISHED == state] P_TCP.receive(tr_TCP(data := ?)) -> value tcp {
+		if (th_is_set(tcp, PSH) or th_is_set(tcp, ACK)) {
+			T.stop;
+			peer_assert(TCP_ESTABLISHED);
+			P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
+							  ack := u32_pre_inc(conn(ack),
+												 lengthof(tcp.data))));
+			byte_array_append(rcv, tcp.data);
+			if (rcv != data_to_receive) {
+				T.start; repeat;
+			}
 		}
 	}
 	} /* end of alt */
