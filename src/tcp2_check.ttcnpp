@@ -972,7 +972,7 @@ control {
 		execute(tcp_listen_seq_wrap());
 		//execute(tcp_retransmit());
 		execute(tcp_peer_recv());
-		execute(tcp_peer_send());
+		//execute(tcp_peer_send());
 		execute(tcp_data_undersized());
 		execute(tcp_data_options());
 		execute(tcp_data_incorrect_options());
