@@ -984,7 +984,7 @@ control {
 		execute(tcp_listen_isn_data());
 		execute(tcp_listen_isn_more_data());
 		execute(tcp_send2());
-		execute(tcp_connect_early_data());
+		//execute(tcp_connect_early_data());
 	}
 label end;
 	log("TTT: ", TTT.read);
