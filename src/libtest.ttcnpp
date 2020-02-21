@@ -167,12 +167,15 @@ function fail_on_events(event_t event) runs on test_ct
 	}
 }
 
-template eth_t ts_ETH (ethertype_t proto, template octetstring d := omit) := {
-	h_dest := fx_ether_aton(m_eth_dst),
-	h_source := fx_ether_aton(m_eth_src),
+template eth_t ts_ETH (ethertype_t proto,
+					   template octetstring d := omit,
+					   charstring h_dest := m_eth_dst,
+					   charstring h_source := m_eth_src) := {
+	h_dest := fx_ether_aton(h_dest),
+	h_source := fx_ether_aton(h_source),
 	h_proto := proto,
-    vlan := omit,
-    data := d
+	vlan := omit,
+	data := d
 }
 
 template ip6_t ts_IP6 (ipproto_t proto, template octetstring d := omit) := {
