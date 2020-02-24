@@ -178,13 +178,16 @@ template eth_t ts_ETH (ethertype_t proto,
 	data := d
 }
 
-template ip6_t ts_IP6 (ipproto_t proto, template octetstring d := omit) := {
+template ip6_t ts_IP6 (ipproto_t proto,
+					   template octetstring d := omit,
+					   charstring ip6_src := m_ip6_src,
+					   charstring ip6_dst := m_ip6_dst) := {
 	ip6_vfc := 96,
 	ip6_plen := 0,
 	ip6_nxt := proto,
 	ip6_hlim := 0,
-	ip6_src := fx_inet6_pton(m_ip6_src),
-	ip6_dst := fx_inet6_pton(m_ip6_dst),
+	ip6_src := fx_inet6_pton(ip6_src),
+	ip6_dst := fx_inet6_pton(ip6_dst),
 	data := d
 }
 
