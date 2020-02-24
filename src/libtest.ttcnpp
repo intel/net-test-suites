@@ -128,8 +128,10 @@ altstep as_timeout() runs on test_ct
 
 altstep as_unexpected_msg() runs on test_ct
 {
-	[] P_TCP.receive(?) {
-		log("Error: as_unexpected_msg()");
+	var tcp_t tcp;
+
+	[] P_TCP.receive(?) -> value tcp {
+		log("Error: as_unexpected_msg() Unexpected TCP message: ", tcp);
 		setverdict(fail);
 		stop;
 	}
