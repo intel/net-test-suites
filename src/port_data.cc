@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, Intel Corporation.
+ * Copyright © 2018-2020, Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU Lesser General Public License,
@@ -51,7 +51,7 @@ do {									\
 		__FILE__, __func__, ## args);				\
 } while (0)
 
-port__data_PROVIDER::port__data_PROVIDER(const char *name) : PORT(name)
+port__data::port__data(const char *name) : port__data_BASE(name)
 {
 	debug = 0;
 
@@ -62,9 +62,14 @@ port__data_PROVIDER::port__data_PROVIDER(const char *name) : PORT(name)
 	dst_port = 7771;
 }
 
+port__data::~port__data()
+{
+
+}
+
 #define IS_PARAM(_param, _name) (strcmp(_param, _name) == 0)
 
-void port__data_PROVIDER::set_parameter(const char *name, const char *value)
+void port__data::set_parameter(const char *name, const char *value)
 {
 	if (IS_PARAM("debug", name)) {
 		debug = atoi(value);
@@ -98,7 +103,7 @@ void port__data_PROVIDER::set_parameter(const char *name, const char *value)
 	return;
 }
 
-void port__data_PROVIDER::Handle_Fd_Event_Readable(int fd)
+void port__data::Handle_Fd_Event_Readable(int fd)
 {
 	ssize_t bytes_read = read(fd, buf, sizeof(buf));
 
@@ -110,7 +115,7 @@ void port__data_PROVIDER::Handle_Fd_Event_Readable(int fd)
 	incoming_message(OCTETSTRING(bytes_read, buf));
 }
 
-void port__data_PROVIDER::Event_Handler(const fd_set *fds_read,
+void port__data::Event_Handler(const fd_set *fds_read,
 			     const fd_set */*write_fds*/,
 			     const fd_set */*error_fds*/,
 			     double /*time_since_last_call*/)
@@ -132,7 +137,7 @@ const sockaddr *s_in(uint32_t ip, uint16_t port)
 	return (const sockaddr *) &sin;
 }
 
-void port__data_PROVIDER::user_map(const char *system_port)
+void port__data::user_map(const char *system_port)
 {
 	D("system_port: %s", system_port);
 
@@ -155,7 +160,7 @@ void port__data_PROVIDER::user_map(const char *system_port)
 	}
 }
 
-void port__data_PROVIDER::user_unmap(const char * /*system_port*/)
+void port__data::user_unmap(const char * /*system_port*/)
 {
 	Uninstall_Handler();
 	close(fd);
@@ -291,7 +296,7 @@ uint16_t inet6_chksum(uint8_t *data, size_t data_len)
 	return s;
 }
 
-void port__data_PROVIDER::outgoing_send(const OCTETSTRING& msg)
+void port__data::outgoing_send(const OCTETSTRING& msg)
 {
 	ssize_t data_len = msg.lengthof();
 

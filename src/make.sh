@@ -25,6 +25,8 @@ sed -i 's/\(if $(CXX)\)/\@echo "   LD\t" $(EXECUTABLE)\n\t@\1/' Makefile
 
 echo "libutils_ext.cc: libutils.hh" >> Makefile
 
+echo "port_data.cc: port_data_types.hh" >> Makefile
+
 echo >> Makefile
 
 make -j $(nproc)

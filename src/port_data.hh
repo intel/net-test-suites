@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019, Intel Corporation.
+ * Copyright © 2018-2020, Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU Lesser General Public License,
@@ -15,29 +15,24 @@
 #ifndef PORT_DATA_HH
 #define PORT_DATA_HH
 
-#include <TTCN3.hh>
+#include "port_data_types.hh"
 
 #include <stdint.h>
 
 namespace port__data__types {
 
-#define PORT_DATA_BUF_MAXSIZE 1522
+#define BUF_SIZE 1522
 
-class port__data_PROVIDER : public PORT {
+class port__data : public port__data_BASE {
 public:
-	port__data_PROVIDER(const char *port_name = NULL);
-	~port__data_PROVIDER() { }
-	void set_parameter(const char *parameter_name,
-			   const char *parameter_value);
+	port__data(const char *name = NULL);
+	~port__data();
+
+	void set_parameter(const char *name, const char *value);
 	void Event_Handler(const fd_set *read_fds,
 			   const fd_set *write_fds,
 			   const fd_set *error_fds,
 			   double time_since_last_call);
-protected:
-	void user_map(const char *system_port);
-	void user_unmap(const char *system_port);
-	void outgoing_send(const OCTETSTRING& msg);
-	virtual void incoming_message(const OCTETSTRING& incoming_par) = 0;
 private:
 	int fd;
 	int debug;
@@ -45,9 +40,14 @@ private:
 	uint16_t src_port;
 	uint32_t dst_ip;
 	uint16_t dst_port;
-	uint8_t buf[PORT_DATA_BUF_MAXSIZE];
+	uint8_t buf[BUF_SIZE];
 
 	void Handle_Fd_Event_Readable(int fd);
+protected:
+	void user_map(const char *system_port);
+	void user_unmap(const char *system_port);
+
+	void outgoing_send(const OCTETSTRING& msg);
 };
 
 } /* end of namespace */
