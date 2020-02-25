@@ -1,14 +1,8 @@
 *.o
 *.log
 *~
-*.pcap
 
-.TITAN_properties
-.cproject
-.project
-.settings/
 compile
-kwinject.out
 
 /titan
 /bin/
@@ -20,14 +14,12 @@ kwinject.out
 /src/lib*.hh
 /src/*_suite.cc
 /src/*_suite.hh
-/src/port*_module.cc
-/src/port*_module.hh
 /src/tcp2_check.ttcn
 /src/tcp2_check.cc
 /src/tcp2_check.hh
 /src/tcp2_types.ttcn
-/src/tcp2_utils.cc
 /src/tcp2_utils.ttcn
+/src/tcp2_utils.cc
 /src/tcp2_utils.hh
 /src/Makefile
 /src/cversion.h
