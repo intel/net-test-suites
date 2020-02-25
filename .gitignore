@@ -29,8 +29,6 @@ kwinject.out
 /src/tcp2_utils.cc
 /src/tcp2_utils.ttcn
 /src/tcp2_utils.hh
-/src/cons.cc
-/src/cons.hh
 /src/Makefile
 /src/cversion.h
 /src/test_suite
