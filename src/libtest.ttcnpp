@@ -492,16 +492,33 @@ template icmp6_t ts_ICMP6_NBR_ADV := {
 	}
 }
 
+/*
+ * ff02::1:ff00:1		solicited-node multicast IPv6 address
+ * 33:33:00:00:00:01	all-nodes multicast MAC address
+ */
+function eth_ip6_ll_multicast(ipproto_t proto, octetstring d) return eth_t
+{
+	var ip6_t ip6 := valueof(ts_IP6(proto, d, ip6_dst := "ff02::1:ff00:1"));
+	var eth_t eth := valueof(ts_ETH(ETHERTYPE_IPV6,
+								  d := ip6_enc(ip6),
+								  h_dest := "33:33:00:00:00:01"));
+	return eth;
+}
+
 function do_nbr_sol() runs on test_ct
 {
 	var icmp6_t icmp6 := valueof(ts_ICMP6_NBR_SOL);
+	var eth_t eth := eth_ip6_ll_multicast(IPPROTO_ICMPV6,
+										  d := icmp6_enc(icmp6));
+	P_ETH.send(eth_enc(eth));
+}
 
-	P_ICMP6.send(icmp6);
-
-	alt {
-		[] P_ICMP6.receive(tr_ICMP6(ICMP6_NEIGHBOR_SOLICIT)) -> value icmp6 {
-		}
-	}
+function do_nbr_adv() runs on test_ct
+{
+	var icmp6_t icmp6 := valueof(ts_ICMP6_NBR_ADV);
+	var eth_t eth := eth_ip6_ll_multicast(IPPROTO_ICMPV6,
+										  d := icmp6_enc(icmp6));
+	P_ETH.send(eth_enc(eth));
 }
 
 template icmp6_t ts_ICMP6_ECHO_REQUEST := {
