@@ -470,7 +470,7 @@ template icmp6_t ts_ICMP6_NBR_SOL := {
 			ns_flag_solicited := '1'B,
 			ns_flag_override := '0'B,
 			ns_reserved := 0,
-			ns_target := fx_inet6_pton(m_ip6_src),
+			ns_target := fx_inet6_pton(m_ip6_dst),
 			ns_options := '0101'O & fx_ether_aton(m_eth_src)
 		}
 	}
