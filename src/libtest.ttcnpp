@@ -42,7 +42,7 @@ type record port_stat {
 }
 
 type component eth_CT {
-	port port_data		P_ETH;
+	port port_data		P_ETH_EXT;
 	port port_ip		P_IP;
 	port port_arp		P_ARP;
 	port port_icmp		P_ICMP;
@@ -309,12 +309,12 @@ function eth_ct_eth_send(eth_t eth) runs on eth_CT
 		eth.vlan := valueof(ts_VLAN(t := eth.h_proto));
 		eth.h_proto := ETHERTYPE_VLAN;
 	}
-	P_ETH.send(eth_enc(eth));
+	P_ETH_EXT.send(eth_enc(eth));
 }
 
 function eth_ct_start() runs on eth_CT
 {
-	map(self:P_ETH, system:P_ETH);
+	map(self:P_ETH_EXT, system:P_ETH_EXT);
 
 	var octetstring d;
 	var eth_t eth;
@@ -335,7 +335,7 @@ function eth_ct_start() runs on eth_CT
 			log("TCP: ", tcp_stat);
 			log("UDP: ", udp_stat);
 		}
-		[] P_ETH.receive(?) -> value d {
+		[] P_ETH_EXT.receive(?) -> value d {
 
 			eth := eth_dec(d);
 
