@@ -476,6 +476,22 @@ template icmp6_t ts_ICMP6_NBR_SOL := {
 	}
 }
 
+template icmp6_t ts_ICMP6_NBR_ADV := {
+	icmp6_type := ICMP6_NEIGHBOR_ADVERT,
+	icmp6_code := 0,
+	icmp6_cksum := 0,
+	data := {
+		nbr_adv := {
+			na_flag_router := '0'B,
+			na_flag_solicited := '1'B,
+			na_flag_override := '1'B,
+			na_reserved := 0,
+			na_target := fx_inet6_pton(m_ip6_src),
+			na_options := '0201'O & fx_ether_aton(m_eth_src)
+		}
+	}
+}
+
 function do_nbr_sol() runs on test_ct
 {
 	var icmp6_t icmp6 := valueof(ts_ICMP6_NBR_SOL);
