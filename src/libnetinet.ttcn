@@ -504,6 +504,8 @@ external function tcp2_dec(in octetstring data) return tcp2_t
 
 type port port_tcp2 message { inout tcp2_t; } with { extension "internal"; }
 
+type port port_eth message { inout octetstring; } with { extension "internal"; }
+
 /**
  * TODO: Add templates test here
  */

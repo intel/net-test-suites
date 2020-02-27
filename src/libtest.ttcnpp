@@ -52,6 +52,7 @@ type component eth_CT {
 	port port_tcp2		P_TCP2;
 	port port_udp		P_UDP;
 	port port_cf		P_CF;
+	port port_eth		P_ETH;
 	var ethertype_t		ethertype := m_ethertype;
 	var boolean			vlan_enabled := false;
 	var port_stat		tcp_stat := { 0, 0, 0, 0 };
@@ -81,6 +82,7 @@ function test_ct_init() runs on test_ct
 	connect(self:P_TCP, eth_ct:P_TCP);
 	connect(self:P_TCP2, eth_ct:P_TCP2);
 	connect(self:P_CF, eth_ct:P_CF);
+	connect(self:P_ETH, eth_ct:P_ETH);
 
 	eth_ct.start(eth_ct_start());
 
@@ -359,6 +361,9 @@ function eth_ct_start() runs on eth_CT
 				eth_ct_ip_input(eth);
 			}
 			}
+		}
+		[] P_ETH.receive(?) -> value d {
+			P_ETH_EXT.send(d);
 		}
 		[] P_IP.receive(?) -> value ip {
 				eth_ct_eth_send(eth_new(ETHERTYPE_IP, ip_enc(ip)));
