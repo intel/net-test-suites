@@ -86,9 +86,15 @@ function test_ct_init() runs on test_ct
 
 	eth_ct.start(eth_ct_start());
 
-	if (ping_enabled and do_ping() == false) {
+	if (m_ethertype == ETHERTYPE_IP and ping_enabled and do_ping() == false) {
 		setverdict(fail);
 		stop;
+	}
+
+	if (m_ethertype == ETHERTYPE_IPV6) {
+		do_nbr_adv();
+		do_nbr_sol();
+		do_ping6();
 	}
 
 	if (TT_default > 0.0) {
@@ -539,10 +545,19 @@ function do_ping6() runs on test_ct
 	var icmp6_t icmp6 := valueof(ts_ICMP6_ECHO_REQUEST);
 
 	P_ICMP6.send(icmp6);
+	T.start;
 
 	alt {
 		[] P_ICMP6.receive(tr_ICMP6(ICMP6_ECHO_REPLY)) -> value icmp6 {
-			setverdict(pass);
+			T.stop;
+		}
+		[] P_ICMP6.receive(tr_ICMP6(?)) {
+			/* Ignore other messages (NS, NA) */
+			repeat;
+		}
+		[] T.timeout {
+			log("Error: ping6 timeout");
+			stop;
 		}
 	}
 }
