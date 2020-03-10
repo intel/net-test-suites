@@ -975,14 +975,14 @@ control {
 		execute(tcp_listen_data_close());
 		execute(tcp_listen_data_reset());
 		execute(tcp_listen_more_data_close());
-		execute(tcp_connect_seq_wrap());
+		//execute(tcp_connect_seq_wrap());
 		execute(tcp_listen_seq_wrap());
 		//execute(tcp_retransmit());
-		execute(tcp_peer_recv());
+		//execute(tcp_peer_recv());
 		//execute(tcp_peer_send());
-		execute(tcp_data_undersized());
+		//execute(tcp_data_undersized());
 		execute(tcp_data_options());
-		execute(tcp_data_incorrect_options());
+		//execute(tcp_data_incorrect_options());
 		execute(tcp_data_incorrect_offset());
 		execute(tcp_connect_isn_no_data());
 		execute(tcp_connect_isn_data());
