@@ -145,7 +145,8 @@ label end;
 /**
  * Suite's passive connection establishment, optional data and close
  */
-function tcp_listen(octetstring data_to_receive := ''O,
+function tcp_listen(octetstring data_to_send := ''O,
+					octetstring data_to_receive := ''O,
 					boolean close := true,
 					u32 isn := 0) runs on tcp_ct
 {
@@ -173,6 +174,9 @@ function tcp_listen(octetstring data_to_receive := ''O,
 		conn_state(TCP_SYN_RECEIVED);
 		ack := tcp.th_seq;
 		conn_state(TCP_ESTABLISHED, fail_on := EV_NONE);
+		if (lengthof(data_to_send) > 0) {
+			tp_send(TP_COMMAND, "SEND", oct2str(data_to_send));
+		}
 		if (close == false) {
 			goto end;
 		}
@@ -435,12 +439,12 @@ testcase tcp_listen_no_data_reset() runs on tcp_ct
  */
 testcase tcp_listen_data_close() runs on tcp_ct
 {
-	tcp_listen(data_to_receive := '01'O);
+	tcp_listen(data_to_send := '01'O, data_to_receive := '01'O);
 }
 
 testcase tcp_listen_data_reset() runs on tcp_ct
 {
-	tcp_listen(data_to_receive := '01'O, close := false);
+	tcp_listen(data_to_send := '01'O, data_to_receive := '01'O, close := false);
 
 	P_TCP.send(ts_TCP(fl := RST));
 
@@ -459,7 +463,7 @@ testcase tcp_listen_data_reset() runs on tcp_ct
  */
 testcase tcp_listen_more_data_close() runs on tcp_ct
 {
-	tcp_listen(data_to_receive := '010203'O);
+	tcp_listen(data_to_send := '010203'O, data_to_receive := '010203'O);
 }
 
 /**
@@ -473,7 +477,8 @@ testcase tcp_connect_seq_wrap() runs on tcp_ct
 
 testcase tcp_listen_seq_wrap() runs on tcp_ct
 {
-	tcp_listen(data_to_receive := '01'O, isn := hex2int('FFFFFFFE'H));
+	tcp_listen(data_to_send := '01'O, data_to_receive := '01'O,
+			   isn := hex2int('FFFFFFFE'H));
 }
 
 /**
@@ -736,12 +741,12 @@ testcase tcp_listen_isn_no_data() runs on tcp_ct
 
 testcase tcp_listen_isn_data() runs on tcp_ct
 {
-	tcp_listen(data_to_receive := '01'O, isn := 333);
+	tcp_listen(data_to_send := '01'O, data_to_receive := '01'O, isn := 333);
 }
 
 testcase tcp_listen_isn_more_data() runs on tcp_ct
 {
-	tcp_listen(data_to_receive := '010203'O, isn := 333);
+	tcp_listen(data_to_send := '010203'O, data_to_receive := '010203'O, isn := 333);
 }
 
 testcase tcp_close2() runs on tcp_ct
