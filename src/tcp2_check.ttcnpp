@@ -73,7 +73,7 @@ label est;
 	/* Everything is sent and aknowledged, do active close */
 	P_TCP.send(ts_TCP(fl := FIN or4b ACK, seq := u32_post_inc(conn(seq)),
 					  ack := conn(ack)));
-	conn_state(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
+	conn_state(TCP_FIN_WAIT_1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 
 	/* TODO: peer_assert() here is tricky, since peer in active close
 	   sends ack and fin+ack immedeately */
@@ -106,15 +106,15 @@ label est;
 	[TCP_ESTABLISHED == state] T.timeout {
 		goto est;
 	}
-	[TCP_FIN_WAIT1 == state] P_TCP.receive(tr_TCP(fl := ACK, seq := conn(ack),
+	[TCP_FIN_WAIT_1 == state] P_TCP.receive(tr_TCP(fl := ACK, seq := conn(ack),
 												  ack := conn(seq))) {
 		T.stop;
 		/* TODO: peer_assert() here is tricky, since peer in active close
 		   sends ack and fin+ack immedeately */
-		conn_state(TCP_FIN_WAIT2);
+		conn_state(TCP_FIN_WAIT_2);
 		T.start; repeat;
 	}
-	[TCP_FIN_WAIT2 == state] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
+	[TCP_FIN_WAIT_2 == state] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
 												  seq := conn(ack),
 												  ack := conn(seq))) {
 		T.stop;
@@ -203,17 +203,17 @@ function tcp_listen(octetstring data_to_send := ''O,
 
 	P_TCP.send(ts_TCP(fl := FIN or4b ACK, seq := u32_post_inc(conn(seq)),
 					  ack := conn(ack)));
-	conn_state(TCP_FIN_WAIT1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
+	conn_state(TCP_FIN_WAIT_1, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
 
 	alt {
-	[TCP_FIN_WAIT1 == state] P_TCP.receive(tr_TCP(fl := ACK,
+	[TCP_FIN_WAIT_1 == state] P_TCP.receive(tr_TCP(fl := ACK,
 											  seq := conn(ack), ack := conn(seq))) {
 		T.stop;
-		conn_state(TCP_FIN_WAIT2);
+		conn_state(TCP_FIN_WAIT_2);
 		T.start; repeat;
 	}
-	[TCP_FIN_WAIT2 == state] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
+	[TCP_FIN_WAIT_2 == state] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
 											  seq := conn(ack), ack := conn(seq))) {
 		T.stop;
 		peer_assert(TCP_LAST_ACK);
