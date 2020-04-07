@@ -784,6 +784,52 @@ testcase tcp_peer_close() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+/*
+ * Test peer's retransmission in active close:
+ *
+ * - Check that peer retransmits in FIN_WAIT_1 state
+ * - Check that peer deletes the connection on no response
+ */
+testcase tcp_peer_close_retransmit() runs on tcp_ct
+{
+#define TCP_RETRIES 1
+	var udp_t udp;
+	var tp_new_t tp;
+	var integer replies := 0;
+
+	tcp_connect(close := false);
+
+	tcp_config({
+			{ "tp_trace", "1" },
+			{ "tcp_rto", int2str(TO_MSEC(T_default/4.0)) },
+			{ "tcp_retries", int2str(TCP_RETRIES) }
+		});
+
+	tp_send(TP_COMMAND, "CLOSE2");
+
+	T.start;
+
+	alt {
+	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
+													seq := conn(ack),
+													ack := conn(seq))) {
+		T.stop;
+		replies := replies + 1;
+		T.start; repeat;
+	}
+	[] P_UDP.receive(?) -> value udp {
+		T.stop;
+		tp := f_tp_new_dec(udp.data);
+		if (tp.data[0].val == "CONN_DELETE" and replies == (TCP_RETRIES + 1)) {
+			setverdict(pass);
+		}
+	}
+	}
+
+	tp_send(TP_COMMAND, "CLOSE");
+#undef TCP_RETRIES
+}
+
 testcase tcp_close2() runs on tcp_ct
 {
 	tcp_connect(close := false);
