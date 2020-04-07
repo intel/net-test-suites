@@ -1073,6 +1073,8 @@ control {
 		execute(tcp_listen_isn_more_data());
 		execute(tcp_send2());
 		//execute(tcp_connect_early_data());
+		execute(tcp_peer_close());
+		execute(tcp_peer_close_retransmit());
 	}
 label end;
 	log("TTT: ", TTT.read);
