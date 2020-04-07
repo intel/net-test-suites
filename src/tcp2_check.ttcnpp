@@ -749,6 +749,41 @@ testcase tcp_listen_isn_more_data() runs on tcp_ct
 	tcp_listen(data_to_send := '010203'O, data_to_receive := '010203'O, isn := 333);
 }
 
+/*
+ * Test peer's active close:
+ *
+ * - Check that peer is in FIN_WAIT_1 after it sends FIN+ACK
+ * - Check that peer is in TIME_WAIT after the reception of FIN+ACK
+ */
+testcase tcp_peer_close() runs on tcp_ct
+{
+	tcp_connect(close := false);
+
+	tp_send(TP_COMMAND, "CLOSE2");
+
+	T.start;
+
+	alt {
+	[state == TCP_ESTABLISHED] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
+													seq := conn(ack),
+													ack := conn(seq))) {
+		T.stop;
+		peer_assert(TCP_FIN_WAIT_1);
+		conn_state(TCP_CLOSING);
+		P_TCP.send(ts_TCP(fl := FIN or4b ACK,
+						  seq := conn(seq),
+						  ack := u32_pre_inc(conn(ack))));
+		T.start(T_default/4.0); repeat;
+	}
+	[state == TCP_CLOSING] T.timeout {
+		peer_assert(TCP_TIME_WAIT);
+		setverdict(pass);
+	}
+	}
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 testcase tcp_close2() runs on tcp_ct
 {
 	tcp_connect(close := false);
