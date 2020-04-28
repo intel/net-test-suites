@@ -106,29 +106,19 @@ label est;
 	[TCP_ESTABLISHED == state] T.timeout {
 		goto est;
 	}
-	[TCP_FIN_WAIT_1 == state] P_TCP.receive(tr_TCP(fl := ACK, seq := conn(ack),
-												  ack := conn(seq))) {
-		T.stop;
-		/* TODO: peer_assert() here is tricky, since peer in active close
-		   sends ack and fin+ack immedeately */
-		conn_state(TCP_FIN_WAIT_2);
-		T.start; repeat;
-	}
-	[TCP_FIN_WAIT_2 == state] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
-												  seq := conn(ack),
-												  ack := conn(seq))) {
+	[TCP_FIN_WAIT_1 == state] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
+												   seq := conn(ack),
+												   ack := conn(seq))) {
 		T.stop;
 		peer_assert(TCP_LAST_ACK);
-		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
+		conn_state(TCP_CLOSED, fail_on := EV_NONE);
+		P_TCP.send(ts_TCP(fl := ACK,
+						  seq := conn(seq),
 						  ack := u32_pre_inc(conn(ack))));
-		conn_state(TCP_TIME_WAIT, fail_on := EV_NONE);
-		T.start; repeat;
-	}
-	[TCP_TIME_WAIT == state] T.timeout {
-		conn_state(TCP_CLOSED);
-		peer_assert(TCP_CLOSED);
 	}
 	}  /* end of alt */
+
+	peer_assert(TCP_CLOSED);
 
 	if (TCP_CLOSED == state and 0 == lengthof(data_to_send) and
 			0 == lengthof(snd) and rcv == data_to_receive) {
@@ -207,25 +197,19 @@ function tcp_listen(octetstring data_to_send := ''O,
 	T.start;
 
 	alt {
-	[TCP_FIN_WAIT_1 == state] P_TCP.receive(tr_TCP(fl := ACK,
-											  seq := conn(ack), ack := conn(seq))) {
-		T.stop;
-		conn_state(TCP_FIN_WAIT_2);
-		T.start; repeat;
-	}
-	[TCP_FIN_WAIT_2 == state] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
-											  seq := conn(ack), ack := conn(seq))) {
+	[TCP_FIN_WAIT_1 == state] P_TCP.receive(tr_TCP(fl := FIN or4b ACK,
+												   seq := conn(ack),
+												   ack := conn(seq))) {
 		T.stop;
 		peer_assert(TCP_LAST_ACK);
-		P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq), ack := u32_pre_inc(conn(ack))));
-		conn_state(TCP_TIME_WAIT, fail_on := EV_NONE);
-		T.start; repeat; /* TODO: T * 2 */
-	}
-	[TCP_TIME_WAIT == state] T.timeout {
-		conn_state(TCP_CLOSED);
-		peer_assert(TCP_CLOSED);
+		conn_state(TCP_CLOSED, fail_on := EV_NONE);
+		P_TCP.send(ts_TCP(fl := ACK,
+						  seq := conn(seq),
+						  ack := u32_pre_inc(conn(ack))));
 	}
 	} /* end of alt */
+
+	peer_assert(TCP_CLOSED);
 
 	if (state == TCP_CLOSED and rcv == data_to_receive) {
 		setverdict(pass);
