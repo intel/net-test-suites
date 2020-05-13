@@ -602,7 +602,7 @@ testcase tcp_data_options() runs on tcp_ct
 						  seq := u32_post_inc(conn(seq), lengthof(data_to_send)),
 						  data := data_to_send));
 	tcp.opt := {
-		{ TO_MSS, 4, '0000'O }
+		{ TO_MSS, 4, int2oct(1460, 2) }
 	}
 
 	P_TCP.send(tcp);
