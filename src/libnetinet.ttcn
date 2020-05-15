@@ -130,13 +130,13 @@ type record tcp_t {
 	uint16_t	th_win,
 	uint16_t	th_sum,
 	uint16_t	th_urp,
-	tcp_options_t opt optional,
+	tcp_options_t options optional,
 	octetstring data optional
 } with {
 	variant(th_sport, th_dport, th_seq, th_ack, th_win) "BYTEORDER(last)";
-	variant(opt) "REPEATABLE(yes)";
+	variant(options) "REPEATABLE(yes)";
 	variant(th_off) "LENGTHTO(th_sport,th_dport,th_seq,th_ack,th_off,
-		th_res,th_ecn,th_flags,th_win,th_sum,th_urp,opt)";
+		th_res,th_ecn,th_flags,th_win,th_sum,th_urp,options)";
 	variant(th_off) "UNIT(dword32)";
 }
 
@@ -145,6 +145,7 @@ template tcp_t ts_TCP(th_flags_t fl := TH_NONE,
 					  u32 seq := 0,
 					  u32 ack := 0,
 					  u32 sum := 0,
+					  template tcp_options_t options := omit,
 					  template octetstring data := omit) := {
 	 th_sport := 4242,
 	 th_dport := 4242,
@@ -157,7 +158,7 @@ template tcp_t ts_TCP(th_flags_t fl := TH_NONE,
 	 th_win := 1280,
 	 th_sum := sum,
 	 th_urp := 0,
-	 opt := omit,
+	 options := options,
 	 data := data
 }
 
@@ -177,7 +178,7 @@ template tcp_t tr_TCP(template th_flags_t fl := TH_ANY,
 	 th_win := ?,
 	 th_sum := ?,
 	 th_urp := ?,
-	 opt := *,
+	 options := *,
 	 data := data
 }
 
@@ -434,7 +435,7 @@ testcase tcp_codecs() runs on dummy_ct
 
 	tcp := valueof(ts_TCP(data := '1111'O));
 
-	tcp.opt := {
+	tcp.options := {
 		{ TO_MSS, 4, '0000'O },
 		{ TO_MSS, 4, '0000'O }
 	}
@@ -449,7 +450,7 @@ testcase tcp_codecs() runs on dummy_ct
 
 	tcp := valueof(ts_TCP);
 
-	tcp.opt := {
+	tcp.options := {
 		{ TO_MSS, 4, '0000'O },
 		{ TO_MSS, 4, '0000'O }
 	}

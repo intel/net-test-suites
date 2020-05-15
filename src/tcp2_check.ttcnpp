@@ -601,7 +601,8 @@ testcase tcp_data_options() runs on tcp_ct
 	tcp := valueof(ts_TCP(fl := PSH,
 						  seq := u32_post_inc(conn(seq), lengthof(data_to_send)),
 						  data := data_to_send));
-	tcp.opt := {
+
+	tcp.options := {
 		{ TO_MSS, 4, int2oct(1460, 2) }
 	}
 
@@ -644,7 +645,7 @@ testcase tcp_data_incorrect_options() runs on tcp_ct
 	tcp := valueof(ts_TCP(fl := PSH,
 						  seq := u32_post_inc(conn(seq), lengthof(data_to_send)),
 						  data := data_to_send));
-	tcp.opt := {
+	tcp.options := {
 		{ TO_MSS, 3, '00'O } /* Incorrect option length */
 	}
 
