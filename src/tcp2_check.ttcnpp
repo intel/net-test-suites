@@ -1072,6 +1072,56 @@ testcase tcp_data_retransmit() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+/**
+ * This test checks if peer sends data with the maximum segment size (MSS)
+ */
+testcase tcp_data_mss() runs on tcp_ct
+{
+	tcp_connect(close := false,
+				options := {{ TO_MSS, 4, int2oct(1/*mss=1*/, 2) }});
+
+	tcp_config({{ "tp_trace", "1" }});
+
+	var octetstring data := '010203'O;
+	var octetstring data_received := ''O;
+	var boolean conn_closed := false;
+	var udp_t udp;
+
+	tp_send(TP_COMMAND, "SEND", oct2str(data));
+
+	T.start;
+
+	alt {
+		[] P_TCP.receive(tr_TCP(seq := conn(ack), ack := conn(seq)))
+				-> value tcp {
+			T.stop;
+			P_TCP.send(ts_TCP(fl := ACK, ack := u32_pre_inc(conn(ack))));
+			byte_array_append(data_received, tcp.data);
+			T.start;
+			repeat;
+		}
+		[] P_TCP.receive(?) {
+			setverdict(fail);
+		}
+		[] P_UDP.receive(?) -> value udp {
+			T.stop;
+			var tp_new_t tp := f_tp_new_dec(udp.data);
+			if (tp.data[0].val == "CONN_DELETE") {
+				conn_closed := true;
+			}
+		}
+		[] T.timeout {
+
+		}
+	}
+
+	if (data_received == data and conn_closed == false) {
+		setverdict(pass);
+	}
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 control {
 
 	timer TTT;
