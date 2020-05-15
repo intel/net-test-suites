@@ -37,13 +37,15 @@ type component tcp_ct extends test_ct {
 function tcp_connect(octetstring data_to_send := ''O,
 					 octetstring data_to_receive := ''O,
 					 boolean close := true,
-					 u32 isn := 0) runs on tcp_ct
+					 u32 isn := 0,
+					 template tcp_options_t options := omit) runs on tcp_ct
 {
 	seq := isn;
 
 	tcp_init();
 
-	P_TCP.send(ts_TCP(fl := SYN, seq := u32_post_inc(conn(seq))));
+	P_TCP.send(ts_TCP(fl := SYN, seq := u32_post_inc(conn(seq)),
+													 options := options));
 	conn_state(TCP_SYN_SENT, fail_on := EV_TIMEOUT or4b EV_UNEXPECTED_MSG);
 	T.start;
 
