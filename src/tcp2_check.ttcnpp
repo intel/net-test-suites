@@ -1017,6 +1017,59 @@ testcase tcp_connect_data_with_ack_close() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+/**
+ * This test checks if data from the peer is retansmitted
+ */
+testcase tcp_data_retransmit() runs on tcp_ct
+{
+	tcp_connect(close := false);
+
+	tcp_config({
+			{ "tcp_rto", int2str(TO_MSEC(T_default/4.0)) },
+			{ "tcp_retries", int2str(1) },
+			{ "tp_trace", "1" }
+		});
+
+	var octetstring data := '01'O;
+	var octetstring data_received := ''O;
+	var integer count := 0;
+	var boolean conn_closed := false;
+	var udp_t udp;
+
+	tp_send(TP_COMMAND, "SEND", oct2str(data));
+
+	T.start;
+
+	alt {
+		[] P_TCP.receive(tr_TCP(seq := conn(ack), ack := conn(seq)))
+				-> value tcp {
+			T.stop;
+			count := count + 1;
+			if (count > 1) {
+				byte_array_append(data_received, tcp.data);
+			}
+			T.start;
+			repeat;
+		}
+		[] P_UDP.receive(?) -> value udp {
+			T.stop;
+			var tp_new_t tp := f_tp_new_dec(udp.data);
+			if (tp.data[0].val == "CONN_DELETE") {
+				conn_closed := true;
+			}
+		}
+		[] T.timeout {
+			setverdict(fail);
+		}
+	}
+
+	if (data_received == data and conn_closed == true) {
+		setverdict(pass);
+	}
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 control {
 
 	timer TTT;
