@@ -1177,6 +1177,76 @@ testcase tcp_data_win() runs on tcp_ct
 	tp_send(TP_COMMAND, "CLOSE");
 }
 
+/**
+ * This test checks if peer can recover from the data retansmition
+ */
+testcase tcp_data_retransmit_recover() runs on tcp_ct
+{
+	tcp_connect(close := false);
+
+	tcp_config({{ "tcp_rto", int2str(TO_MSEC(T_default/4.0)) },
+				{ "tcp_retries", int2str(1) },
+				{ "tp_trace", "1" }});
+
+	var octetstring data := '010203'O;
+	var octetstring data_received := ''O;
+	var boolean conn_closed := false;
+	var integer n := 0;
+	var udp_t udp;
+
+	P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq), ack := conn(ack), win := 1));
+
+	tp_send(TP_COMMAND, "SEND", oct2str(data));
+
+	T.start;
+
+	alt {
+		[] P_TCP.receive(tr_TCP(seq := 1, ack := conn(seq))) -> value tcp {
+			T.stop;
+			byte_array_append(data_received, tcp.data);
+			P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
+							  ack := u32_pre_inc(conn(ack)), win := 1));
+			T.start;
+			repeat;
+		}
+		[] P_TCP.receive(tr_TCP(seq := 2, ack := conn(seq))) -> value tcp {
+			T.stop;
+			n := n + 1;
+			if (n == 2) {
+				byte_array_append(data_received, tcp.data);
+				P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
+								  ack := u32_pre_inc(conn(ack)), win := 1));
+			}
+			T.start;
+			repeat;
+		}
+		[] P_TCP.receive(tr_TCP(seq := 3, ack := conn(seq))) -> value tcp {
+			T.stop;
+			byte_array_append(data_received, tcp.data);
+			P_TCP.send(ts_TCP(fl := ACK, seq := conn(seq),
+							  ack := u32_pre_inc(conn(ack)), win := 1));
+			T.start;
+			repeat;
+		}
+		[] P_UDP.receive(?) -> value udp {
+			T.stop;
+			var tp_new_t tp := f_tp_new_dec(udp.data);
+			if (tp.data[0].val == "CONN_DELETE") {
+				conn_closed := true;
+			}
+		}
+		[] T.timeout {
+
+		}
+	}
+
+	if (data_received == data and conn_closed == false and n == 2) {
+			setverdict(pass);
+	}
+
+	tp_send(TP_COMMAND, "CLOSE");
+}
+
 control {
 
 	timer TTT;
