@@ -34,7 +34,8 @@ public:
 			   const fd_set *error_fds,
 			   double time_since_last_call);
 private:
-	int fd;
+	int fd_r;
+	int fd_w;
 	int debug;
 	uint32_t src_ip;
 	uint16_t src_port;

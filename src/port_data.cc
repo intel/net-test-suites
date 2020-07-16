@@ -79,7 +79,7 @@ void port__data::set_parameter(const char *name, const char *value)
 	D("%s=%s", name, value);
 
 	if (IS_PARAM("src_ip", name)) {
-		dst_port = inet_addr(value);
+		src_ip = inet_addr(value);
 		goto out;
 	}
 
@@ -120,8 +120,8 @@ void port__data::Event_Handler(const fd_set *fds_read,
 			     const fd_set */*error_fds*/,
 			     double /*time_since_last_call*/)
 {
-	if (FD_ISSET(fd, fds_read))
-		Handle_Fd_Event_Readable(fd);
+	if (FD_ISSET(fd_r, fds_read))
+		Handle_Fd_Event_Readable(fd_r);
 }
 
 #define S_IN_SIZE sizeof(struct sockaddr_in)
@@ -141,20 +141,23 @@ void port__data::user_map(const char *system_port)
 {
 	D("system_port: %s", system_port);
 
-	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-		E("socket");
+	if ((fd_w = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+		E("write socket");
 
-	if (bind(fd, s_in(src_ip, src_port), S_IN_SIZE) == -1)
+	if ((fd_r = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+		E("read socket");
+
+	if (bind(fd_r, s_in(src_ip, src_port), S_IN_SIZE) == -1)
 		E("bind");
 
-	if (connect(fd, s_in(dst_ip, dst_port), S_IN_SIZE) == -1)
+	if (connect(fd_w, s_in(dst_ip, dst_port), S_IN_SIZE) == -1)
 		E("connect");
 
 	{
 		fd_set fds_read;
 
 		FD_ZERO(&fds_read);
-		FD_SET(fd, &fds_read);
+		FD_SET(fd_r, &fds_read);
 
 		Install_Handler(&fds_read, NULL, NULL, 0);
 	}
@@ -163,7 +166,8 @@ void port__data::user_map(const char *system_port)
 void port__data::user_unmap(const char * /*system_port*/)
 {
 	Uninstall_Handler();
-	close(fd);
+	close(fd_w);
+	close(fd_r);
 }
 
 int32_t _cs(void *data, size_t data_len)
@@ -304,7 +308,7 @@ void port__data::outgoing_send(const OCTETSTRING& msg)
 
 	inet6_chksum(buf, data_len);
 
-	if (write(fd, buf, data_len) < data_len)
+	if (write(fd_w, buf, data_len) < data_len)
 		E("write");
 }
 
