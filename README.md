@@ -20,9 +20,11 @@ Ubuntu: ```# sudo apt install g++ libxml2-dev libssl-dev expect```
 Fedora: ```# sudo dnf install gcc-c++ libxml2-devel openssl-devel expect```
 ## 1.2 Install [titan.core](https://projects.eclipse.org/projects/tools.titan)
 To install titan.core onto your Linux host, either:
+* Install through the package manager (Ubuntu):
+
+    ```# sudo apt install --no-install-recommends eclipse-titan```
 * Install to ```~/titan``` with the supplied script: ```# . titan-install.sh```
 * Get a version from the project's download [page](https://projects.eclipse.org/projects/tools.titan/downloads)
-* Install through the package manager (Ubuntu): ```# sudo apt install eclipse-titan```
 * Install from the [source](https://gitlab.eclipse.org/eclipse/titan/titan.core)
 
 ## 1.3 Set the Environment
