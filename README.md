@@ -1,35 +1,35 @@
 
 # Net-test-suites
 
-Net-test-suites include a few TCP test suites written in [TTCN-3](https://www.netdevconf.org/2.2/papers/welte-ttcn3-talk.pdf) for [Eclipse titan.core](https://projects.eclipse.org/projects/tools.titan) (open source TTCN-3 compiler and runtime).
+Net-test-suites include TCP test suites written in [TTCN-3](https://www.netdevconf.org/2.2/papers/welte-ttcn3-talk.pdf) for [Eclipse titan.core](https://projects.eclipse.org/projects/tools.titan) (open source TTCN-3 compiler and runtime).
 
 Test suite | Description
 --------|--------
-[tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn) | This is an example TCP suite using black box testing approach.
-[tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp) | This is a sanity check suite for [experimental TCP](https://github.com/ozhuraki/zephyr) (TCP2) realizing a white box testing model with the help of JSON based [test protocol](https://github.com/intel/net-test-suites/blob/master/src/tcp2_utils.ttcnpp#L73).
+[tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn) | This is a sample introductory TCP suite using a black-box testing approach
+[tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp) | This is a sanity check suite for the [experimental TCP](https://github.com/ozhuraki/zephyr) that additionally uses a white-box testing with [JSON-based test protocol](https://github.com/intel/net-test-suites/blob/master/src/tcp2_utils.ttcnpp#L73)
 
-Both suites will be merged and use a hybrid approach, i.e. black box model with optionally enablable white box features.
+Both suites will be merged and use a hybrid approach, i.e. a black-box model with an optional white-box features.
 
-Test protocol will be transformed into reusable component (at both sides), suitable for testing of other network protocols/technologies.
+Test protocol will be transformed into the reusable components (at both sides), suitable for testing of other network protocols and technologies.
 
 # 1 Build and Run
 
 ## 1.1 Install Dependencies
-Ubuntu: ```# sudo apt-get install g++ libxml2-dev libssl-dev expect```
+Ubuntu: ```# sudo apt install g++ libxml2-dev libssl-dev expect```
 
 Fedora: ```# sudo dnf install gcc-c++ libxml2-devel openssl-devel expect```
-## 1.2 Install titan.core
-Options to install titan.core onto your Linux host:
-* Install with the supplied script (```~/titan```): ```# . titan-install.sh```
-* Get a suitable version from [project's download](https://projects.eclipse.org/projects/tools.titan/downloads) page.
-* Install from the [source](https://github.com/eclipse/titan.core).
-* Ubuntu's default titan.core (packaged incorrectly, not recommended): ```# sudo apt-get install eclipse-titan```
+## 1.2 Install [titan.core](https://projects.eclipse.org/projects/tools.titan)
+To install titan.core onto your Linux host, either:
+* Install to ```~/titan``` with the supplied script: ```# . titan-install.sh```
+* Get a version from the project's download [page](https://projects.eclipse.org/projects/tools.titan/downloads)
+* Install through the package manager (Ubuntu): ```# sudo apt install eclipse-titan```
+* Install from the [source](https://gitlab.eclipse.org/eclipse/titan/titan.core)
 
 ## 1.3 Set the Environment
 ```
 # . titan-env.sh
 ```
-For Ubuntu's packaged titan.core, ```TTCN3_DIR=/usr```.
+For Ubuntu's packaged titan.core, use ```TTCN3_DIR=/usr```.
 ## 1.4 Build
 ```
 # cd src
@@ -42,14 +42,14 @@ Test suite | Command
 [tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn) | ```# ttcn3_start test_suite tcp_suite.cfg```
 [tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp) | ```# ttcn3_start test_suite tcp2_check_3_runs.cfg```
 
-To run any single test from the suite:
+To run a single test:
 ```
 # ttcn3_start test_suite tcp2_check_3_runs.cfg tcp2_check.test_tcp_connect_data_close
 ```
 
-# 2 Description
+# 2 Communication with the System Under Test (SUT)
 
-Test suites send Ethernet frames over UDP/IPv4 to [net-test-tools](https://github.com/intel/net-test-tools) that support:
+Test suites send Ethernet frames over UDP/IPv4 to the [net-test-tools](https://github.com/intel/net-test-tools) that support:
 
 SUT interface | Default | Encapsulation
 --------|--------|--------
@@ -61,17 +61,17 @@ TAP | - | -
 
 IPv4/UDP Endpoint | Purpose
 --------|--------
-localhost:7771 | [net-test-tools](https://github.com/intel/net-test-tools) interfaced to system under test
+localhost:7771 | [net-test-tools](https://github.com/intel/net-test-tools) interfaced to the SUT
 localhost:7777 | Test suite
 
 Ethernet MAC | TCP Endpoint | Purpose | Manual
 --------|--------|--------|--------
-00:00:00:00:00:01 | 192.0.2.1:4242 | System under test | [echo app manual](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.md)/[TCP2 manual](https://github.com/ozhuraki/zephyr)
-00:00:00:00:00:02 | 192.0.2.2:4242 | Test suite | [tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn)/[tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp)
+00:00:00:00:00:01 | 192.0.2.1:4242 | SUT | [Zephyr echo app manual](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.md), [TCP2 manual](https://github.com/ozhuraki/zephyr)
+00:00:00:00:00:02 | 192.0.2.2:4242 | Test suite | [tcp_suite.ttcn](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.ttcn), [tcp2_check.ttcnpp](https://github.com/intel/net-test-suites/blob/master/src/tcp2_check.ttcnpp)
 
 All endpoints are [configurable](https://github.com/intel/net-test-suites/blob/master/src/tcp_suite.cfg#L6).
 
 ### Reporting a Security Issue
-If you have information about a security issue or vulnerability,
+If you have an information about a security issue or vulnerability,
 please follow the [process](https://01.org/security).
 
