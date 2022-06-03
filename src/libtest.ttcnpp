@@ -20,7 +20,7 @@ modulepar {
 	charstring m_ip_src := "192.0.2.2";
 	charstring m_ip6_dst := "fe80::1";
 	charstring m_ip6_src := "fe80::2";
-	boolean ping_enabled := true;
+	boolean ping_enabled := false;
 	boolean ping_repeat := false;
 	boolean pass_arp := false;
 	boolean stat_enabled := false;
