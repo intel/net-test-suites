@@ -1,7 +1,6 @@
-/* -*- tab-width: 4; -*- */
+/* -*- c-basic-offset: 4; tab-width: 4; -*- */
 /*
- * Copyright © 2017-2019, Intel Corporation.
- *
+ * Copyright © 2017-2022, Intel Corporation.
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
@@ -27,7 +26,7 @@ modulepar {
 	boolean stat_enabled := false;
 	ethertype_t m_ethertype := ETHERTYPE_IP;
 	float T_default := 0.1; /* default message timeout, sec */
-	float TT_default := 2.0; /* default test teardown timeout, sec */
+	float TT_default := 0.0; /* test teardown timeout, sec (0 - unused)*/
 	float T_peer_default := -1.0; /* peer's retransmission timeout, sec
 									 (negative value: unused) */
 	integer number_of_runs := 1;
@@ -100,8 +99,6 @@ function test_ct_init() runs on test_ct
 	if (TT_default > 0.0) {
 		d_as_TT_timeout := activate(as_TT_timeout());
 		TT.start(TT_default);
-	} else {
-		TT.start(3600.0);
 	}
 }
 
