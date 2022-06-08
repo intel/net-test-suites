@@ -15,7 +15,7 @@
 module tcp2_check {
 
 import from libtypes all;
-import from libnetinet all;
+import from libnet all;
 import from libtest all;
 import from libutils all;
 import from tcp2_utils all;

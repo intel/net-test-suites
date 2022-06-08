@@ -10,7 +10,7 @@
 module tcp2_utils {
 
 import from libtypes all;
-import from libnetinet all;
+import from libnet all;
 import from libutils all;
 import from libtest all;
 import from tcp2_check all;

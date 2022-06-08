@@ -9,7 +9,7 @@
 
 module libutils {
 
-import from libnetinet all;
+import from libnet all;
 
 external function u32_pre_inc(inout integer a, integer b := 1) return integer;
 external function u32_post_inc(inout integer a, integer b := 1) return integer;

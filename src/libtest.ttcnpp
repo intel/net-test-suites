@@ -12,7 +12,7 @@
 module libtest {
 
 import from libtypes all;
-import from libnetinet all;
+import from libnet all;
 import from port_data_types all;
 import from libutils all;
 
