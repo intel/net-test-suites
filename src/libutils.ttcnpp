@@ -1,11 +1,8 @@
-/* -*- tab-width: 4; -*- */
+/* -*- c-basic-offset: 4; tab-width: 4; -*- */
 /*
- * Copyright © 2018-2019, Intel Corporation.
- *
+ * Copyright © 2018-2022, Intel Corporation.
  * SPDX-License-Identifier: LGPL-2.1-only
  */
-
-#include "libutils.ttcnin"
 
 module libutils {
 
@@ -83,8 +80,6 @@ function byte_array_new(integer len := 0, octetstring c := '00'O)
 	return octetstring
 {
 	var octetstring array := ''O;
-
-	ASSERT(lengthof(c) == 1);
 
 	while (len > 0) {
 		array := array & c;
