@@ -4,7 +4,10 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-#include "libtest.ttcnin"
+#define EVENT_IS(_event, _kind) mask_is_present(_event, _kind)
+#define EVENT_IS_SET(_event, _kind) mask_is_present(_event, _kind)
+#define EVENT_SET(_event, _kind) mask_set(_event, _kind)
+#define EVENT_CLEAR(_event, _kind) mask_clear(_event, _kind)
 
 module libtest {
 
