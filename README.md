@@ -1,7 +1,7 @@
 
 # Net-test-suites
 
-Net-test-suites include TCP test suites written in [TTCN-3](https://www.netdevconf.org/2.2/papers/welte-ttcn3-talk.pdf) for [Eclipse titan.core](https://projects.eclipse.org/projects/tools.titan) (open source TTCN-3 compiler and runtime).
+Net-test-suites include TCP test suites written in [TTCN-3](https://www.netdevconf.org/2.2/papers/welte-ttcn3-talk.pdf) for [Eclipse titan.core](https://gitlab.eclipse.org/eclipse/titan/titan.core/-/blob/master/README.md) (open source TTCN-3 compiler and runtime).
 
 Test suite | Description
 --------|--------
@@ -18,7 +18,7 @@ Test protocol will be transformed into the reusable components (at both sides), 
 Ubuntu: ```# sudo apt install g++ libxml2-dev libssl-dev expect```
 
 Fedora: ```# sudo dnf install gcc-c++ libxml2-devel openssl-devel expect```
-## 1.2 Install [titan.core](https://projects.eclipse.org/projects/tools.titan)
+## 1.2 Install [titan.core](https://gitlab.eclipse.org/eclipse/titan/titan.core/-/blob/master/README.md)
 To install titan.core onto your Linux host, either:
 * Install through the package manager (Ubuntu):
 
@@ -77,3 +77,10 @@ All endpoints are [configurable](https://github.com/intel/net-test-suites/blob/m
 If you have an information about a security issue or vulnerability,
 please follow the [process](https://01.org/security).
 
+# References
+
+- [https://projects.eclipse.org/projects/tools.titan](https://projects.eclipse.org/projects/tools.titan)
+- [TTCN-3 and Eclipse TITAN for testing protocol stacks](https://legacy.netdevconf.info/2.2/papers/welte-ttcn3-talk.pdf)
+- [https://gitlab.eclipse.org/eclipse/titan/titan.core/-/blob/master/README.md](https://gitlab.eclipse.org/eclipse/titan/titan.core/-/blob/master/README.md)
+- [Programmers' Technical Reference Guide for the TITAN TTCN-3 Toolset](https://mirror.umd.edu/eclipse/titan/ReferenceGuide.pdf)
+- [User Guide for TITAN TTCN-3 Test Executor](https://mirror.umd.edu/eclipse/titan/UserGuide.pdf)
